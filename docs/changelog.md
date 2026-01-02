@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                  |
 | ------- | ---------- | ---------- | -------------------------------------------------------- |
+| 0.1.0   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)              |
 | 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup |
 
 **Types:** `major` | `minor` | `patch` | `prerelease`
@@ -57,6 +58,22 @@
 ## [Unreleased]
 
 ### Added
+
+- **Retry Logic & Error Handling (Feature #4)** - Complete execution infrastructure with resilience patterns
+  - Exponential backoff with configurable jitter (default: 1s base, 2x multiplier, 10% jitter)
+  - Retry-After header parsing (both seconds and HTTP-date formats)
+  - Circuit breaker pattern with in-memory state tracking per integration
+  - State transitions: closed → open (5 failures in 30s) → half-open (60s) → closed
+  - HTTP client wrapper with configurable timeouts and AbortController
+  - Rate limit header extraction (X-RateLimit-\*, Retry-After)
+  - Execution service orchestrating retry + circuit breaker + HTTP client
+  - Passthrough mode for raw error forwarding
+  - Request context in errors for debugging (requestId, attempts, duration)
+  - Fluent RequestBuilder API for common patterns
+  - Typed error classes: NetworkError, TimeoutError, RateLimitError, ServerError, ClientError, CircuitOpenError, MaxRetriesExceededError
+  - Result type guards: isSuccess, isFailure, isRateLimited, isCircuitOpen, isTimeout
+  - Convenience helpers: get, post, put, patch, del with automatic JSON handling
+  - 113 new unit tests for execution module (252 total tests)
 
 - **Authentication Framework (Feature #3)** - Complete multi-type authentication system
   - AES-256-GCM encryption module for secure credential storage

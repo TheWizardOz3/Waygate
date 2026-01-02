@@ -18,6 +18,8 @@
 | ADR-002 | 2026-01-02 | infra    | active | Prisma 7 config file requires explicit env loading    |
 | ADR-003 | 2026-01-02 | infra    | active | Environment variable file strategy for secrets        |
 | ADR-004 | 2026-01-01 | arch     | active | Dual encryption strategy for credentials              |
+| ADR-005 | 2026-01-02 | arch     | active | In-memory circuit breaker with per-circuit tracking   |
+| ADR-006 | 2026-01-02 | arch     | active | Result pattern for execution service                  |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -182,6 +184,123 @@ When working with environment variables:
 - Update `.env.example` when adding new required variables
 - Check `.gitignore` includes both `.env` and `.env.local`
 - For Prisma CLI operations, ensure dotenv is loaded in config files
+
+---
+
+### ADR-006: Result Pattern for Execution Service
+
+**Date:** 2026-01-02 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+The execution service needs to handle both success and failure cases in a way that's predictable for consumers and compatible with TypeScript's type system.
+
+#### Decision
+
+Implemented a Result pattern for all execution operations:
+
+```typescript
+interface ExecutionResult<T> {
+  success: boolean;
+  data?: T; // Present when success=true
+  error?: ExecutionErrorDetails; // Present when success=false
+  attempts?: number;
+  totalDurationMs?: number;
+}
+```
+
+- `execute()` returns `ExecutionResult` - never throws
+- `httpRequest()` throws typed errors - for use within retry/circuit breaker
+- Helper functions (`isSuccess`, `isFailure`, `unwrap`, `unwrapOr`) for result handling
+- Typed error codes as discriminated union for pattern matching
+
+#### Rationale
+
+- **Predictable control flow**: Consumers don't need try/catch for expected failures
+- **Type safety**: TypeScript can narrow types based on `success` flag
+- **Error context**: Rich error details (code, statusCode, retryable, details) preserved
+- **Composable**: Results can be chained, mapped, and unwrapped
+- **Consistent**: Same pattern across all execution helpers (get, post, etc.)
+
+#### Supersedes
+
+N/A (new feature)
+
+#### Migration
+
+- **Affected files:** All code that calls execution module
+- **Find:** `try { await execute(...) } catch`
+- **Replace with:** `const result = await execute(...); if (!result.success) { ... }`
+- **Verify:** `npm run type-check` passes
+
+#### AI Instructions
+
+When working with execution module:
+
+- Use `isSuccess(result)`/`isFailure(result)` for type narrowing
+- Use `unwrap(result)` when you want to throw on failure
+- Use `unwrapOr(result, defaultValue)` for safe defaults
+- Check `error.code` for specific error handling (RATE_LIMITED, CIRCUIT_OPEN, etc.)
+- The `httpRequest` function throws - only use directly when you need raw errors
+
+---
+
+### ADR-005: In-Memory Circuit Breaker with Per-Circuit Tracking
+
+**Date:** 2026-01-02 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+The execution engine needs to fail fast when external services are unhealthy, preventing cascade failures and wasted resources on requests that will likely fail.
+
+#### Decision
+
+Implemented in-memory circuit breaker with:
+
+1. **Per-circuit tracking** using `Map<string, CircuitState>`
+   - Circuit ID defaults to request URL, can be overridden (e.g., integration ID)
+   - Enables granular failure isolation per integration/service
+
+2. **State machine**:
+   - `closed` → Normal operation, requests flow through
+   - `open` → Fail fast, requests rejected with CircuitOpenError
+   - `half-open` → Allow single test request to probe recovery
+
+3. **Configuration** (per circuit, with defaults):
+   - `failureThreshold`: 5 failures to open
+   - `failureWindowMs`: 30s window for counting failures
+   - `resetTimeoutMs`: 60s before trying half-open
+
+4. **Failure window** - Only count recent failures, not total historical failures
+
+#### Rationale
+
+- **In-memory for MVP**: Simple, fast, no external dependencies. Acceptable trade-off that cold starts reset state.
+- **Per-circuit**: Different integrations may have different reliability profiles
+- **Failure window**: Prevents old failures from keeping circuit open indefinitely
+- **Configurable**: Different services may need different thresholds
+- **Redis-ready**: Map-based storage can be swapped for Redis in V1
+
+#### Supersedes
+
+N/A (new feature)
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/execution/circuit-breaker.ts`
+- **Find:** Direct usage of HTTP client without circuit breaker
+- **Replace with:** Use `ExecutionService.execute()` which integrates circuit breaker
+- **Verify:** Circuit state correctly tracked per circuitId
+
+#### AI Instructions
+
+When working with circuit breaker:
+
+- Always use `circuitBreakerId` option for related requests (e.g., same integration)
+- Check `isCircuitOpen(result)` to handle circuit open errors gracefully
+- Use `getStatus(circuitId)` to inspect circuit state for debugging
+- For MVP, accept that cold starts reset circuit state
+- When migrating to Redis, implement same interface in `circuit-breaker.ts`
 
 ---
 
