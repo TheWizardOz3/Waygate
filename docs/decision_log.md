@@ -17,6 +17,7 @@
 | ADR-001 | 2026-01-01 | infra    | active | Prisma 7 requires pg adapter instead of URL in schema |
 | ADR-002 | 2026-01-02 | infra    | active | Prisma 7 config file requires explicit env loading    |
 | ADR-003 | 2026-01-02 | infra    | active | Environment variable file strategy for secrets        |
+| ADR-004 | 2026-01-01 | arch     | active | Dual encryption strategy for credentials              |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -181,5 +182,64 @@ When working with environment variables:
 - Update `.env.example` when adding new required variables
 - Check `.gitignore` includes both `.env` and `.env.local`
 - For Prisma CLI operations, ensure dotenv is loaded in config files
+
+---
+
+### ADR-004: Dual Encryption Strategy for Authentication Credentials
+
+**Date:** 2026-01-01 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+The Authentication Framework requires secure storage for two distinct types of secrets:
+
+1. Waygate API keys (for consuming apps authenticating with Waygate)
+2. Integration credentials (OAuth tokens, API keys for external services)
+
+Each has different security requirements and usage patterns.
+
+#### Decision
+
+Implemented a dual encryption strategy:
+
+1. **Waygate API Keys** - Bcrypt hashing (one-way)
+   - Keys are hashed with bcrypt before storage in `Tenant.waygateApiKey`
+   - Original key is shown only once at generation time
+   - Validation done via `bcrypt.compare()` - timing-safe comparison
+   - Format: `wg_live_<32-char-hex>` for easy identification
+
+2. **Integration Credentials** - AES-256-GCM encryption (reversible)
+   - Stored in `IntegrationCredential.encryptedData` as `Bytes`
+   - Format: `[IV (16 bytes)] + [AuthTag (16 bytes)] + [Ciphertext]`
+   - Single 32-byte key in `ENCRYPTION_KEY` environment variable
+   - Decrypted only in-memory at point of use, never persisted decrypted
+
+#### Rationale
+
+- **Bcrypt for API keys**: Keys don't need to be recovered, only validated. One-way hashing prevents exposure even if database is compromised.
+- **AES-256-GCM for credentials**: OAuth tokens must be sent to external APIs, so reversible encryption is required. GCM mode provides both confidentiality and authenticity (tamper detection).
+- **Separated storage**: API keys in Tenant table, credentials in dedicated IntegrationCredential table with credential type enum for polymorphic handling.
+
+#### Supersedes
+
+N/A (new feature)
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/credentials/encryption.ts`, `src/lib/modules/auth/api-key.ts`
+- **Find:** Direct storage of sensitive credentials
+- **Replace with:** Use `encryptJson()`/`decryptJson()` for integration credentials, `generateApiKey()`/`validateApiKey()` for API keys
+- **Verify:** All credentials in DB are encrypted buffers, not plaintext
+
+#### AI Instructions
+
+When working with credentials in this project:
+
+- NEVER log decrypted credentials, even in error messages
+- NEVER return actual secrets in API responses - use `getCredentialStatus()` for safe status info
+- Always use `Buffer.from(uint8Array)` when converting Prisma `Uint8Array` to `Buffer` for decryption
+- The encryption key must be exactly 64 hex characters (32 bytes)
+- Use `encryptJson()`/`decryptJson()` for objects, `encrypt()`/`decrypt()` for strings
+- API key validation is O(1) constant-time via bcrypt
 
 ---

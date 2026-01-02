@@ -58,6 +58,20 @@
 
 ### Added
 
+- **Authentication Framework (Feature #3)** - Complete multi-type authentication system
+  - AES-256-GCM encryption module for secure credential storage
+  - Waygate API key authentication middleware (bcrypt hashed)
+  - Credential repository with CRUD operations for encrypted data
+  - Credential service with encrypt-on-save, decrypt-on-retrieve pattern
+  - OAuth2 provider base with authorization URL, code exchange, token refresh
+  - Generic OAuth2 provider supporting standard OAuth2 flows
+  - Auth type handlers for API Key, Basic, Bearer, OAuth2, Custom Headers
+  - API endpoints: OAuth connect, callback, disconnect, credential status, test
+  - Auth service orchestrating all authentication flows
+  - Comprehensive Zod schemas for all auth types and API requests/responses
+  - Unit tests for encryption, credential service, handlers (139 tests total)
+  - Integration tests for OAuth flows with mocked external dependencies
+
 - **Database Setup (Feature #2)** - Complete Prisma schema and Supabase configuration
   - 6 PostgreSQL enums: AuthType, IntegrationStatus, CredentialType, CredentialStatus, HttpMethod, MappingDirection
   - 6 Prisma models: Tenant, Integration, Action, IntegrationCredential, FieldMapping, RequestLog
