@@ -5,6 +5,6 @@ Plan the **[FEATURE NAME]** feature:
 1. Read `docs/project_status.md` and `docs/product_spec.md` and `docs/architecture.md`
 2. Break into atomic implementation tasks (~30-60 min each)
 3. Create a feature doc in `docs/Features/[feature-name].md` outlining the feature and the implementation tasks.
-4. Update `docs/project_status.md` to mark this feature as in-progress
+4. Update `docs/project_status.md` to mark this feature as in-progress (keep this update context-light). Do not update any other files.
 
 Start with step 1.
