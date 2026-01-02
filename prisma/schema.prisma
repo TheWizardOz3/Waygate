@@ -10,5 +10,207 @@ datasource db {
   provider = "postgresql"
 }
 
-// Models will be added in Feature #2: Database Setup
+// =============================================================================
+// ENUMS
+// =============================================================================
 
+/// Authentication type for integrations
+enum AuthType {
+  oauth2
+  api_key
+  basic
+  bearer
+  custom_header
+}
+
+/// Status of an integration
+enum IntegrationStatus {
+  draft
+  active
+  error
+  disabled
+}
+
+/// Type of stored credential
+enum CredentialType {
+  oauth2_tokens
+  api_key
+  basic
+  bearer
+}
+
+/// Status of stored credentials
+enum CredentialStatus {
+  active
+  expired
+  revoked
+  needs_reauth
+}
+
+/// HTTP methods for action endpoints
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+/// Direction of field mapping transformation
+enum MappingDirection {
+  input
+  output
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+/// Multi-tenant accounts - each tenant is an organization/user account
+model Tenant {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String   @db.VarChar(255)
+  email              String   @unique @db.VarChar(255)
+  waygateApiKeyHash  String   @unique @map("waygate_api_key_hash") @db.VarChar(255)
+  settings           Json     @default("{}")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  integrations           Integration[]
+  integrationCredentials IntegrationCredential[]
+  fieldMappings          FieldMapping[]
+  requestLogs            RequestLog[]
+
+  @@map("tenants")
+}
+
+/// Integration definitions - configured connections to external APIs
+model Integration {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  name             String            @db.VarChar(255)
+  slug             String            @db.VarChar(100)
+  description      String?           @db.Text
+  documentationUrl String?           @map("documentation_url") @db.Text
+  authType         AuthType          @map("auth_type")
+  authConfig       Json              @default("{}") @map("auth_config")
+  status           IntegrationStatus @default(draft)
+  tags             String[]          @default([])
+  metadata         Json              @default("{}")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  tenant      Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actions     Action[]
+  credentials IntegrationCredential[]
+  requestLogs RequestLog[]
+
+  // Indexes
+  @@unique([tenantId, slug], name: "integrations_tenant_slug_idx")
+  @@index([tenantId], name: "integrations_tenant_id_idx")
+  @@index([status], name: "integrations_status_idx")
+  @@map("integrations")
+}
+
+/// Action definitions - typed operations within an integration
+model Action {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId    String     @map("integration_id") @db.Uuid
+  name             String     @db.VarChar(255)
+  slug             String     @db.VarChar(100)
+  description      String?    @db.Text
+  httpMethod       HttpMethod @map("http_method")
+  endpointTemplate String     @map("endpoint_template") @db.Text
+  inputSchema      Json       @default("{}") @map("input_schema")
+  outputSchema     Json       @default("{}") @map("output_schema")
+  paginationConfig Json?      @map("pagination_config")
+  retryConfig      Json?      @map("retry_config")
+  cacheable        Boolean    @default(false)
+  cacheTtlSeconds  Int?       @map("cache_ttl_seconds")
+  metadata         Json       @default("{}")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  integration   Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  fieldMappings FieldMapping[]
+  requestLogs   RequestLog[]
+
+  // Indexes
+  @@unique([integrationId, slug], name: "actions_integration_slug_idx")
+  @@index([integrationId], name: "actions_integration_id_idx")
+  @@map("actions")
+}
+
+/// Encrypted credentials for external API connections (OAuth tokens, API keys, etc.)
+model IntegrationCredential {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId         String           @map("integration_id") @db.Uuid
+  tenantId              String           @map("tenant_id") @db.Uuid
+  credentialType        CredentialType   @map("credential_type")
+  encryptedData         Bytes            @map("encrypted_data")
+  expiresAt             DateTime?        @map("expires_at")
+  encryptedRefreshToken Bytes?           @map("encrypted_refresh_token")
+  scopes                String[]         @default([])
+  status                CredentialStatus @default(active)
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([integrationId], name: "credentials_integration_id_idx")
+  @@index([tenantId], name: "credentials_tenant_id_idx")
+  @@index([expiresAt], name: "credentials_expires_at_idx")
+  @@map("integration_credentials")
+}
+
+/// Field transformation configuration between Waygate and consuming apps
+model FieldMapping {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actionId        String           @map("action_id") @db.Uuid
+  tenantId        String?          @map("tenant_id") @db.Uuid
+  sourcePath      String           @map("source_path") @db.VarChar(255)
+  targetPath      String           @map("target_path") @db.VarChar(255)
+  transformConfig Json?            @map("transform_config")
+  direction       MappingDirection
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  action Action  @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([actionId, tenantId], name: "mappings_action_tenant_idx")
+  @@map("field_mappings")
+}
+
+/// Audit trail for action invocations
+model RequestLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  integrationId   String   @map("integration_id") @db.Uuid
+  actionId        String   @map("action_id") @db.Uuid
+  requestSummary  Json     @map("request_summary")
+  responseSummary Json?    @map("response_summary")
+  statusCode      Int?     @map("status_code")
+  latencyMs       Int      @map("latency_ms")
+  retryCount      Int      @default(0) @map("retry_count")
+  error           Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  action      Action      @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([tenantId, createdAt(sort: Desc)], name: "logs_tenant_created_idx")
+  @@index([integrationId, createdAt(sort: Desc)], name: "logs_integration_created_idx")
+  @@index([actionId, createdAt(sort: Desc)], name: "logs_action_created_idx")
+  @@map("request_logs")
+}
