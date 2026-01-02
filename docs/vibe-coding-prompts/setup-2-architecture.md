@@ -20,4 +20,3 @@ Build out the technical architecture from the product spec:
    - Infrastructure and deployment approach
 
 Start with step 1. Ask questions before making changes.
-

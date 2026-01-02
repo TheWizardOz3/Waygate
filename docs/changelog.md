@@ -1,8 +1,9 @@
-# Changelog: {{PROJECT_NAME}}
+## Changelog: Waygate
 
 > **Purpose:** Development history tracking all notable changes. Follows [Keep a Changelog](https://keepachangelog.com/) conventions. For architectural decisions and rationale, see `decision_log.md`.
 
 **Related Documents:**
+
 - `decision_log.md` — Why changes were made
 - `architecture.md` — Technical implementation details
 - `product_spec.md` — Product requirements
@@ -11,9 +12,9 @@
 
 ## Version Index
 
-| Version | Date | Type | Summary |
-|---------|------|------|---------|
-| {{VERSION}} | {{DATE}} | {{TYPE}} | {{ONE_LINE_SUMMARY}} |
+| Version | Date       | Type       | Summary                                                  |
+| ------- | ---------- | ---------- | -------------------------------------------------------- |
+| 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup |
 
 **Types:** `major` | `minor` | `patch` | `prerelease`
 
@@ -56,26 +57,31 @@
 ## [Unreleased]
 
 ### Added
-- {{DESCRIPTION}}
 
-### Changed
-- {{DESCRIPTION}}
-
-### Fixed
-- {{DESCRIPTION}}
+- **Project Scaffolding (Feature #1)** - Complete foundation for Waygate development
+  - Next.js 14 with App Router and TypeScript 5.x (strict mode)
+  - Tailwind CSS with Waygate design system (custom colors, typography)
+  - Shadcn/ui components (button, card, dialog, input, label, badge, separator, skeleton, sonner, dropdown-menu)
+  - Prisma 7 with PostgreSQL adapter configured
+  - TanStack Query provider with React Query Devtools
+  - Zustand UI store for state management
+  - Zod, React Hook Form with resolvers
+  - ESLint + Prettier + Husky + lint-staged for code quality
+  - Vitest + React Testing Library + MSW for testing (17 tests passing)
+  - GitHub Actions CI workflow
+  - Full directory structure per architecture.md
+  - API response helpers and custom error classes
+  - Health check endpoint at `/api/v1/health`
 
 ---
 
-## [{{VERSION}}] - {{YYYY-MM-DD}}
+## [0.0.0] - 2026-01-01
 
 ### Added
-- {{DESCRIPTION}}
 
-### Changed
-- {{DESCRIPTION}}
-
-### Fixed
-- {{DESCRIPTION}}
+- Complete project documentation suite (product spec, architecture, decision log)
+- Vibe-coding workflow prompts for structured development process
+- MCP configuration for Cursor integration
+- Git repository structure and .cursorrules for AI assistant behavior
 
 ---
-

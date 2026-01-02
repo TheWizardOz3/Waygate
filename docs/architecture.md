@@ -8,75 +8,75 @@
 
 ### 1.1 Frontend Stack
 
-| Layer | Technology | Version | Package Name | Rationale |
-|-------|------------|---------|--------------|-----------|
-| Framework | Next.js | 14.x | `next` | App Router, Server Components, API routes unified |
-| Language | TypeScript | 5.x | `typescript` | Type safety, better DX, self-documenting |
-| State Management | Zustand | 4.x | `zustand` | Lightweight, simple API, works with Server Components |
-| Data Fetching | TanStack Query | 5.x | `@tanstack/react-query` | Caching, deduplication, optimistic updates |
-| Routing | Next.js App Router | 14.x | (built-in) | File-based routing, layouts, loading states |
-| Styling | Tailwind CSS | 3.x | `tailwindcss` | Utility-first, matches Shadcn, fast iteration |
-| Component Library | Shadcn/ui | Latest | (copy-paste) | High-quality, customizable, accessible |
-| Form Handling | React Hook Form | 7.x | `react-hook-form` | Performant, minimal re-renders |
-| Validation | Zod | 3.x | `zod` | Runtime validation, TypeScript inference |
-| Build Tool | Turbopack | (via Next.js) | (built-in) | Fast builds, HMR |
-| Package Manager | pnpm | 8.x | — | Fast, disk-efficient, strict |
+| Layer             | Technology         | Version       | Package Name            | Rationale                                             |
+| ----------------- | ------------------ | ------------- | ----------------------- | ----------------------------------------------------- |
+| Framework         | Next.js            | 14.x          | `next`                  | App Router, Server Components, API routes unified     |
+| Language          | TypeScript         | 5.x           | `typescript`            | Type safety, better DX, self-documenting              |
+| State Management  | Zustand            | 4.x           | `zustand`               | Lightweight, simple API, works with Server Components |
+| Data Fetching     | TanStack Query     | 5.x           | `@tanstack/react-query` | Caching, deduplication, optimistic updates            |
+| Routing           | Next.js App Router | 14.x          | (built-in)              | File-based routing, layouts, loading states           |
+| Styling           | Tailwind CSS       | 3.x           | `tailwindcss`           | Utility-first, matches Shadcn, fast iteration         |
+| Component Library | Shadcn/ui          | Latest        | (copy-paste)            | High-quality, customizable, accessible                |
+| Form Handling     | React Hook Form    | 7.x           | `react-hook-form`       | Performant, minimal re-renders                        |
+| Validation        | Zod                | 3.x           | `zod`                   | Runtime validation, TypeScript inference              |
+| Build Tool        | Turbopack          | (via Next.js) | (built-in)              | Fast builds, HMR                                      |
+| Package Manager   | pnpm               | 8.x           | —                       | Fast, disk-efficient, strict                          |
 
 ### 1.2 Backend Stack
 
-| Layer | Technology | Version | Package Name | Rationale |
-|-------|------------|---------|--------------|-----------|
-| Runtime | Node.js | 20.x LTS | — | Native fetch, stable, wide ecosystem |
-| Language | TypeScript | 5.x | `typescript` | Shared types with frontend |
-| Framework | Next.js API Routes | 14.x | `next` | Unified deployment, no separate backend |
-| API Style | REST | — | — | Simple, well-understood, fits gateway pattern |
-| ORM / Data Layer | Prisma | 5.x | `prisma` | Type-safe queries, migrations, great DX |
-| Validation | Zod | 3.x | `zod` | Shared validation schemas frontend/backend |
-| Authentication | Supabase Auth | Latest | `@supabase/supabase-js` | Built-in, handles OAuth flows |
-| Job Queue | Trigger.dev | 3.x | `@trigger.dev/sdk` | Serverless-native, Vercel-compatible (V1) |
-| AI/LLM | LangChain | Latest | `langchain` | Flexible LLM orchestration |
+| Layer            | Technology         | Version  | Package Name            | Rationale                                     |
+| ---------------- | ------------------ | -------- | ----------------------- | --------------------------------------------- |
+| Runtime          | Node.js            | 20.x LTS | —                       | Native fetch, stable, wide ecosystem          |
+| Language         | TypeScript         | 5.x      | `typescript`            | Shared types with frontend                    |
+| Framework        | Next.js API Routes | 14.x     | `next`                  | Unified deployment, no separate backend       |
+| API Style        | REST               | —        | —                       | Simple, well-understood, fits gateway pattern |
+| ORM / Data Layer | Prisma             | 5.x      | `prisma`                | Type-safe queries, migrations, great DX       |
+| Validation       | Zod                | 3.x      | `zod`                   | Shared validation schemas frontend/backend    |
+| Authentication   | Supabase Auth      | Latest   | `@supabase/supabase-js` | Built-in, handles OAuth flows                 |
+| Job Queue        | Trigger.dev        | 3.x      | `@trigger.dev/sdk`      | Serverless-native, Vercel-compatible (V1)     |
+| AI/LLM           | LangChain          | Latest   | `langchain`             | Flexible LLM orchestration                    |
 
 ### 1.3 Database & Storage
 
-| Component | Technology | Version/Tier | Hosted By | Rationale |
-|-----------|------------|--------------|-----------|-----------|
-| Primary Database | PostgreSQL | 15.x | Supabase | Managed, RLS built-in, real-time |
-| Cache Layer | Upstash Redis | Serverless | Upstash | Serverless Redis, Vercel-compatible (V1+) |
-| File Storage | Supabase Storage | — | Supabase | Integrated, simple API |
-| Vector Database | — | — | — | Not needed for MVP |
+| Component        | Technology       | Version/Tier | Hosted By | Rationale                                 |
+| ---------------- | ---------------- | ------------ | --------- | ----------------------------------------- |
+| Primary Database | PostgreSQL       | 15.x         | Supabase  | Managed, RLS built-in, real-time          |
+| Cache Layer      | Upstash Redis    | Serverless   | Upstash   | Serverless Redis, Vercel-compatible (V1+) |
+| File Storage     | Supabase Storage | —            | Supabase  | Integrated, simple API                    |
+| Vector Database  | —                | —            | —         | Not needed for MVP                        |
 
 ### 1.4 Infrastructure & DevOps
 
-| Component | Technology | Tier/Plan | Rationale |
-|-----------|------------|-----------|-----------|
-| Hosting | Vercel | Pro | Integrated with Next.js, edge functions, zero-config |
-| Database | Supabase | Pro | Managed Postgres, auth, storage in one |
-| AI Models | Google Gemini | Pay-as-you-go | Cost-effective, good for structured extraction |
-| Web Scraping | Firecrawl | Pay-as-you-go | Handles JS rendering, anti-bot, existing LangChain tool |
-| CI/CD | Vercel + GitHub Actions | Free tier | Auto-deploy on push, PR previews |
-| DNS | Vercel | (included) | Automatic SSL, simple |
-| Secrets Management | Vercel Environment Variables | (included) | Simple for MVP, no extra accounts |
+| Component          | Technology                   | Tier/Plan     | Rationale                                               |
+| ------------------ | ---------------------------- | ------------- | ------------------------------------------------------- |
+| Hosting            | Vercel                       | Pro           | Integrated with Next.js, edge functions, zero-config    |
+| Database           | Supabase                     | Pro           | Managed Postgres, auth, storage in one                  |
+| AI Models          | Google Gemini                | Pay-as-you-go | Cost-effective, good for structured extraction          |
+| Web Scraping       | Firecrawl                    | Pay-as-you-go | Handles JS rendering, anti-bot, existing LangChain tool |
+| CI/CD              | Vercel + GitHub Actions      | Free tier     | Auto-deploy on push, PR previews                        |
+| DNS                | Vercel                       | (included)    | Automatic SSL, simple                                   |
+| Secrets Management | Vercel Environment Variables | (included)    | Simple for MVP, no extra accounts                       |
 
 ### 1.5 Observability & Monitoring
 
-| Component | Technology | Tier/Plan | Purpose |
-|-----------|------------|-----------|---------|
-| Error Tracking | Vercel (built-in) | (included) | Basic error visibility (MVP) |
-| APM / Tracing | — | — | Defer to V1 (Sentry or similar) |
-| Log Aggregation | Vercel Logs | (included) | Basic logs for MVP |
-| Uptime Monitoring | — | — | Defer to V1 (Better Uptime or similar) |
-| Analytics | Vercel Analytics | (included) | Core Web Vitals, basic usage |
+| Component         | Technology        | Tier/Plan  | Purpose                                |
+| ----------------- | ----------------- | ---------- | -------------------------------------- |
+| Error Tracking    | Vercel (built-in) | (included) | Basic error visibility (MVP)           |
+| APM / Tracing     | —                 | —          | Defer to V1 (Sentry or similar)        |
+| Log Aggregation   | Vercel Logs       | (included) | Basic logs for MVP                     |
+| Uptime Monitoring | —                 | —          | Defer to V1 (Better Uptime or similar) |
+| Analytics         | Vercel Analytics  | (included) | Core Web Vitals, basic usage           |
 
 ### 1.6 Development Tools
 
-| Tool | Purpose | Configuration File |
-|------|---------|-------------------|
-| Linter | ESLint | `eslint.config.mjs` |
-| Formatter | Prettier | `.prettierrc` |
-| Type Checker | TypeScript | `tsconfig.json` |
-| Test Runner | Vitest | `vitest.config.ts` |
-| Git Hooks | Husky + lint-staged | `.husky/`, `package.json` |
-| Environment Variables | dotenv | `.env.local`, `.env.example` |
+| Tool                  | Purpose             | Configuration File           |
+| --------------------- | ------------------- | ---------------------------- |
+| Linter                | ESLint              | `eslint.config.mjs`          |
+| Formatter             | Prettier            | `.prettierrc`                |
+| Type Checker          | TypeScript          | `tsconfig.json`              |
+| Test Runner           | Vitest              | `vitest.config.ts`           |
+| Git Hooks             | Husky + lint-staged | `.husky/`, `package.json`    |
+| Environment Variables | dotenv              | `.env.local`, `.env.example` |
 
 ---
 
@@ -94,6 +94,7 @@ Single Next.js application with clearly separated internal modules. This enables
 3. **Extraction-ready** — Any module can become a separate service without rewriting
 
 **Future Evolution Path:**
+
 - MVP → V1: Add Redis for state persistence, background jobs via Trigger.dev
 - V1 → V2: Extract Execution Engine to dedicated service if latency/scale requires
 
@@ -169,19 +170,20 @@ Single Next.js application with clearly separated internal modules. This enables
 
 ### 2.3 Service Boundaries & Responsibilities
 
-| Module | Responsibility | Exposes | Consumes |
-|--------|----------------|---------|----------|
-| **Gateway API** | Request routing, tenant auth, rate limiting | REST endpoints | All modules |
-| **Integration Engine** | Integration CRUD, action schema management | Internal API | Database |
-| **Execution Engine** | HTTP requests, retry, circuit breaker, response validation | Internal API | Credential Vault, External APIs |
-| **AI Service** | Doc scraping, schema generation, action mapping | Internal API | Firecrawl, Gemini |
-| **Credential Vault** | Encrypt/decrypt credentials, token storage | Internal API | Database |
-| **Auth Service** | OAuth flows, token refresh, API key validation | Internal API | Supabase Auth, Database |
-| **Logging Service** | Request logging, audit trail, metrics collection | Internal API | Database |
+| Module                 | Responsibility                                             | Exposes        | Consumes                        |
+| ---------------------- | ---------------------------------------------------------- | -------------- | ------------------------------- |
+| **Gateway API**        | Request routing, tenant auth, rate limiting                | REST endpoints | All modules                     |
+| **Integration Engine** | Integration CRUD, action schema management                 | Internal API   | Database                        |
+| **Execution Engine**   | HTTP requests, retry, circuit breaker, response validation | Internal API   | Credential Vault, External APIs |
+| **AI Service**         | Doc scraping, schema generation, action mapping            | Internal API   | Firecrawl, Gemini               |
+| **Credential Vault**   | Encrypt/decrypt credentials, token storage                 | Internal API   | Database                        |
+| **Auth Service**       | OAuth flows, token refresh, API key validation             | Internal API   | Supabase Auth, Database         |
+| **Logging Service**    | Request logging, audit trail, metrics collection           | Internal API   | Database                        |
 
 ### 2.4 Data Flow Patterns
 
 #### Action Invocation Flow (Primary Path)
+
 ```
 1. Consuming app sends POST /api/v1/actions/{integration}/{action}
 2. Edge middleware validates Waygate API key → extracts tenant context
@@ -201,6 +203,7 @@ Single Next.js application with clearly separated internal modules. This enables
 ```
 
 #### Integration Creation Flow
+
 ```
 1. User provides API documentation URL + wishlist of desired actions
 2. AI Service invokes Firecrawl LangChain tool to scrape docs
@@ -214,6 +217,7 @@ Single Next.js application with clearly separated internal modules. This enables
 ```
 
 #### Token Refresh Flow (Background)
+
 ```
 1. Cron job (Vercel Cron or Trigger.dev) runs every 5 minutes
 2. Query credentials expiring within next 10 minutes
@@ -231,12 +235,12 @@ Single Next.js application with clearly separated internal modules. This enables
 
 ### 2.5 Communication Patterns
 
-| Pattern | Used For | Implementation |
-|---------|----------|----------------|
-| Synchronous HTTP | Action invocation, Config API | Next.js API Routes (Node.js runtime) |
-| Edge Functions | Gateway auth, rate limiting | Next.js Edge Runtime |
-| Background Jobs | Token refresh, scraping, health checks | Vercel Cron (MVP), Trigger.dev (V1) |
-| Database Subscriptions | Real-time config updates (future) | Supabase Realtime (V2) |
+| Pattern                | Used For                               | Implementation                       |
+| ---------------------- | -------------------------------------- | ------------------------------------ |
+| Synchronous HTTP       | Action invocation, Config API          | Next.js API Routes (Node.js runtime) |
+| Edge Functions         | Gateway auth, rate limiting            | Next.js Edge Runtime                 |
+| Background Jobs        | Token refresh, scraping, health checks | Vercel Cron (MVP), Trigger.dev (V1)  |
+| Database Subscriptions | Real-time config updates (future)      | Supabase Realtime (V2)               |
 
 ---
 
@@ -447,20 +451,21 @@ waygate/
 
 ### 3.3 Key Directory Explanations
 
-| Directory | Purpose | Contents |
-|-----------|---------|----------|
-| `src/app/api/v1/` | Versioned REST API endpoints | Route handlers using Next.js conventions |
-| `src/lib/modules/` | Domain-driven business logic | Self-contained modules with services, repos, schemas |
-| `src/lib/modules/execution/` | Action execution pipeline | HTTP client, retry, circuit breaker, transformations |
-| `src/lib/modules/credentials/` | Secure credential management | Encryption, token storage, refresh logic |
-| `src/lib/api/middleware/` | API middleware chain | Auth, validation, rate limiting, error handling |
-| `src/components/features/` | Feature-specific UI components | Grouped by domain (integrations, logs, etc.) |
+| Directory                      | Purpose                        | Contents                                             |
+| ------------------------------ | ------------------------------ | ---------------------------------------------------- |
+| `src/app/api/v1/`              | Versioned REST API endpoints   | Route handlers using Next.js conventions             |
+| `src/lib/modules/`             | Domain-driven business logic   | Self-contained modules with services, repos, schemas |
+| `src/lib/modules/execution/`   | Action execution pipeline      | HTTP client, retry, circuit breaker, transformations |
+| `src/lib/modules/credentials/` | Secure credential management   | Encryption, token storage, refresh logic             |
+| `src/lib/api/middleware/`      | API middleware chain           | Auth, validation, rate limiting, error handling      |
+| `src/components/features/`     | Feature-specific UI components | Grouped by domain (integrations, logs, etc.)         |
 
 ### 3.4 Business Logic Location
 
 **Primary Location:** `src/lib/modules/`
 
 **Guidelines:**
+
 - All business rules live in `*.service.ts` files, never in API routes or components
 - Database queries only occur in `*.repository.ts` files
 - API routes are thin — validate input, call service, format response
@@ -469,16 +474,16 @@ waygate/
 
 ### 3.5 File Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Components | PascalCase | `IntegrationCard.tsx` |
-| Hooks | camelCase with `use` prefix | `useIntegrations.ts` |
-| Services | kebab-case with `.service` suffix | `integration.service.ts` |
-| Repositories | kebab-case with `.repository` suffix | `integration.repository.ts` |
-| Schemas | kebab-case with `.schemas` suffix | `integration.schemas.ts` |
-| Types | kebab-case | `api.ts` |
-| Tests | Same as source with `.test` suffix | `integration.service.test.ts` |
-| Utilities | kebab-case | `json-schema.ts` |
+| Type         | Convention                           | Example                       |
+| ------------ | ------------------------------------ | ----------------------------- |
+| Components   | PascalCase                           | `IntegrationCard.tsx`         |
+| Hooks        | camelCase with `use` prefix          | `useIntegrations.ts`          |
+| Services     | kebab-case with `.service` suffix    | `integration.service.ts`      |
+| Repositories | kebab-case with `.repository` suffix | `integration.repository.ts`   |
+| Schemas      | kebab-case with `.schemas` suffix    | `integration.schemas.ts`      |
+| Types        | kebab-case                           | `api.ts`                      |
+| Tests        | Same as source with `.test` suffix   | `integration.service.test.ts` |
+| Utilities    | kebab-case                           | `json-schema.ts`              |
 
 ---
 
@@ -488,6 +493,7 @@ waygate/
 
 **Primary Database:** PostgreSQL (via Supabase)  
 **Why:**
+
 - Supabase provides managed Postgres with built-in Row-Level Security (RLS)
 - RLS enables secure multi-tenant isolation without application-level checks
 - JSONB columns support flexible schema storage (action schemas, configs)
@@ -595,50 +601,55 @@ erDiagram
 ### 4.3 Schema Documentation
 
 #### Table: `tenants`
+
 **Purpose:** Multi-tenant isolation. Each tenant is an organization/user account.
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique tenant identifier |
-| name | varchar(255) | NO | — | — | Organization/user name |
-| email | varchar(255) | NO | — | UK | Primary contact email |
-| waygate_api_key_hash | varchar(255) | NO | — | UK | Bcrypt hash of Waygate API key |
-| settings | jsonb | NO | '{}' | — | Tenant settings (rate limits, etc.) |
-| created_at | timestamptz | NO | now() | — | Creation timestamp |
-| updated_at | timestamptz | NO | now() | — | Last update timestamp |
+| Column               | Type         | Nullable | Default           | Constraints | Description                         |
+| -------------------- | ------------ | -------- | ----------------- | ----------- | ----------------------------------- |
+| id                   | uuid         | NO       | gen_random_uuid() | PK          | Unique tenant identifier            |
+| name                 | varchar(255) | NO       | —                 | —           | Organization/user name              |
+| email                | varchar(255) | NO       | —                 | UK          | Primary contact email               |
+| waygate_api_key_hash | varchar(255) | NO       | —                 | UK          | Bcrypt hash of Waygate API key      |
+| settings             | jsonb        | NO       | '{}'              | —           | Tenant settings (rate limits, etc.) |
+| created_at           | timestamptz  | NO       | now()             | —           | Creation timestamp                  |
+| updated_at           | timestamptz  | NO       | now()             | —           | Last update timestamp               |
 
 **Indexes:**
+
 - `tenants_email_idx` UNIQUE on (`email`)
 - `tenants_api_key_hash_idx` UNIQUE on (`waygate_api_key_hash`)
 
 ---
 
 #### Table: `integrations`
+
 **Purpose:** Stores integration definitions (configured connections to external APIs).
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique integration identifier |
-| tenant_id | uuid | NO | — | FK → tenants | Owning tenant |
-| name | varchar(255) | NO | — | — | Human-readable name |
-| slug | varchar(100) | NO | — | UK (scoped to tenant) | URL-safe identifier |
-| description | text | YES | — | — | Integration description |
-| documentation_url | text | YES | — | — | Source API documentation URL |
-| auth_type | enum | NO | — | — | oauth2, api_key, basic, bearer, custom_header |
-| auth_config | jsonb | NO | '{}' | — | Non-sensitive auth config (scopes, endpoints) |
-| status | enum | NO | 'draft' | — | draft, active, error, disabled |
-| tags | text[] | NO | '{}' | — | User-defined tags |
-| metadata | jsonb | NO | '{}' | — | AI-generated metadata, notes |
-| created_at | timestamptz | NO | now() | — | Creation timestamp |
-| updated_at | timestamptz | NO | now() | — | Last update timestamp |
+| Column            | Type         | Nullable | Default           | Constraints           | Description                                   |
+| ----------------- | ------------ | -------- | ----------------- | --------------------- | --------------------------------------------- |
+| id                | uuid         | NO       | gen_random_uuid() | PK                    | Unique integration identifier                 |
+| tenant_id         | uuid         | NO       | —                 | FK → tenants          | Owning tenant                                 |
+| name              | varchar(255) | NO       | —                 | —                     | Human-readable name                           |
+| slug              | varchar(100) | NO       | —                 | UK (scoped to tenant) | URL-safe identifier                           |
+| description       | text         | YES      | —                 | —                     | Integration description                       |
+| documentation_url | text         | YES      | —                 | —                     | Source API documentation URL                  |
+| auth_type         | enum         | NO       | —                 | —                     | oauth2, api_key, basic, bearer, custom_header |
+| auth_config       | jsonb        | NO       | '{}'              | —                     | Non-sensitive auth config (scopes, endpoints) |
+| status            | enum         | NO       | 'draft'           | —                     | draft, active, error, disabled                |
+| tags              | text[]       | NO       | '{}'              | —                     | User-defined tags                             |
+| metadata          | jsonb        | NO       | '{}'              | —                     | AI-generated metadata, notes                  |
+| created_at        | timestamptz  | NO       | now()             | —                     | Creation timestamp                            |
+| updated_at        | timestamptz  | NO       | now()             | —                     | Last update timestamp                         |
 
 **Indexes:**
+
 - `integrations_tenant_slug_idx` UNIQUE on (`tenant_id`, `slug`)
 - `integrations_tenant_id_idx` on (`tenant_id`)
 - `integrations_status_idx` on (`status`)
 - `integrations_tags_idx` GIN on (`tags`)
 
 **RLS Policies:**
+
 - SELECT: `tenant_id = auth.tenant_id()`
 - INSERT: `tenant_id = auth.tenant_id()`
 - UPDATE: `tenant_id = auth.tenant_id()`
@@ -647,56 +658,61 @@ erDiagram
 ---
 
 #### Table: `actions`
+
 **Purpose:** Stores action definitions with typed schemas.
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique action identifier |
-| integration_id | uuid | NO | — | FK → integrations | Parent integration |
-| name | varchar(255) | NO | — | — | Human-readable name |
-| slug | varchar(100) | NO | — | UK (scoped to integration) | URL-safe identifier |
-| description | text | YES | — | — | Action description |
-| http_method | enum | NO | — | — | GET, POST, PUT, PATCH, DELETE |
-| endpoint_template | text | NO | — | — | URL template with {param} placeholders |
-| input_schema | jsonb | NO | '{}' | — | JSON Schema for input validation |
-| output_schema | jsonb | NO | '{}' | — | JSON Schema for response validation |
-| pagination_config | jsonb | YES | — | — | Pagination strategy and config |
-| retry_config | jsonb | YES | — | — | Custom retry policy |
-| cacheable | boolean | NO | false | — | Whether response can be cached |
-| cache_ttl_seconds | integer | YES | — | — | Cache TTL (if cacheable) |
-| metadata | jsonb | NO | '{}' | — | Additional metadata |
-| created_at | timestamptz | NO | now() | — | Creation timestamp |
-| updated_at | timestamptz | NO | now() | — | Last update timestamp |
+| Column            | Type         | Nullable | Default           | Constraints                | Description                            |
+| ----------------- | ------------ | -------- | ----------------- | -------------------------- | -------------------------------------- |
+| id                | uuid         | NO       | gen_random_uuid() | PK                         | Unique action identifier               |
+| integration_id    | uuid         | NO       | —                 | FK → integrations          | Parent integration                     |
+| name              | varchar(255) | NO       | —                 | —                          | Human-readable name                    |
+| slug              | varchar(100) | NO       | —                 | UK (scoped to integration) | URL-safe identifier                    |
+| description       | text         | YES      | —                 | —                          | Action description                     |
+| http_method       | enum         | NO       | —                 | —                          | GET, POST, PUT, PATCH, DELETE          |
+| endpoint_template | text         | NO       | —                 | —                          | URL template with {param} placeholders |
+| input_schema      | jsonb        | NO       | '{}'              | —                          | JSON Schema for input validation       |
+| output_schema     | jsonb        | NO       | '{}'              | —                          | JSON Schema for response validation    |
+| pagination_config | jsonb        | YES      | —                 | —                          | Pagination strategy and config         |
+| retry_config      | jsonb        | YES      | —                 | —                          | Custom retry policy                    |
+| cacheable         | boolean      | NO       | false             | —                          | Whether response can be cached         |
+| cache_ttl_seconds | integer      | YES      | —                 | —                          | Cache TTL (if cacheable)               |
+| metadata          | jsonb        | NO       | '{}'              | —                          | Additional metadata                    |
+| created_at        | timestamptz  | NO       | now()             | —                          | Creation timestamp                     |
+| updated_at        | timestamptz  | NO       | now()             | —                          | Last update timestamp                  |
 
 **Indexes:**
+
 - `actions_integration_slug_idx` UNIQUE on (`integration_id`, `slug`)
 - `actions_integration_id_idx` on (`integration_id`)
 
 ---
 
 #### Table: `integration_credentials`
+
 **Purpose:** Securely stores encrypted OAuth tokens, API keys, etc. for external services.
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique credential identifier |
-| integration_id | uuid | NO | — | FK → integrations | Associated integration |
-| tenant_id | uuid | NO | — | FK → tenants | Owning tenant (denormalized for RLS) |
-| credential_type | enum | NO | — | — | oauth2_tokens, api_key, basic, bearer |
-| encrypted_data | bytea | NO | — | — | Encrypted credential payload |
-| expires_at | timestamptz | YES | — | — | Token expiration (for OAuth) |
-| encrypted_refresh_token | bytea | YES | — | — | Encrypted refresh token |
-| scopes | text[] | NO | '{}' | — | Granted OAuth scopes |
-| status | enum | NO | 'active' | — | active, expired, revoked, needs_reauth |
-| created_at | timestamptz | NO | now() | — | Creation timestamp |
-| updated_at | timestamptz | NO | now() | — | Last update timestamp |
+| Column                  | Type        | Nullable | Default           | Constraints       | Description                            |
+| ----------------------- | ----------- | -------- | ----------------- | ----------------- | -------------------------------------- |
+| id                      | uuid        | NO       | gen_random_uuid() | PK                | Unique credential identifier           |
+| integration_id          | uuid        | NO       | —                 | FK → integrations | Associated integration                 |
+| tenant_id               | uuid        | NO       | —                 | FK → tenants      | Owning tenant (denormalized for RLS)   |
+| credential_type         | enum        | NO       | —                 | —                 | oauth2_tokens, api_key, basic, bearer  |
+| encrypted_data          | bytea       | NO       | —                 | —                 | Encrypted credential payload           |
+| expires_at              | timestamptz | YES      | —                 | —                 | Token expiration (for OAuth)           |
+| encrypted_refresh_token | bytea       | YES      | —                 | —                 | Encrypted refresh token                |
+| scopes                  | text[]      | NO       | '{}'              | —                 | Granted OAuth scopes                   |
+| status                  | enum        | NO       | 'active'          | —                 | active, expired, revoked, needs_reauth |
+| created_at              | timestamptz | NO       | now()             | —                 | Creation timestamp                     |
+| updated_at              | timestamptz | NO       | now()             | —                 | Last update timestamp                  |
 
 **Indexes:**
+
 - `credentials_integration_id_idx` on (`integration_id`)
 - `credentials_tenant_id_idx` on (`tenant_id`)
 - `credentials_expires_at_idx` on (`expires_at`) WHERE status = 'active'
 
 **RLS Policies:**
+
 - All operations: `tenant_id = auth.tenant_id()`
 
 **Security Note:** `encrypted_data` contains AES-256-GCM encrypted JSON with the actual credentials. The encryption key is stored in Vercel environment variables, never in the database.
@@ -704,42 +720,46 @@ erDiagram
 ---
 
 #### Table: `field_mappings`
+
 **Purpose:** Custom field transformations between Waygate and consuming apps.
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique mapping identifier |
-| action_id | uuid | NO | — | FK → actions | Associated action |
-| tenant_id | uuid | YES | — | FK → tenants | Tenant override (null = default) |
-| source_path | varchar(255) | NO | — | — | JSONPath in source |
-| target_path | varchar(255) | NO | — | — | JSONPath in target |
-| transform_config | jsonb | YES | — | — | Transform options (type coercion, etc.) |
-| direction | enum | NO | — | — | input, output |
-| created_at | timestamptz | NO | now() | — | Creation timestamp |
+| Column           | Type         | Nullable | Default           | Constraints  | Description                             |
+| ---------------- | ------------ | -------- | ----------------- | ------------ | --------------------------------------- |
+| id               | uuid         | NO       | gen_random_uuid() | PK           | Unique mapping identifier               |
+| action_id        | uuid         | NO       | —                 | FK → actions | Associated action                       |
+| tenant_id        | uuid         | YES      | —                 | FK → tenants | Tenant override (null = default)        |
+| source_path      | varchar(255) | NO       | —                 | —            | JSONPath in source                      |
+| target_path      | varchar(255) | NO       | —                 | —            | JSONPath in target                      |
+| transform_config | jsonb        | YES      | —                 | —            | Transform options (type coercion, etc.) |
+| direction        | enum         | NO       | —                 | —            | input, output                           |
+| created_at       | timestamptz  | NO       | now()             | —            | Creation timestamp                      |
 
 **Indexes:**
+
 - `mappings_action_tenant_idx` on (`action_id`, `tenant_id`)
 
 ---
 
 #### Table: `request_logs`
+
 **Purpose:** Audit trail and debugging for action invocations.
 
-| Column | Type | Nullable | Default | Constraints | Description |
-|--------|------|----------|---------|-------------|-------------|
-| id | uuid | NO | gen_random_uuid() | PK | Unique log identifier |
-| tenant_id | uuid | NO | — | FK → tenants | Requesting tenant |
-| integration_id | uuid | NO | — | FK → integrations | Target integration |
-| action_id | uuid | NO | — | FK → actions | Invoked action |
-| request_summary | jsonb | NO | — | — | Sanitized request (no secrets) |
-| response_summary | jsonb | YES | — | — | Sanitized response (truncated if large) |
-| status_code | integer | YES | — | — | HTTP status code |
-| latency_ms | integer | NO | — | — | Total request duration |
-| retry_count | integer | NO | 0 | — | Number of retries performed |
-| error | jsonb | YES | — | — | Error details (if failed) |
-| created_at | timestamptz | NO | now() | — | Log timestamp |
+| Column           | Type        | Nullable | Default           | Constraints       | Description                             |
+| ---------------- | ----------- | -------- | ----------------- | ----------------- | --------------------------------------- |
+| id               | uuid        | NO       | gen_random_uuid() | PK                | Unique log identifier                   |
+| tenant_id        | uuid        | NO       | —                 | FK → tenants      | Requesting tenant                       |
+| integration_id   | uuid        | NO       | —                 | FK → integrations | Target integration                      |
+| action_id        | uuid        | NO       | —                 | FK → actions      | Invoked action                          |
+| request_summary  | jsonb       | NO       | —                 | —                 | Sanitized request (no secrets)          |
+| response_summary | jsonb       | YES      | —                 | —                 | Sanitized response (truncated if large) |
+| status_code      | integer     | YES      | —                 | —                 | HTTP status code                        |
+| latency_ms       | integer     | NO       | —                 | —                 | Total request duration                  |
+| retry_count      | integer     | NO       | 0                 | —                 | Number of retries performed             |
+| error            | jsonb       | YES      | —                 | —                 | Error details (if failed)               |
+| created_at       | timestamptz | NO       | now()             | —                 | Log timestamp                           |
 
 **Indexes:**
+
 - `logs_tenant_created_idx` on (`tenant_id`, `created_at` DESC)
 - `logs_integration_created_idx` on (`integration_id`, `created_at` DESC)
 - `logs_action_created_idx` on (`action_id`, `created_at` DESC)
@@ -753,11 +773,13 @@ erDiagram
 **Tool:** Prisma Migrate
 
 **Conventions:**
+
 - Migration naming: Auto-generated by Prisma (timestamp + description)
 - All migrations are forward-only in production
 - Schema changes require PR review
 
 **Commands:**
+
 ```bash
 # Generate migration from schema changes
 pnpm prisma migrate dev --name describe_change
@@ -773,11 +795,11 @@ pnpm prisma migrate reset
 
 **Purpose:** Seed data for development and testing only.
 
-| Category | Purpose | Environment |
-|----------|---------|-------------|
-| Reference Data | Auth type enums, default configs | ALL |
-| Test Tenant | Demo tenant with API key | DEV, TEST |
-| Demo Integration | Sample Slack integration (mock) | DEV |
+| Category         | Purpose                          | Environment |
+| ---------------- | -------------------------------- | ----------- |
+| Reference Data   | Auth type enums, default configs | ALL         |
+| Test Tenant      | Demo tenant with API key         | DEV, TEST   |
+| Demo Integration | Sample Slack integration (mock)  | DEV         |
 
 ---
 
@@ -794,11 +816,13 @@ pnpm prisma migrate reset
 #### Authentication Methods
 
 **Gateway API (Consuming Apps):**
+
 - Type: API Key (Bearer token)
 - Header: `Authorization: Bearer wg_live_xxx...`
 - Validation: Bcrypt compare against stored hash
 
 **Dashboard (Users):**
+
 - Type: Supabase Auth (JWT)
 - Flow: OAuth only (Google, GitHub)
 - Session: HTTP-only cookies
@@ -815,41 +839,42 @@ pnpm prisma migrate reset
 
 #### Group: Integrations — `/api/v1/integrations`
 
-| Method | Endpoint | Purpose | Auth | Request Body | Response |
-|--------|----------|---------|------|--------------|----------|
-| GET | `/integrations` | List tenant's integrations | API Key | — | IntegrationList |
-| POST | `/integrations` | Create integration | API Key | CreateIntegration | Integration |
-| GET | `/integrations/:id` | Get integration details | API Key | — | Integration |
-| PATCH | `/integrations/:id` | Update integration | API Key | UpdateIntegration | Integration |
-| DELETE | `/integrations/:id` | Delete integration | API Key | — | — |
-| GET | `/integrations/:id/actions` | List integration's actions | API Key | — | ActionList |
-| GET | `/integrations/:id/health` | Check integration health | API Key | — | HealthStatus |
-| POST | `/integrations/:id/connect` | Initiate OAuth flow | Session | OAuthInit | RedirectURL |
-| POST | `/integrations/:id/disconnect` | Revoke credentials | API Key | — | — |
+| Method | Endpoint                       | Purpose                    | Auth    | Request Body      | Response        |
+| ------ | ------------------------------ | -------------------------- | ------- | ----------------- | --------------- |
+| GET    | `/integrations`                | List tenant's integrations | API Key | —                 | IntegrationList |
+| POST   | `/integrations`                | Create integration         | API Key | CreateIntegration | Integration     |
+| GET    | `/integrations/:id`            | Get integration details    | API Key | —                 | Integration     |
+| PATCH  | `/integrations/:id`            | Update integration         | API Key | UpdateIntegration | Integration     |
+| DELETE | `/integrations/:id`            | Delete integration         | API Key | —                 | —               |
+| GET    | `/integrations/:id/actions`    | List integration's actions | API Key | —                 | ActionList      |
+| GET    | `/integrations/:id/health`     | Check integration health   | API Key | —                 | HealthStatus    |
+| POST   | `/integrations/:id/connect`    | Initiate OAuth flow        | Session | OAuthInit         | RedirectURL     |
+| POST   | `/integrations/:id/disconnect` | Revoke credentials         | API Key | —                 | —               |
 
 #### Group: Actions — `/api/v1/actions`
 
-| Method | Endpoint | Purpose | Auth | Request Body | Response |
-|--------|----------|---------|------|--------------|----------|
-| POST | `/actions/:integration/:action` | Invoke action | API Key | ActionInput | ActionOutput |
-| GET | `/actions/:integration/:action/schema` | Get action schema | API Key | — | ActionSchema |
+| Method | Endpoint                               | Purpose           | Auth    | Request Body | Response     |
+| ------ | -------------------------------------- | ----------------- | ------- | ------------ | ------------ |
+| POST   | `/actions/:integration/:action`        | Invoke action     | API Key | ActionInput  | ActionOutput |
+| GET    | `/actions/:integration/:action/schema` | Get action schema | API Key | —            | ActionSchema |
 
 #### Group: Scraping — `/api/v1/scrape`
 
-| Method | Endpoint | Purpose | Auth | Request Body | Response |
-|--------|----------|---------|------|--------------|----------|
-| POST | `/scrape` | Initiate doc scraping | Session | ScrapeRequest | ScrapeJob |
-| GET | `/scrape/:jobId` | Get scrape job status | Session | — | ScrapeJobStatus |
+| Method | Endpoint         | Purpose               | Auth    | Request Body  | Response        |
+| ------ | ---------------- | --------------------- | ------- | ------------- | --------------- |
+| POST   | `/scrape`        | Initiate doc scraping | Session | ScrapeRequest | ScrapeJob       |
+| GET    | `/scrape/:jobId` | Get scrape job status | Session | —             | ScrapeJobStatus |
 
 #### Group: Logs — `/api/v1/logs`
 
-| Method | Endpoint | Purpose | Auth | Request Body | Response |
-|--------|----------|---------|------|--------------|----------|
-| GET | `/logs` | Query request logs | API Key | — (query params) | LogList |
+| Method | Endpoint | Purpose            | Auth    | Request Body     | Response |
+| ------ | -------- | ------------------ | ------- | ---------------- | -------- |
+| GET    | `/logs`  | Query request logs | API Key | — (query params) | LogList  |
 
 ### 5.4 Request/Response Standards
 
 #### Standard Success Response
+
 ```typescript
 {
   "success": true,
@@ -862,6 +887,7 @@ pnpm prisma migrate reset
 ```
 
 #### Paginated Response
+
 ```typescript
 {
   "success": true,
@@ -876,6 +902,7 @@ pnpm prisma migrate reset
 ```
 
 #### Error Response (LLM-Friendly)
+
 ```typescript
 {
   "success": false,
@@ -899,26 +926,26 @@ pnpm prisma migrate reset
 
 #### HTTP Status Codes
 
-| Code | Usage |
-|------|-------|
-| 200 | Successful GET, PATCH, DELETE |
-| 201 | Successful POST (resource created) |
-| 400 | Invalid request body or parameters |
-| 401 | Missing or invalid authentication |
-| 403 | Valid auth but insufficient permissions |
-| 404 | Resource not found |
-| 422 | Request validation failed (schema mismatch) |
-| 429 | Rate limit exceeded |
-| 500 | Internal server error |
-| 502 | External API error (Waygate couldn't reach provider) |
+| Code | Usage                                                |
+| ---- | ---------------------------------------------------- |
+| 200  | Successful GET, PATCH, DELETE                        |
+| 201  | Successful POST (resource created)                   |
+| 400  | Invalid request body or parameters                   |
+| 401  | Missing or invalid authentication                    |
+| 403  | Valid auth but insufficient permissions              |
+| 404  | Resource not found                                   |
+| 422  | Request validation failed (schema mismatch)          |
+| 429  | Rate limit exceeded                                  |
+| 500  | Internal server error                                |
+| 502  | External API error (Waygate couldn't reach provider) |
 
 ### 5.5 Rate Limiting
 
-| Endpoint Group | Limit | Window | Scope |
-|----------------|-------|--------|-------|
-| Action Invocation | 100 | 1 minute | Per API Key |
-| Config API | 60 | 1 minute | Per API Key |
-| Scraping | 5 | 1 hour | Per Tenant |
+| Endpoint Group    | Limit | Window   | Scope       |
+| ----------------- | ----- | -------- | ----------- |
+| Action Invocation | 100   | 1 minute | Per API Key |
+| Config API        | 60    | 1 minute | Per API Key |
+| Scraping          | 5     | 1 hour   | Per Tenant  |
 
 **Implementation:** In-memory rate limiting for MVP (Vercel Edge), Redis-backed for V1.
 
@@ -928,13 +955,13 @@ pnpm prisma migrate reset
 
 ### 6.1 Third-Party Services
 
-| Service | Purpose | Integration Type | Criticality | MVP Required |
-|---------|---------|------------------|-------------|--------------|
-| Supabase | Database, Auth, Storage | SDK | CRITICAL | Yes |
-| Google Gemini | AI document processing | API (via LangChain) | CRITICAL | Yes |
-| Firecrawl | Web scraping | REST API | CRITICAL | Yes |
-| Vercel | Hosting, Edge functions | Platform | CRITICAL | Yes |
-| Upstash Redis | Caching, rate limits | SDK | IMPORTANT | No (V1) |
+| Service       | Purpose                 | Integration Type    | Criticality | MVP Required |
+| ------------- | ----------------------- | ------------------- | ----------- | ------------ |
+| Supabase      | Database, Auth, Storage | SDK                 | CRITICAL    | Yes          |
+| Google Gemini | AI document processing  | API (via LangChain) | CRITICAL    | Yes          |
+| Firecrawl     | Web scraping            | REST API            | CRITICAL    | Yes          |
+| Vercel        | Hosting, Edge functions | Platform            | CRITICAL    | Yes          |
+| Upstash Redis | Caching, rate limits    | SDK                 | IMPORTANT   | No (V1)      |
 
 ### 6.2 Integration Details
 
@@ -943,6 +970,7 @@ pnpm prisma migrate reset
 **Purpose:** Primary database, user authentication, file storage
 
 **Configuration:**
+
 ```bash
 # Required environment variables
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -954,6 +982,7 @@ DATABASE_URL=postgresql://... # For Prisma
 **Implementation Location:** `src/lib/db/supabase.ts`
 
 **Error Handling:**
+
 - Connection failures: Retry with exponential backoff
 - Auth failures: Clear session, redirect to login
 - RLS violations: Log and return 403
@@ -965,6 +994,7 @@ DATABASE_URL=postgresql://... # For Prisma
 **Purpose:** AI-powered document analysis, schema generation
 
 **Configuration:**
+
 ```bash
 GOOGLE_API_KEY=xxx
 ```
@@ -972,6 +1002,7 @@ GOOGLE_API_KEY=xxx
 **Implementation Location:** `src/lib/modules/ai/`
 
 **Error Handling:**
+
 - Rate limits: Queue requests, respect Retry-After
 - Model errors: Fall back to simpler prompts, retry once
 - Timeout: 60s timeout, fail gracefully with partial results
@@ -983,6 +1014,7 @@ GOOGLE_API_KEY=xxx
 **Purpose:** Scrape and parse API documentation sites
 
 **Configuration:**
+
 ```bash
 FIRECRAWL_API_KEY=xxx
 ```
@@ -992,6 +1024,7 @@ FIRECRAWL_API_KEY=xxx
 **Integration Pattern:** REST API (native Firecrawl SDK)
 
 **Error Handling:**
+
 - Scrape failures: Return partial results with error details
 - Anti-bot blocks: Report to user, suggest manual input
 - Timeout: 5 minute timeout for full scrapes
@@ -1048,19 +1081,20 @@ NODE_ENV=development
 
 ### 7.1 Architectural Patterns
 
-| Pattern | Where Used | Implementation |
-|---------|------------|----------------|
-| Repository Pattern | Data access | `*.repository.ts` files abstract Prisma queries |
-| Service Layer | Business logic | `*.service.ts` files contain all business rules |
-| Pipeline Pattern | Request execution | Chain of handlers: auth → validate → transform → execute |
-| Factory Pattern | OAuth providers | `oauth-providers/` with common interface |
-| Circuit Breaker | External API calls | In-memory state tracking failures per integration |
+| Pattern            | Where Used         | Implementation                                           |
+| ------------------ | ------------------ | -------------------------------------------------------- |
+| Repository Pattern | Data access        | `*.repository.ts` files abstract Prisma queries          |
+| Service Layer      | Business logic     | `*.service.ts` files contain all business rules          |
+| Pipeline Pattern   | Request execution  | Chain of handlers: auth → validate → transform → execute |
+| Factory Pattern    | OAuth providers    | `oauth-providers/` with common interface                 |
+| Circuit Breaker    | External API calls | In-memory state tracking failures per integration        |
 
 ### 7.2 Code Style Guidelines
 
 **Language Style Guide:** TypeScript with strict mode enabled
 
 **Key Conventions:**
+
 - Use `async/await` over Promise chains
 - Prefer named exports over default exports
 - Use Zod for all runtime validation (inputs, configs, API responses)
@@ -1071,6 +1105,7 @@ NODE_ENV=development
 ### 7.3 Error Handling Patterns
 
 **Backend API Routes:**
+
 ```typescript
 // src/app/api/v1/integrations/route.ts
 import { withApiAuth } from '@/lib/api/middleware/auth';
@@ -1091,21 +1126,22 @@ export const GET = withApiAuth(async (req, { tenant }) => {
 ```
 
 **Service Layer:**
+
 ```typescript
 // src/lib/modules/integrations/integration.service.ts
 import { IntegrationNotFoundError, ValidationError } from '@/lib/api/errors';
 
 export async function getIntegration(id: string, tenantId: string) {
   const integration = await integrationRepository.findById(id);
-  
+
   if (!integration) {
     throw new IntegrationNotFoundError(id);
   }
-  
+
   if (integration.tenantId !== tenantId) {
     throw new IntegrationNotFoundError(id); // Don't leak existence
   }
-  
+
   return integration;
 }
 ```
@@ -1113,6 +1149,7 @@ export async function getIntegration(id: string, tenantId: string) {
 ### 7.4 State Management Patterns
 
 **Server State (TanStack Query):**
+
 ```typescript
 // src/hooks/useIntegrations.ts
 export function useIntegrations() {
@@ -1125,6 +1162,7 @@ export function useIntegrations() {
 ```
 
 **UI State (Zustand):**
+
 ```typescript
 // src/stores/ui.store.ts
 export const useUIStore = create<UIState>((set) => ({
@@ -1136,6 +1174,7 @@ export const useUIStore = create<UIState>((set) => ({
 ### 7.5 Component Patterns
 
 **Component Structure:**
+
 ```typescript
 // src/components/features/integrations/IntegrationCard.tsx
 import { type Integration } from '@/types';
@@ -1149,7 +1188,7 @@ interface IntegrationCardProps {
 
 export function IntegrationCard({ integration, onSelect }: IntegrationCardProps) {
   return (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-md transition-shadow"
       onClick={() => onSelect?.(integration.id)}
     >
@@ -1185,37 +1224,39 @@ export function IntegrationCard({ integration, onSelect }: IntegrationCardProps)
 
 ### 8.2 Security Measures
 
-| Threat | Mitigation | Implementation |
-|--------|------------|----------------|
-| SQL Injection | Parameterized queries | Prisma ORM (never raw SQL with user input) |
-| XSS | Output encoding | React's built-in escaping, CSP headers |
-| CSRF | SameSite cookies | Supabase Auth cookies are SameSite=Lax |
-| Credential Theft | Encryption at rest | AES-256-GCM for all stored credentials |
-| API Key Exposure | Key hashing | Bcrypt hash stored, plaintext never persisted |
-| Data Leakage | Log sanitization | Auth headers/tokens stripped from logs |
-| Rate Limit Bypass | Per-key limiting | API key identified before rate check |
-| Tenant Isolation | Row-Level Security | Supabase RLS policies on all tables |
+| Threat            | Mitigation            | Implementation                                |
+| ----------------- | --------------------- | --------------------------------------------- |
+| SQL Injection     | Parameterized queries | Prisma ORM (never raw SQL with user input)    |
+| XSS               | Output encoding       | React's built-in escaping, CSP headers        |
+| CSRF              | SameSite cookies      | Supabase Auth cookies are SameSite=Lax        |
+| Credential Theft  | Encryption at rest    | AES-256-GCM for all stored credentials        |
+| API Key Exposure  | Key hashing           | Bcrypt hash stored, plaintext never persisted |
+| Data Leakage      | Log sanitization      | Auth headers/tokens stripped from logs        |
+| Rate Limit Bypass | Per-key limiting      | API key identified before rate check          |
+| Tenant Isolation  | Row-Level Security    | Supabase RLS policies on all tables           |
 
 ### 8.3 Sensitive Data Handling
 
-| Data Type | Classification | Storage | Encryption | Retention |
-|-----------|---------------|---------|------------|-----------|
-| Waygate API Keys | SENSITIVE | Hashed (bcrypt) | N/A (one-way) | Until revoked |
-| OAuth Access Tokens | SENSITIVE | Encrypted column | AES-256-GCM | Until expired/revoked |
-| OAuth Refresh Tokens | SENSITIVE | Encrypted column | AES-256-GCM | Until revoked |
-| External API Keys | SENSITIVE | Encrypted column | AES-256-GCM | Until deleted |
-| Request Logs | INTERNAL | Plain (sanitized) | N/A | 30 days |
-| User Emails | PII | Plain | N/A (Supabase Auth) | Until account deleted |
+| Data Type            | Classification | Storage           | Encryption          | Retention             |
+| -------------------- | -------------- | ----------------- | ------------------- | --------------------- |
+| Waygate API Keys     | SENSITIVE      | Hashed (bcrypt)   | N/A (one-way)       | Until revoked         |
+| OAuth Access Tokens  | SENSITIVE      | Encrypted column  | AES-256-GCM         | Until expired/revoked |
+| OAuth Refresh Tokens | SENSITIVE      | Encrypted column  | AES-256-GCM         | Until revoked         |
+| External API Keys    | SENSITIVE      | Encrypted column  | AES-256-GCM         | Until deleted         |
+| Request Logs         | INTERNAL       | Plain (sanitized) | N/A                 | 30 days               |
+| User Emails          | PII            | Plain             | N/A (Supabase Auth) | Until account deleted |
 
 ### 8.4 Credential Encryption
 
 **Algorithm:** AES-256-GCM  
-**Key Management:** 
+**Key Management:**
+
 - Single encryption key stored in Vercel environment variable
 - Key is 32 bytes (256 bits) of cryptographically random data
 - Key rotation requires re-encrypting all credentials (manual process for MVP)
 
 **Implementation:**
+
 ```typescript
 // src/lib/utils/crypto.ts
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
@@ -1228,14 +1269,11 @@ export function encrypt(plaintext: string): Buffer {
   const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final(),
-  ]);
-  
+
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+
   const authTag = cipher.getAuthTag();
-  
+
   // Format: IV (16) + AuthTag (16) + Ciphertext
   return Buffer.concat([iv, authTag, encrypted]);
 }
@@ -1245,10 +1283,10 @@ export function decrypt(data: Buffer): string {
   const iv = data.subarray(0, IV_LENGTH);
   const authTag = data.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
   const ciphertext = data.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
-  
+
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
-  
+
   return decipher.update(ciphertext) + decipher.final('utf8');
 }
 ```
@@ -1271,13 +1309,13 @@ export function decrypt(data: Buffer): string {
 
 ### 9.2 Testing Strategy by Layer
 
-| Layer | Test Type | Tools | Coverage Target |
-|-------|-----------|-------|-----------------|
-| Services | Unit | Vitest | 80% |
-| Utilities | Unit | Vitest | 90% |
-| API Routes | Integration | Vitest + Supertest | Critical paths |
-| Components | Component | Vitest + Testing Library | Key interactions |
-| Full Flows | E2E | Playwright | Happy paths only |
+| Layer      | Test Type   | Tools                    | Coverage Target  |
+| ---------- | ----------- | ------------------------ | ---------------- |
+| Services   | Unit        | Vitest                   | 80%              |
+| Utilities  | Unit        | Vitest                   | 90%              |
+| API Routes | Integration | Vitest + Supertest       | Critical paths   |
+| Components | Component   | Vitest + Testing Library | Key interactions |
+| Full Flows | E2E         | Playwright               | Happy paths only |
 
 ### 9.3 Test File Organization
 
@@ -1321,12 +1359,12 @@ tests/
 
 ### 10.1 Environments
 
-| Environment | Purpose | URL | Branch | Data |
-|-------------|---------|-----|--------|------|
-| Local | Development | `localhost:3000` | — | Seed data |
-| Preview | PR previews | `*.vercel.app` | PR branch | Seed data |
-| Staging | Pre-prod testing | `staging.{YOUR_DOMAIN}` | `main` | Sanitized prod copy |
-| Production | Live system | `app.{YOUR_DOMAIN}` | `main` (manual) | Live |
+| Environment | Purpose          | URL                     | Branch          | Data                |
+| ----------- | ---------------- | ----------------------- | --------------- | ------------------- |
+| Local       | Development      | `localhost:3000`        | —               | Seed data           |
+| Preview     | PR previews      | `*.vercel.app`          | PR branch       | Seed data           |
+| Staging     | Pre-prod testing | `staging.{YOUR_DOMAIN}` | `main`          | Sanitized prod copy |
+| Production  | Live system      | `app.{YOUR_DOMAIN}`     | `main` (manual) | Live                |
 
 ### 10.2 CI/CD Pipeline
 
@@ -1344,6 +1382,7 @@ tests/
 ```
 
 **GitHub Actions Workflow:**
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI
@@ -1370,12 +1409,14 @@ jobs:
 **Method:** Rolling (Vercel default — instant, zero-downtime)
 
 **Rollback Process:**
+
 1. Navigate to Vercel dashboard
 2. Select previous deployment
 3. Click "Promote to Production"
 4. Instant rollback (< 30 seconds)
 
 **Database Migrations:**
+
 - Run `prisma migrate deploy` as part of Vercel build
 - Migrations must be backwards-compatible (expand-contract pattern)
 
@@ -1385,29 +1426,29 @@ jobs:
 
 ### 11.1 Frontend Performance
 
-| Metric | Target | Strategy |
-|--------|--------|----------|
-| LCP | < 2.5s | Server components, image optimization |
-| INP | < 200ms | Client-side caching, optimistic updates |
-| CLS | < 0.1 | Reserved space for dynamic content |
-| Bundle Size | < 200KB (initial) | Code splitting, tree shaking |
+| Metric      | Target            | Strategy                                |
+| ----------- | ----------------- | --------------------------------------- |
+| LCP         | < 2.5s            | Server components, image optimization   |
+| INP         | < 200ms           | Client-side caching, optimistic updates |
+| CLS         | < 0.1             | Reserved space for dynamic content      |
+| Bundle Size | < 200KB (initial) | Code splitting, tree shaking            |
 
 ### 11.2 Backend Performance
 
-| Metric | Target | Strategy |
-|--------|--------|----------|
+| Metric                 | Target  | Strategy                           |
+| ---------------------- | ------- | ---------------------------------- |
 | Gateway Overhead (p50) | < 100ms | Edge functions, connection pooling |
-| Gateway Overhead (p95) | < 300ms | Warm functions, efficient queries |
-| Database Query (p95) | < 50ms | Indexes, query optimization |
+| Gateway Overhead (p95) | < 300ms | Warm functions, efficient queries  |
+| Database Query (p95)   | < 50ms  | Indexes, query optimization        |
 
 ### 11.3 Caching Strategy (V1+)
 
-| Layer | Cache Type | TTL | Invalidation |
-|-------|------------|-----|--------------|
-| CDN | Static assets | 1 year | Content hash in filename |
-| API | Response cache (Redis) | Configurable | Manual or time-based |
-| Database | Query cache (Redis) | 5 minutes | On write |
-| Client | TanStack Query | 30 seconds | Manual invalidation |
+| Layer    | Cache Type             | TTL          | Invalidation             |
+| -------- | ---------------------- | ------------ | ------------------------ |
+| CDN      | Static assets          | 1 year       | Content hash in filename |
+| API      | Response cache (Redis) | Configurable | Manual or time-based     |
+| Database | Query cache (Redis)    | 5 minutes    | On write                 |
+| Client   | TanStack Query         | 30 seconds   | Manual invalidation      |
 
 ---
 
@@ -1415,31 +1456,31 @@ jobs:
 
 ### 12.1 Current Capacity (MVP Targets)
 
-| Dimension | MVP Target | Headroom Strategy |
-|-----------|-----------|-------------------|
-| Concurrent Users | 10 | Vercel auto-scaling |
-| Integrations per Tenant | 20 | Database indexes |
-| Actions per Integration | 50 | Pagination |
-| Requests/Second | 10 | Edge functions |
-| Database Size | 1 GB | Supabase Pro tier |
+| Dimension               | MVP Target | Headroom Strategy   |
+| ----------------------- | ---------- | ------------------- |
+| Concurrent Users        | 10         | Vercel auto-scaling |
+| Integrations per Tenant | 20         | Database indexes    |
+| Actions per Integration | 50         | Pagination          |
+| Requests/Second         | 10         | Edge functions      |
+| Database Size           | 1 GB       | Supabase Pro tier   |
 
 ### 12.2 Scaling Strategy
 
-| Component | Scaling Type | Trigger | Action |
-|-----------|--------------|---------|--------|
-| API Functions | Horizontal (auto) | Traffic | Vercel handles |
-| Database | Vertical | 80% connections | Upgrade Supabase tier |
-| Background Jobs | Horizontal | Queue depth | Add Trigger.dev workers (V1) |
+| Component        | Scaling Type       | Trigger               | Action                        |
+| ---------------- | ------------------ | --------------------- | ----------------------------- |
+| API Functions    | Horizontal (auto)  | Traffic               | Vercel handles                |
+| Database         | Vertical           | 80% connections       | Upgrade Supabase tier         |
+| Background Jobs  | Horizontal         | Queue depth           | Add Trigger.dev workers (V1)  |
 | Execution Engine | Extract to service | > 100 req/s sustained | Dedicated Fly.io service (V2) |
 
 ### 12.3 Bottleneck Identification
 
-| Potential Bottleneck | Mitigation | Priority |
-|---------------------|------------|----------|
-| Database connections | Connection pooling (PgBouncer via Supabase) | P0 |
-| Cold starts | Edge Runtime for gateway endpoints | P1 |
-| AI rate limits | Request queuing, model fallback | P1 |
-| Credential decryption | In-memory caching of decrypted creds (short TTL) | P2 |
+| Potential Bottleneck  | Mitigation                                       | Priority |
+| --------------------- | ------------------------------------------------ | -------- |
+| Database connections  | Connection pooling (PgBouncer via Supabase)      | P0       |
+| Cold starts           | Edge Runtime for gateway endpoints               | P1       |
+| AI rate limits        | Request queuing, model fallback                  | P1       |
+| Credential decryption | In-memory caching of decrypted creds (short TTL) | P2       |
 
 ---
 
@@ -1447,16 +1488,17 @@ jobs:
 
 ### 13.1 Backup Strategy
 
-| Data Type | Frequency | Retention | Storage | Recovery Time |
-|-----------|-----------|-----------|---------|---------------|
-| Database | Daily (auto) | 7 days | Supabase | < 1 hour |
-| Database (PITR) | Continuous | 7 days | Supabase | < 15 minutes |
-| File Storage | Daily (auto) | 7 days | Supabase | < 1 hour |
-| Code | Every push | Infinite | GitHub | Instant |
+| Data Type       | Frequency    | Retention | Storage  | Recovery Time |
+| --------------- | ------------ | --------- | -------- | ------------- |
+| Database        | Daily (auto) | 7 days    | Supabase | < 1 hour      |
+| Database (PITR) | Continuous   | 7 days    | Supabase | < 15 minutes  |
+| File Storage    | Daily (auto) | 7 days    | Supabase | < 1 hour      |
+| Code            | Every push   | Infinite  | GitHub   | Instant       |
 
 ### 13.2 Recovery Procedures
 
 **Database Recovery:**
+
 1. Navigate to Supabase dashboard
 2. Database → Backups
 3. Select point-in-time or daily backup
@@ -1464,6 +1506,7 @@ jobs:
 5. Update DATABASE_URL if new instance
 
 **Application Recovery:**
+
 1. `git checkout` to known-good commit
 2. Push to trigger Vercel deployment
 3. Or: Promote previous Vercel deployment
@@ -1471,6 +1514,7 @@ jobs:
 ### 13.3 Incident Response
 
 **Escalation Path:**
+
 1. Automated alerts (Vercel) → Check logs
 2. Manual triage → Identify root cause
 3. Hotfix or rollback → Restore service
@@ -1485,6 +1529,7 @@ jobs:
 ### 14.1 Code Generation Preferences
 
 **Preferred Patterns:**
+
 - Use Zod schemas for all validation (never trust input)
 - Throw errors, don't return them (use typed error classes)
 - Prefer composition over inheritance
@@ -1492,6 +1537,7 @@ jobs:
 - Keep API routes thin — delegate to services
 
 **Avoid:**
+
 - `any` types — use `unknown` with type guards
 - Default exports — use named exports
 - Barrel files (`index.ts` re-exports) except for module roots
@@ -1500,20 +1546,21 @@ jobs:
 
 ### 14.2 File Organization Rules
 
-| New... | Goes in... |
-|--------|------------|
-| Component | `src/components/features/{domain}/` |
-| API route | `src/app/api/v1/{resource}/` |
-| Service | `src/lib/modules/{module}/{module}.service.ts` |
-| Repository | `src/lib/modules/{module}/{module}.repository.ts` |
-| Schema (Zod) | `src/lib/modules/{module}/{module}.schemas.ts` |
-| Types | `src/types/` or co-located with module |
-| Hook | `src/hooks/use{Name}.ts` |
-| Utility | `src/lib/utils/{name}.ts` |
+| New...       | Goes in...                                        |
+| ------------ | ------------------------------------------------- |
+| Component    | `src/components/features/{domain}/`               |
+| API route    | `src/app/api/v1/{resource}/`                      |
+| Service      | `src/lib/modules/{module}/{module}.service.ts`    |
+| Repository   | `src/lib/modules/{module}/{module}.repository.ts` |
+| Schema (Zod) | `src/lib/modules/{module}/{module}.schemas.ts`    |
+| Types        | `src/types/` or co-located with module            |
+| Hook         | `src/hooks/use{Name}.ts`                          |
+| Utility      | `src/lib/utils/{name}.ts`                         |
 
 ### 14.3 Import Conventions
 
 **Path Aliases:**
+
 ```typescript
 // tsconfig.json paths
 {
@@ -1522,6 +1569,7 @@ jobs:
 ```
 
 **Import Order:**
+
 1. React/Next.js imports
 2. External packages
 3. Internal absolute imports (`@/lib/...`)
@@ -1530,14 +1578,14 @@ jobs:
 
 ### 14.4 Common Tasks Reference
 
-| Task | Files to Modify |
-|------|-----------------|
-| Add new API endpoint | `src/app/api/v1/{resource}/route.ts`, add to OpenAPI spec |
+| Task                       | Files to Modify                                                         |
+| -------------------------- | ----------------------------------------------------------------------- |
+| Add new API endpoint       | `src/app/api/v1/{resource}/route.ts`, add to OpenAPI spec               |
 | Add new integration module | Create folder in `src/lib/modules/`, add service + repository + schemas |
-| Add new UI page | `src/app/(dashboard)/{page}/page.tsx` |
-| Add new component | `src/components/features/{domain}/{Component}.tsx` |
-| Add database table | `prisma/schema.prisma`, run `pnpm prisma migrate dev` |
-| Add environment variable | `.env.example`, `src/lib/config.ts` |
+| Add new UI page            | `src/app/(dashboard)/{page}/page.tsx`                                   |
+| Add new component          | `src/components/features/{domain}/{Component}.tsx`                      |
+| Add database table         | `prisma/schema.prisma`, run `pnpm prisma migrate dev`                   |
+| Add environment variable   | `.env.example`, `src/lib/config.ts`                                     |
 
 ### 14.5 Testing Requirements
 
@@ -1553,6 +1601,7 @@ jobs:
 For architecture decisions and their rationale, see `decision_log.md`.
 
 Key decisions affecting this architecture:
+
 - **ADR-001:** Modular monolith over microservices (simplicity for MVP)
 - **ADR-002:** Supabase over Firebase (PostgreSQL, RLS, Prisma compatibility)
 - **ADR-003:** Application-level encryption over Vault (fewer dependencies)
@@ -1564,52 +1613,52 @@ Key decisions affecting this architecture:
 
 ## Appendix B: Glossary
 
-| Term | Definition |
-|------|------------|
-| **Action** | A single operation that can be performed through an integration (e.g., `slack.sendMessage`) |
-| **Consuming App** | An application that uses Waygate's Gateway API to access integrations |
-| **Integration** | A configured connection to an external API (e.g., Slack, Google) |
-| **Tenant** | An isolated account in Waygate (organization or user) |
-| **Gateway API** | The unified REST API that consuming apps call to invoke actions |
-| **Waygate API Key** | The API key consuming apps use to authenticate with Waygate |
-| **Integration Credential** | OAuth tokens or API keys for external services (stored encrypted) |
-| **Request Pipeline** | The chain of middleware that processes action invocations |
-| **Circuit Breaker** | Pattern that fails fast when an external API is unhealthy |
+| Term                       | Definition                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| **Action**                 | A single operation that can be performed through an integration (e.g., `slack.sendMessage`) |
+| **Consuming App**          | An application that uses Waygate's Gateway API to access integrations                       |
+| **Integration**            | A configured connection to an external API (e.g., Slack, Google)                            |
+| **Tenant**                 | An isolated account in Waygate (organization or user)                                       |
+| **Gateway API**            | The unified REST API that consuming apps call to invoke actions                             |
+| **Waygate API Key**        | The API key consuming apps use to authenticate with Waygate                                 |
+| **Integration Credential** | OAuth tokens or API keys for external services (stored encrypted)                           |
+| **Request Pipeline**       | The chain of middleware that processes action invocations                                   |
+| **Circuit Breaker**        | Pattern that fails fast when an external API is unhealthy                                   |
 
 ---
 
 ## Appendix C: Related Documentation
 
-| Document | Purpose | Location |
-|----------|---------|----------|
-| Product Spec | What we're building | `product_spec.md` |
-| Decision Log | Why we chose things | `decision_log.md` |
-| Changelog | What changed | `changelog.md` |
-| API Docs | API reference | Generated from code (OpenAPI) |
+| Document     | Purpose             | Location                      |
+| ------------ | ------------------- | ----------------------------- |
+| Product Spec | What we're building | `product_spec.md`             |
+| Decision Log | Why we chose things | `decision_log.md`             |
+| Changelog    | What changed        | `changelog.md`                |
+| API Docs     | API reference       | Generated from code (OpenAPI) |
 
 ---
 
 ## Appendix D: MVP vs Future Scope
 
-| Capability | MVP | V0.5 | V1 | V2 |
-|------------|-----|------|----|----|
-| AI Doc Scraping | ✅ | — | — | — |
-| Action Registry | ✅ | — | — | — |
-| OAuth2/API Key Auth | ✅ | — | — | — |
-| Token Refresh | ✅ | — | — | — |
-| Retry Logic | ✅ | — | — | — |
-| Circuit Breaker | ✅ (in-memory) | — | Persisted (Redis) | — |
-| Gateway API | ✅ | — | — | — |
-| Config UI | ✅ (basic) | — | Enhanced | Full no-code |
-| Pagination Handler | — | ✅ | — | — |
-| Response Validation | — | ✅ | — | — |
-| Field Mapping | — | ✅ (basic) | Per-app custom | — |
-| Integration Tagging | — | ✅ | — | — |
-| Smart Caching | — | — | ✅ (Redis) | — |
-| Background Jobs | ✅ (Vercel Cron) | — | ✅ (Trigger.dev) | — |
-| Health Checks | — | — | ✅ | — |
-| Auto-Maintenance | — | — | — | ✅ |
-| Versioning/Rollback | — | — | — | ✅ |
-| Webhook Ingestion | — | — | — | ✅ |
-| LLM Tool Wrapping | — | — | — | ✅ |
-| RBAC/Teams | — | — | — | ✅ |
+| Capability          | MVP              | V0.5       | V1                | V2           |
+| ------------------- | ---------------- | ---------- | ----------------- | ------------ |
+| AI Doc Scraping     | ✅               | —          | —                 | —            |
+| Action Registry     | ✅               | —          | —                 | —            |
+| OAuth2/API Key Auth | ✅               | —          | —                 | —            |
+| Token Refresh       | ✅               | —          | —                 | —            |
+| Retry Logic         | ✅               | —          | —                 | —            |
+| Circuit Breaker     | ✅ (in-memory)   | —          | Persisted (Redis) | —            |
+| Gateway API         | ✅               | —          | —                 | —            |
+| Config UI           | ✅ (basic)       | —          | Enhanced          | Full no-code |
+| Pagination Handler  | —                | ✅         | —                 | —            |
+| Response Validation | —                | ✅         | —                 | —            |
+| Field Mapping       | —                | ✅ (basic) | Per-app custom    | —            |
+| Integration Tagging | —                | ✅         | —                 | —            |
+| Smart Caching       | —                | —          | ✅ (Redis)        | —            |
+| Background Jobs     | ✅ (Vercel Cron) | —          | ✅ (Trigger.dev)  | —            |
+| Health Checks       | —                | —          | ✅                | —            |
+| Auto-Maintenance    | —                | —          | —                 | ✅           |
+| Versioning/Rollback | —                | —          | —                 | ✅           |
+| Webhook Ingestion   | —                | —          | —                 | ✅           |
+| LLM Tool Wrapping   | —                | —          | —                 | ✅           |
+| RBAC/Teams          | —                | —          | —                 | ✅           |

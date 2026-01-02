@@ -17,4 +17,3 @@ Set up the development environment and configuration:
    - Document the setup process in architecture or a separate guide
 
 Start with step 1. Ask questions before creating files.
-

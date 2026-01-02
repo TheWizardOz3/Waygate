@@ -7,4 +7,3 @@ Test the **[FEATURE/COMPONENT]** we just built:
 3. Write new tests for the new functionality
 4. Use browser tools to manually verify UI if applicable
 5. Report results
-

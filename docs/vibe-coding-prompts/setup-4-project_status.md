@@ -18,4 +18,3 @@ Set up the project status tracker:
    - Known issues and tech debt sections (even if empty)
 
 Start with step 1. Ask questions before making changes.
-

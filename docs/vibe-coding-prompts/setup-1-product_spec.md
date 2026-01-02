@@ -17,4 +17,3 @@ Build out the product specification from the initial concept:
    - Explicit scope boundaries (what's NOT included)
 
 Start with step 1. Ask questions before making changes.
-

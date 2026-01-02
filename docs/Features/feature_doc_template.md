@@ -3,15 +3,19 @@
 ## 1. Overview
 
 ### 1.1 One-Line Summary
+
 {{A single sentence describing what this feature does — should be understandable to anyone}}
 
 ### 1.2 User Story
+
 > As a **{{USER_PERSONA}}**, I want to **{{ACTION/CAPABILITY}}**, so that **{{BENEFIT/VALUE}}**.
 
 ### 1.3 Problem Statement
+
 {{What problem does this feature solve? What pain point or gap exists today? Why is this important to address now?}}
 
 ### 1.4 Business Value
+
 {{Why should we build this? How does it support product goals or business objectives?}}
 
 - **User Impact:** {{How does this improve the user experience?}}
@@ -24,20 +28,20 @@
 
 ### 2.1 Functional Requirements
 
-| ID | Requirement | Priority | Notes |
-|----|-------------|----------|-------|
-| FR-1 | {{REQUIREMENT_DESCRIPTION}} | {{MUST | SHOULD | COULD}} | {{NOTES}} |
-| FR-2 | {{REQUIREMENT_DESCRIPTION}} | {{MUST | SHOULD | COULD}} | {{NOTES}} |
-| FR-3 | {{REQUIREMENT_DESCRIPTION}} | {{MUST | SHOULD | COULD}} | {{NOTES}} |
+| ID   | Requirement                 | Priority | Notes  |
+| ---- | --------------------------- | -------- | ------ | ------- | --------- |
+| FR-1 | {{REQUIREMENT_DESCRIPTION}} | {{MUST   | SHOULD | COULD}} | {{NOTES}} |
+| FR-2 | {{REQUIREMENT_DESCRIPTION}} | {{MUST   | SHOULD | COULD}} | {{NOTES}} |
+| FR-3 | {{REQUIREMENT_DESCRIPTION}} | {{MUST   | SHOULD | COULD}} | {{NOTES}} |
 
 ### 2.2 Non-Functional Requirements
 
-| Requirement | Target | Measurement |
-|-------------|--------|-------------|
-| Performance | {{TARGET — e.g., "< 200ms response time"}} | {{HOW_TO_MEASURE}} |
-| Scalability | {{TARGET — e.g., "Support 1000 concurrent users"}} | {{HOW_TO_MEASURE}} |
-| Accessibility | {{TARGET — e.g., "WCAG 2.1 AA compliant"}} | {{HOW_TO_MEASURE}} |
-| Security | {{TARGET — e.g., "No PII exposure"}} | {{HOW_TO_MEASURE}} |
+| Requirement   | Target                                             | Measurement        |
+| ------------- | -------------------------------------------------- | ------------------ |
+| Performance   | {{TARGET — e.g., "< 200ms response time"}}         | {{HOW_TO_MEASURE}} |
+| Scalability   | {{TARGET — e.g., "Support 1000 concurrent users"}} | {{HOW_TO_MEASURE}} |
+| Accessibility | {{TARGET — e.g., "WCAG 2.1 AA compliant"}}         | {{HOW_TO_MEASURE}} |
+| Security      | {{TARGET — e.g., "No PII exposure"}}               | {{HOW_TO_MEASURE}} |
 
 ### 2.3 Acceptance Criteria
 
@@ -66,11 +70,13 @@
 ```
 
 **Happy Path:**
+
 1. {{STEP_DESCRIPTION}}
 2. {{STEP_DESCRIPTION}}
 3. {{STEP_DESCRIPTION}}
 
 **Alternate Paths:**
+
 - {{ALTERNATE_FLOW_DESCRIPTION}}
 
 ## 4. Technical Approach
@@ -87,4 +93,3 @@
 
 **Alignment with Existing Patterns:**
 {{How does this feature align with or leverage existing architecture, patterns, and conventions documented in architecture.md?}}
-
