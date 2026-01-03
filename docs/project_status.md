@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-03 (v0.1.8 - Credential Saving & UI Fixes)
+**Last Updated**: 2026-01-03 (v0.1.10 - Intelligent API Key Defaults)
 
 ---
 
@@ -122,10 +122,11 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 
 ### V0.5: Polish & Robustness
 
-**Functionality Summary**: Add robustness features that make integrations production-ready. Pagination, response validation, field mapping, tagging, continuous testing, and dashboard/logs improvements.
+**Functionality Summary**: Add robustness features that make integrations production-ready. Multi-app connections, pagination, response validation, field mapping, tagging, continuous testing, and dashboard/logs improvements.
 
 **Key Features:**
 
+- **Multi-App Connections** (multiple consuming apps per integration with separate credentials/baseUrls)
 - Pagination Handler (cursor, offset, page number, Link header)
 - Response Validation (Zod-based schema validation)
 - Basic Field Mapping (configure field transformations)
@@ -135,6 +136,7 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 
 **Technical Scope:**
 
+- **Connection entity** (links Integration + Credential to consuming App, enables per-app credential isolation)
 - Pagination detection and handling logic
 - Zod-based response validation
 - Field mapping configuration storage and runtime application

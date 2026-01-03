@@ -24,11 +24,13 @@ export type OAuth2CredentialData = z.infer<typeof OAuth2CredentialSchema>;
  * API Key credential data (decrypted)
  * baseUrl is optional - allows per-credential endpoint configuration
  * (useful for user-specific APIs like Supabase, Airtable, etc.)
+ * prefix is optional - prepended to API key (e.g., "Bearer "), empty for Supabase
  */
 export const ApiKeyCredentialSchema = z.object({
   apiKey: z.string().min(1, 'API key is required'),
   placement: z.enum(['header', 'query', 'body']),
   paramName: z.string().min(1, 'Parameter name is required'),
+  prefix: z.string().optional(), // e.g., "Bearer " - empty for Supabase
   baseUrl: z.string().url().optional(), // Per-credential base URL
 });
 
@@ -108,6 +110,7 @@ export const StoreApiKeyCredentialInputSchema = z.object({
   apiKey: z.string().min(1),
   placement: z.enum(['header', 'query', 'body']),
   paramName: z.string().min(1),
+  prefix: z.string().optional(), // e.g., "Bearer " - empty for Supabase
   baseUrl: z.string().url().optional(), // Per-credential base URL for user-specific APIs
 });
 

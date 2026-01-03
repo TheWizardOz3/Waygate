@@ -314,6 +314,18 @@ function buildRequest(
   const authConfig = integration.authConfig as Record<string, unknown> | null;
   const baseUrl = (credentialData?.baseUrl as string) || (authConfig?.baseUrl as string) || '';
 
+  // Debug logging for URL construction
+  console.log('[GATEWAY] Building request:', {
+    integrationSlug: integration.slug,
+    actionSlug: action.slug,
+    hasCredential: !!credential,
+    credentialBaseUrl: credentialData?.baseUrl,
+    authConfigBaseUrl: authConfig?.baseUrl,
+    resolvedBaseUrl: baseUrl,
+    endpointTemplate: action.endpointTemplate,
+    input,
+  });
+
   // Build the path with parameter substitution
   const path = buildUrl(action.endpointTemplate, input);
 
@@ -378,6 +390,13 @@ function buildRequest(
     headers: { ...headers, ...credentialConfig.headers },
     body,
   };
+
+  console.log('[GATEWAY] Final request:', {
+    url: finalUrl,
+    method: request.method,
+    headers: Object.keys(request.headers),
+    hasBody: !!body,
+  });
 
   return { request, url: finalUrl };
 }

@@ -183,7 +183,7 @@ function ApiKeyForm({
     defaultValues: {
       apiKey: '',
       headerName: isSupabase ? 'apikey' : 'Authorization', // Supabase uses 'apikey' header
-      prefix: isSupabase ? 'none' : 'Bearer', // Supabase doesn't use prefix
+      prefix: isSupabase ? '' : 'Bearer', // Supabase doesn't use prefix (empty string)
       baseUrl: '',
     },
   });

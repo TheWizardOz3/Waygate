@@ -62,15 +62,15 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
       const startTime = Date.now();
 
       try {
-        // Build the request preview
+        // Build the request preview - show the Waygate Gateway URL
         const requestPreview = {
           method: action.httpMethod,
-          url: buildEndpointUrl(integration.slug, action.endpointTemplate, input),
+          url: buildEndpointUrl(integration.slug, action.slug),
           headers: {
             'Content-Type': 'application/json',
-            'X-Waygate-Integration': integration.slug,
+            'X-Waygate-Api-Key': '<your-waygate-api-key>',
           },
-          body: action.httpMethod !== 'GET' ? input : undefined,
+          body: input,
         };
 
         setResult({ request: requestPreview });
@@ -311,17 +311,9 @@ function ActionTesterSkeleton() {
   );
 }
 
-function buildEndpointUrl(
-  integrationSlug: string,
-  template: string,
-  params: Record<string, unknown>
-): string {
-  let url = template;
-
-  // Replace path parameters
-  Object.entries(params).forEach(([key, value]) => {
-    url = url.replace(`{${key}}`, encodeURIComponent(String(value)));
-  });
-
-  return `/api/v1/gateway/${integrationSlug}${url}`;
+function buildEndpointUrl(integrationSlug: string, actionSlug: string): string {
+  // The Waygate Gateway URL is the correct endpoint for consuming apps
+  // Format: /api/v1/actions/{integration}/{action}
+  // The actual external API URL (with path params) is resolved server-side
+  return `/api/v1/actions/${integrationSlug}/${actionSlug}`;
 }

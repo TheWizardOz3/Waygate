@@ -134,6 +134,7 @@ export async function storeApiKeyCredential(
     apiKey: string;
     placement: 'header' | 'query' | 'body';
     paramName: string;
+    prefix?: string; // e.g., "Bearer" - empty for Supabase
     baseUrl?: string; // Per-credential base URL (for user-specific APIs like Supabase)
   }
 ): Promise<IntegrationCredential> {

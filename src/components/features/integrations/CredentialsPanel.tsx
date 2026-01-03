@@ -206,16 +206,21 @@ export function CredentialsPanel({ integration }: CredentialsPanelProps) {
         integrationNameLower.includes('airtable') || integrationSlugLower.includes('airtable');
       const isUserSpecificApi = isSupabase || isAirtable;
 
-      // Determine hints based on the integration type
+      // Determine intelligent defaults based on the integration type
       let baseUrlHint = '';
       let baseUrlPlaceholder = 'https://your-project.example.com';
       let apiKeyHint = 'Your API key will be encrypted before storage';
+      let headerName = 'Authorization';
+      let prefix = 'Bearer';
 
       if (isSupabase) {
         baseUrlHint = 'Your Supabase project URL (found in Project Settings → API)';
         baseUrlPlaceholder = 'https://your-project-id.supabase.co';
         apiKeyHint =
           'Use your "service_role" key for full access (found in Project Settings → API → service_role)';
+        // Supabase uses 'apikey' header with no prefix
+        headerName = 'apikey';
+        prefix = '';
       } else if (isAirtable) {
         baseUrlHint = 'Your Airtable base URL';
         baseUrlPlaceholder = 'https://api.airtable.com/v0/your-base-id';
@@ -226,6 +231,8 @@ export function CredentialsPanel({ integration }: CredentialsPanelProps) {
         <ApiKeyConnectForm
           integrationId={integration.id}
           integrationName={integration.name}
+          headerName={headerName}
+          prefix={prefix}
           requiresBaseUrl={isUserSpecificApi}
           baseUrlHint={baseUrlHint}
           baseUrlPlaceholder={baseUrlPlaceholder}

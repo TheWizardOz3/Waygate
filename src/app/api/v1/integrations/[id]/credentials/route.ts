@@ -202,6 +202,7 @@ export const POST = withApiAuth(async (request: NextRequest, { tenant }) => {
           apiKey: data.apiKey,
           placement: 'header',
           paramName: data.headerName,
+          prefix: data.prefix, // e.g., "Bearer" - empty string for Supabase
           baseUrl: data.baseUrl, // Per-credential base URL
         });
         break;

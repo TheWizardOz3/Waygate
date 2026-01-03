@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                         |
 | ------- | ---------- | ---------- | --------------------------------------------------------------- |
+| 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.) |
 | 0.1.9   | 2026-01-03 | minor      | Per-credential baseUrl for user-specific APIs (Supabase, etc.)  |
 | 0.1.8   | 2026-01-03 | patch      | Credential saving, endpoint copy, parameter descriptions fixes  |
 | 0.1.7   | 2026-01-03 | minor      | Template-based integration creation for schema-driven APIs      |
@@ -68,6 +69,33 @@
 ## Releases
 
 <!-- Add new versions below this line, newest first -->
+
+## [0.1.10] - 2026-01-03
+
+### Added
+
+- **Intelligent API Key Defaults**
+  - Supabase integrations now default to `apikey` header with no prefix (correct format for Supabase)
+  - Airtable integrations get appropriate defaults for their API
+  - Other APIs default to `Authorization` header with `Bearer` prefix
+- **Prefix Support for API Key Credentials**
+  - Credential schema now includes optional `prefix` field
+  - API key handler applies prefix when building auth headers
+  - Empty prefix for Supabase (raw key), `Bearer` prefix for others
+
+### Changed
+
+- **Multi-App Support Added to V0.5 Roadmap**
+  - Added "Multi-App Connections" feature to V0.5 milestone
+  - Connection entity will link Integration + Credential to consuming App
+  - Enables per-app credential isolation for shared integrations
+
+### Fixed
+
+- API key form now shows intelligent defaults based on integration type
+- CredentialsPanel passes correct `headerName` and `prefix` for Supabase
+
+---
 
 ## [0.1.9] - 2026-01-03
 

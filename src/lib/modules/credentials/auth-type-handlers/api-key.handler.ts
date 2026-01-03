@@ -36,15 +36,20 @@ export function applyApiKeyAuth(credential: ApiKeyCredentialData): Authenticated
     bodyParams: {},
   };
 
+  // Build the full credential value with prefix if present
+  // e.g., "Bearer sk-xxx" or just "sk-xxx" for Supabase
+  const prefix = credential.prefix?.trim();
+  const credentialValue = prefix ? `${prefix} ${credential.apiKey}` : credential.apiKey;
+
   switch (credential.placement) {
     case 'header':
-      config.headers[credential.paramName] = credential.apiKey;
+      config.headers[credential.paramName] = credentialValue;
       break;
     case 'query':
-      config.queryParams[credential.paramName] = credential.apiKey;
+      config.queryParams[credential.paramName] = credential.apiKey; // Query params usually don't have prefix
       break;
     case 'body':
-      config.bodyParams[credential.paramName] = credential.apiKey;
+      config.bodyParams[credential.paramName] = credential.apiKey; // Body params usually don't have prefix
       break;
   }
 
