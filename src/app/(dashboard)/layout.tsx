@@ -1,3 +1,5 @@
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen">{children}</div>;
+import { DashboardLayout } from '@/components/layouts';
+
+export default function DashboardRootLayout({ children }: { children: React.ReactNode }) {
+  return <DashboardLayout>{children}</DashboardLayout>;
 }

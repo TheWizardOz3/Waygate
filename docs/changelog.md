@@ -14,10 +14,12 @@
 
 | Version | Date       | Type       | Summary                                                  |
 | ------- | ---------- | ---------- | -------------------------------------------------------- |
+| 0.1.0   | 2026-01-02 | minor      | **MVP Complete!** Basic Configuration UI complete        |
+| 0.0.8   | 2026-01-02 | prerelease | Gateway API complete                                     |
 | 0.0.7   | 2026-01-02 | prerelease | Token Refresh Management complete                        |
 | 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                        |
 | 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                        |
-| 0.1.0   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)              |
+| 0.0.1   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)              |
 | 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup |
 
 **Types:** `major` | `minor` | `patch` | `prerelease`
@@ -57,6 +59,105 @@
 ## Releases
 
 <!-- Add new versions below this line, newest first -->
+
+## [0.1.0] - 2026-01-02 - 🎉 MVP Complete!
+
+### Added
+
+- **Basic Configuration UI (Feature #9)** - Complete web dashboard for Waygate
+
+  **Design System Foundation**
+  - CSS variable-based theming system (single source of truth in `globals.css`)
+  - Tailwind CSS extended to reference CSS variables for global theme changes
+  - Crimson Pro, Inter, and JetBrains Mono fonts via `next/font`
+  - Dark/Light mode with `next-themes` and theme toggle component
+  - Shadcn/ui component library integration with consistent styling
+
+  **Dashboard Layout**
+  - Collapsible sidebar navigation with responsive behavior
+  - Global header with search, notifications, and user menu
+  - Dashboard home with stats cards, recent activity, and quick actions
+
+  **Integration Management**
+  - Integration list with grid/list views, search, and status/type filters
+  - Integration detail view with tabbed layout (Overview, Actions, Logs)
+  - Integration status badges with semantic color coding
+  - Delete integration dialog with slug confirmation
+
+  **Create Integration Wizard**
+  - 5-step multi-step wizard with Zustand state management
+  - Step 1: URL input with optional action wishlist and example URLs
+  - Step 2: Real-time scraping progress with status polling
+  - Step 3: Review AI-detected actions with confidence indicators
+  - Step 4: Configure OAuth2 or API Key authentication
+  - Step 5: Success confirmation with confetti animation
+
+  **Action Table & Management**
+  - TanStack Table with sorting, filtering, pagination
+  - Bulk selection with bulk delete/export actions
+  - Method badges (GET/POST/PUT/DELETE) with semantic colors
+  - Source indicator (AI-generated vs manual)
+  - Quick test modal for inline action testing
+
+  **Action Editor**
+  - Full-page editor for creating/editing actions
+  - Basic info section (name, slug, description, method, endpoint)
+  - Visual schema builder with tabular field editing
+  - JSON Schema toggle for advanced editing
+  - Advanced settings (caching, retry configuration)
+  - Client-side Zod validation
+
+  **Action Testing ("Try It")**
+  - Dynamic form generation from JSON Schema
+  - Request/Response viewer with syntax highlighting
+  - Test history with localStorage persistence
+  - Quick re-execution of previous tests
+
+  **Connection Wizards**
+  - OAuth2 connect button with popup flow
+  - API Key form with secure input and test connection
+  - Connection status display with refresh/disconnect options
+
+  **Request Logs**
+  - Filterable log viewer with search, integration, status, date range filters
+  - Log entry rows with timestamp, integration, action, status, latency
+  - Log detail dialog with full request/response bodies
+
+  **Settings & API Keys**
+  - Settings page with tabs (General, API Keys, Notifications, Appearance)
+  - Masked API key display with copy-to-clipboard
+  - Regenerate API key with confirmation dialog
+  - API usage examples with curl commands
+
+  **Polish & Refinement**
+  - Error boundary component for graceful error handling
+  - Toast notifications via Sonner for CRUD operations
+  - Skeleton loaders for all data-fetching states
+  - Empty states with helpful CTAs
+  - Responsive sidebar (collapsible on smaller screens)
+
+### Dependencies
+
+- `@tanstack/react-query`: Server state management and caching
+- `@tanstack/react-table`: Data table with sorting/filtering/pagination
+- `zustand`: Lightweight state management for wizard flows
+- `next-themes`: Dark/light mode theming
+- `sonner`: Toast notifications
+- `react-syntax-highlighter`: JSON syntax highlighting
+- `date-fns`: Date formatting and relative time
+- `recharts`: Charts for dashboard stats
+- `js-confetti`: Success animations
+- `tailwindcss-animate`: Animation utilities
+
+### Technical Notes
+
+- All 592 existing tests continue to pass
+- Zero lint errors, zero TypeScript errors
+- Design tokens allow single-file theme changes via CSS variables
+- React Query provides caching, optimistic updates, and automatic refetching
+- UI is production-ready, pending backend API integration
+
+---
 
 ## [Unreleased]
 

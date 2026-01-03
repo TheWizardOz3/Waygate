@@ -24,6 +24,8 @@
 | ADR-008 | 2026-01-02 | arch     | active | JSON Schema validation with Ajv and caching             |
 | ADR-009 | 2026-01-02 | arch     | active | PostgreSQL advisory locks for token refresh             |
 | ADR-010 | 2026-01-02 | api      | active | Unified dynamic gateway endpoint over per-action routes |
+| ADR-011 | 2026-01-02 | ui       | active | CSS variable-based design system for global theming     |
+| ADR-012 | 2026-01-02 | ui       | active | Zustand for wizard state, React Query for server state  |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -595,5 +597,118 @@ When working with the Gateway API:
 - Error responses ALWAYS include `suggestedResolution` with `action`, `description`, `retryable`
 - Request ID is generated for every request and included in all responses
 - All requests are logged via the logging service with automatic sanitization
+
+---
+
+### ADR-011: CSS Variable-Based Design System for Global Theming
+
+**Date:** 2026-01-02 | **Category:** ui | **Status:** active
+
+#### Trigger
+
+Building the Basic Configuration UI required a design system that allows easy global changes to colors, fonts, spacing, and component styles. The goal was to enable a complete rebrand or theme change by updating a single file, not touching individual components.
+
+#### Decision
+
+Implemented a layered design token architecture:
+
+1. **CSS Variables (globals.css)** - Single source of truth for all design tokens
+   - Colors: `--primary`, `--secondary`, `--accent`, `--destructive`, `--background`, `--foreground`, etc.
+   - Typography: `--font-heading`, `--font-body`, `--font-mono`
+   - Sizing: `--radius`, `--radius-sm`, `--radius-lg`
+   - Dark mode: Override variables inside `.dark` class
+
+2. **Tailwind Config** - References CSS variables
+   - `colors: { primary: 'hsl(var(--primary))' }`
+   - `fontFamily: { heading: ['var(--font-heading)'] }`
+   - `borderRadius: { DEFAULT: 'var(--radius)' }`
+
+3. **Shadcn/ui Components** - Use Tailwind semantic classes
+   - `bg-primary`, `text-foreground`, `border-border`
+
+4. **Feature Components** - Compose Shadcn + Tailwind
+   - No hard-coded colors, always use semantic tokens
+
+#### Rationale
+
+- **Single source of truth**: Change `--primary` in one place, entire UI updates
+- **Shadcn compatibility**: Shadcn/ui already uses this exact CSS variable pattern
+- **Dark mode for free**: CSS variables + `.dark` class = automatic dark mode
+- **Developer experience**: Tailwind autocomplete still works with semantic classes
+- **Zero runtime overhead**: CSS variables are browser-native, no JS hydration needed
+
+#### Supersedes
+
+N/A (new UI)
+
+#### Migration
+
+- **Affected files:** `src/app/globals.css`, `tailwind.config.ts`, all components
+- **Find:** Hard-coded colors like `bg-indigo-950`, `text-gray-500`
+- **Replace with:** Semantic tokens like `bg-primary`, `text-muted-foreground`
+- **Verify:** Theme toggle switches all colors correctly
+
+#### AI Instructions
+
+When working with UI components:
+
+- NEVER use hard-coded Tailwind colors (`bg-blue-500`, `text-gray-700`)
+- ALWAYS use semantic tokens (`bg-primary`, `text-foreground`, `border-border`)
+- When adding new colors, define in `globals.css` first, then add to `tailwind.config.ts`
+- Dark mode overrides go in `.dark` selector in `globals.css`
+- Test both light and dark modes when making UI changes
+
+---
+
+### ADR-012: Zustand for Wizard State, React Query for Server State
+
+**Date:** 2026-01-02 | **Category:** ui | **Status:** active
+
+#### Trigger
+
+The Create Integration Wizard required complex multi-step state management (current step, form data, detected actions, scrape job status), while other parts of the UI needed server state management (fetching integrations, actions, logs).
+
+#### Decision
+
+Implemented a dual state management strategy:
+
+1. **Zustand** for UI/client state:
+   - Wizard flow state (`wizard.store.ts`)
+   - Current step, form data, detected actions
+   - Modal/dialog open states
+   - Lightweight, no boilerplate
+
+2. **React Query (TanStack Query)** for server state:
+   - All data fetching (integrations, actions, logs)
+   - Caching, background refetching, optimistic updates
+   - Hooks: `useIntegrations`, `useActions`, `useLogs`, etc.
+   - Query invalidation for cache coherence
+
+#### Rationale
+
+- **Separation of concerns**: Server state (async, cached) vs UI state (synchronous, ephemeral) are fundamentally different
+- **React Query strengths**: Built-in caching, deduplication, background refetch, devtools
+- **Zustand strengths**: Simple API, no providers needed, TypeScript-first, tiny bundle
+- **No Redux**: Overhead not justified for MVP scope
+- **Wizard isolation**: Zustand store is local to wizard, doesn't pollute global state
+
+#### Supersedes
+
+N/A (new UI)
+
+#### Migration
+
+- **Affected files:** `src/stores/*.ts`, `src/hooks/use*.ts`
+- **Pattern:** Use Zustand for ephemeral UI state, React Query for anything from the server
+
+#### AI Instructions
+
+When working with state management:
+
+- For server data (API calls), ALWAYS use React Query hooks (`useQuery`, `useMutation`)
+- For UI-only state (modals, wizards, filters), use Zustand or React useState
+- Do NOT mix server state into Zustand stores - it defeats caching
+- Use `queryClient.invalidateQueries()` after mutations to refresh related data
+- Wizard stores should reset on unmount to avoid stale state
 
 ---

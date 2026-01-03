@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Crimson_Pro, Inter, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 import './globals.css';
 
 const crimsonPro = Crimson_Pro({
@@ -37,10 +38,12 @@ export default function RootLayout({
       <body
         className={`${crimsonPro.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <QueryProvider>
-          {children}
-          <Toaster />
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -2,54 +2,192 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * ============================================================================
+ * WAYGATE DESIGN SYSTEM - CSS VARIABLES (SINGLE SOURCE OF TRUTH)
+ * ============================================================================
+ * 
+ * All design tokens live here. To change the theme:
+ * 1. Update values in :root (light mode) or .dark (dark mode)
+ * 2. Everything using Tailwind classes will update automatically
+ * 
+ * Color Format: HSL values without hsl() wrapper for Tailwind compatibility
+ * Example: --primary: 234 84% 15% means hsl(234, 84%, 15%)
+ * 
+ * Usage in components: bg-primary, text-primary-foreground, etc.
+ * ============================================================================
+ */
+
 @layer base {
   :root {
-    /* Waygate Design System - Light Mode */
-    --color-primary: #1e1b4b; /* Indigo 950 */
-    --color-primary-foreground: #ffffff;
-    --color-secondary: #7c3aed; /* Violet 600 */
-    --color-secondary-foreground: #ffffff;
-    --color-accent: #10b981; /* Emerald 500 */
-    --color-accent-warn: #f59e0b; /* Amber 500 */
-    --color-accent-magic: #a78bfa; /* Violet 400 */
-    --color-background: #fafaf9; /* Stone 50 */
-    --color-foreground: #1c1917; /* Stone 900 */
-    --color-surface: #ffffff;
-    --color-surface-dark: #1e1b4b; /* Indigo 950 */
-    --color-muted: #f5f5f4; /* Stone 100 */
-    --color-muted-foreground: #78716c; /* Stone 500 */
-    --color-error: #dc2626; /* Red 600 */
-    --color-error-foreground: #ffffff;
-    --color-success: #059669; /* Emerald 600 */
-    --color-border: #e7e5e4; /* Stone 200 */
-    --color-input: #e7e5e4; /* Stone 200 */
-    --color-ring: #7c3aed; /* Violet 600 */
-    --radius: 0.5rem;
+    /* ─────────────────────────────────────────────────────────────────────
+     * CORE COLORS - Light Mode
+     * ───────────────────────────────────────────────────────────────────── */
+
+    /* Background & Foreground */
+    --background: 40 20% 98%; /* Stone 50 - #FAFAF9 - Page backgrounds */
+    --foreground: 24 10% 10%; /* Stone 900 - #1C1917 - Primary text */
+
+    /* Primary - Main brand color for key actions */
+    --primary: 243 47% 20%; /* Indigo 950 - #1E1B4B */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    /* Secondary - Supporting actions */
+    --secondary: 263 70% 58%; /* Violet 600 - #7C3AED */
+    --secondary-foreground: 0 0% 100%; /* White */
+
+    /* Accent - Success states, active connections */
+    --accent: 160 84% 39%; /* Emerald 500 - #10B981 */
+    --accent-foreground: 0 0% 100%; /* White */
+
+    /* Warning - Pending states, alerts */
+    --warning: 38 92% 50%; /* Amber 500 - #F59E0B */
+    --warning-foreground: 24 10% 10%; /* Dark text for contrast */
+
+    /* Destructive - Errors, delete actions */
+    --destructive: 0 72% 51%; /* Red 600 - #DC2626 */
+    --destructive-foreground: 0 0% 100%; /* White */
+
+    /* Success - Explicit success states */
+    --success: 160 84% 39%; /* Emerald 500 - #10B981 */
+    --success-foreground: 0 0% 100%; /* White */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * SURFACE COLORS - Cards, popovers, dialogs
+     * ───────────────────────────────────────────────────────────────────── */
+
+    /* Card - Primary elevated surface */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 24 10% 10%; /* Stone 900 */
+
+    /* Popover - Dropdowns, tooltips, popovers */
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 24 10% 10%; /* Stone 900 */
+
+    /* Muted - Subtle backgrounds, disabled states */
+    --muted: 40 18% 96%; /* Stone 100 - #F5F5F4 */
+    --muted-foreground: 24 6% 45%; /* Stone 500 - #78716C */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * INTERACTIVE COLORS - Borders, inputs, focus rings
+     * ───────────────────────────────────────────────────────────────────── */
+
+    --border: 24 6% 90%; /* Stone 200 - #E7E5E4 */
+    --input: 24 6% 90%; /* Stone 200 - #E7E5E4 */
+    --ring: 263 70% 58%; /* Violet 600 - Focus ring matches secondary */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * WAYGATE-SPECIFIC COLORS - Magical accents
+     * ───────────────────────────────────────────────────────────────────── */
+
+    --accent-warn: 38 92% 50%; /* Amber 500 - #F59E0B */
+    --accent-magic: 263 70% 75%; /* Violet 400 - #A78BFA - Portal effects */
+    --surface: 0 0% 100%; /* White - Alternative to card */
+    --surface-dark: 243 47% 20%; /* Indigo 950 - Dark surfaces, code blocks */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * CHART COLORS - Data visualization (future use)
+     * ───────────────────────────────────────────────────────────────────── */
+
+    --chart-1: 243 47% 20%; /* Indigo */
+    --chart-2: 263 70% 58%; /* Violet */
+    --chart-3: 160 84% 39%; /* Emerald */
+    --chart-4: 38 92% 50%; /* Amber */
+    --chart-5: 0 72% 51%; /* Red */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * SIZING & SPACING
+     * ───────────────────────────────────────────────────────────────────── */
+
+    --radius: 0.5rem; /* Default border radius */
+    --radius-sm: 0.25rem; /* Small elements (badges, chips) */
+    --radius-lg: 0.75rem; /* Large elements (cards, dialogs) */
+    --radius-xl: 1rem; /* Extra large (hero sections) */
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * SIDEBAR (Dashboard-specific)
+     * ───────────────────────────────────────────────────────────────────── */
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 24 10% 10%;
+    --sidebar-primary: 243 47% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 18% 96%;
+    --sidebar-accent-foreground: 24 10% 10%;
+    --sidebar-border: 24 6% 90%;
+    --sidebar-ring: 263 70% 58%;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+   * DARK MODE
+   * ═══════════════════════════════════════════════════════════════════════ */
+
   .dark {
-    /* Waygate Design System - Dark Mode */
-    --color-primary: #a5b4fc; /* Indigo 300 */
-    --color-primary-foreground: #1e1b4b;
-    --color-secondary: #a78bfa; /* Violet 400 */
-    --color-secondary-foreground: #1e1b4b;
-    --color-accent: #34d399; /* Emerald 400 */
-    --color-accent-warn: #fbbf24; /* Amber 400 */
-    --color-accent-magic: #c4b5fd; /* Violet 300 */
-    --color-background: #0c0a09; /* Stone 950 */
-    --color-foreground: #fafaf9; /* Stone 50 */
-    --color-surface: #1c1917; /* Stone 900 */
-    --color-surface-dark: #0c0a09; /* Stone 950 */
-    --color-muted: #292524; /* Stone 800 */
-    --color-muted-foreground: #a8a29e; /* Stone 400 */
-    --color-error: #f87171; /* Red 400 */
-    --color-error-foreground: #1c1917;
-    --color-success: #34d399; /* Emerald 400 */
-    --color-border: #292524; /* Stone 800 */
-    --color-input: #292524; /* Stone 800 */
-    --color-ring: #a78bfa; /* Violet 400 */
+    /* Core Colors - Dark Mode */
+    --background: 24 10% 4%; /* Stone 950 - #0C0A09 */
+    --foreground: 40 20% 98%; /* Stone 50 - #FAFAF9 */
+
+    --primary: 226 71% 81%; /* Indigo 300 - #A5B4FC */
+    --primary-foreground: 243 47% 20%; /* Indigo 950 */
+
+    --secondary: 263 70% 75%; /* Violet 400 - #A78BFA */
+    --secondary-foreground: 243 47% 20%; /* Dark text */
+
+    --accent: 160 72% 56%; /* Emerald 400 - #34D399 */
+    --accent-foreground: 24 10% 10%; /* Dark text */
+
+    --warning: 43 96% 56%; /* Amber 400 - #FBBF24 */
+    --warning-foreground: 24 10% 10%; /* Dark text */
+
+    --destructive: 0 72% 63%; /* Red 400 - #F87171 */
+    --destructive-foreground: 24 10% 10%; /* Dark text */
+
+    --success: 160 72% 56%; /* Emerald 400 - #34D399 */
+    --success-foreground: 24 10% 10%; /* Dark text */
+
+    /* Surface Colors - Dark Mode */
+    --card: 24 10% 10%; /* Stone 900 - #1C1917 */
+    --card-foreground: 40 20% 98%; /* Stone 50 */
+
+    --popover: 24 10% 10%; /* Stone 900 */
+    --popover-foreground: 40 20% 98%; /* Stone 50 */
+
+    --muted: 24 6% 15%; /* Stone 800 - #292524 */
+    --muted-foreground: 24 5% 64%; /* Stone 400 - #A8A29E */
+
+    /* Interactive Colors - Dark Mode */
+    --border: 24 6% 15%; /* Stone 800 */
+    --input: 24 6% 15%; /* Stone 800 */
+    --ring: 263 70% 75%; /* Violet 400 */
+
+    /* Waygate-Specific - Dark Mode */
+    --accent-warn: 43 96% 56%; /* Amber 400 */
+    --accent-magic: 263 60% 80%; /* Violet 300 - #C4B5FD */
+    --surface: 24 10% 10%; /* Stone 900 */
+    --surface-dark: 24 10% 4%; /* Stone 950 */
+
+    /* Chart Colors - Dark Mode */
+    --chart-1: 226 71% 81%;
+    --chart-2: 263 70% 75%;
+    --chart-3: 160 72% 56%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 0 72% 63%;
+
+    /* Sidebar - Dark Mode */
+    --sidebar-background: 24 10% 6%;
+    --sidebar-foreground: 40 20% 98%;
+    --sidebar-primary: 226 71% 81%;
+    --sidebar-primary-foreground: 243 47% 20%;
+    --sidebar-accent: 24 6% 15%;
+    --sidebar-accent-foreground: 40 20% 98%;
+    --sidebar-border: 24 6% 15%;
+    --sidebar-ring: 263 70% 75%;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * BASE STYLES
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   * {
@@ -58,25 +196,70 @@
 
   body {
     @apply bg-background font-body text-foreground antialiased;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 
+  /* Typography defaults - fonts applied via Tailwind classes */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-heading;
+    @apply font-heading tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
   }
 
   code,
-  pre {
+  pre,
+  kbd {
     @apply font-mono;
   }
+
+  /* Focus visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITIES
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Gradient backgrounds for magical effects */
+  .bg-gradient-magic {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--accent-magic)) 50%,
+      hsl(var(--secondary)) 100%
+    );
+  }
+
+  /* Subtle glow effect for active/connected states */
+  .glow-accent {
+    box-shadow: 0 0 20px -5px hsl(var(--accent) / 0.4);
+  }
+
+  .glow-magic {
+    box-shadow: 0 0 20px -5px hsl(var(--accent-magic) / 0.4);
   }
 }
