@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useWizardStore } from '@/stores/wizard.store';
 import { useCreateIntegration } from '@/hooks';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api/client';
 import type { AuthType } from '@/lib/modules/integrations/integration.schemas';
 
 // =============================================================================
@@ -162,9 +163,11 @@ function OAuth2Form({
 function ApiKeyForm({
   onSubmit,
   isLoading,
+  apiName,
 }: {
   onSubmit: (data: ApiKeyFormData) => void;
   isLoading: boolean;
+  apiName?: string;
 }) {
   const [showKey, setShowKey] = useState(false);
 
@@ -176,6 +179,27 @@ function ApiKeyForm({
       prefix: 'Bearer',
     },
   });
+
+  // Generate context-specific help text based on API name
+  const getApiKeyHelp = () => {
+    const name = apiName?.toLowerCase() || '';
+    if (name.includes('supabase')) {
+      return 'Find your API key in Project Settings → API → anon/public key or service_role key';
+    }
+    if (name.includes('stripe')) {
+      return 'Find your API key in Dashboard → Developers → API keys';
+    }
+    if (name.includes('openai') || name.includes('gpt')) {
+      return 'Find your API key at platform.openai.com → API keys';
+    }
+    if (name.includes('github')) {
+      return 'Create a Personal Access Token at Settings → Developer settings → Tokens';
+    }
+    if (name.includes('slack')) {
+      return 'Find your Bot Token at api.slack.com → Your Apps → OAuth & Permissions';
+    }
+    return 'Your API key will be encrypted and stored securely';
+  };
 
   return (
     <Form {...form}>
@@ -205,6 +229,7 @@ function ApiKeyForm({
                   </Button>
                 </div>
               </FormControl>
+              <FormDescription className="text-xs">{getApiKeyHelp()}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -295,7 +320,8 @@ export function StepConfigureAuth() {
 
   const createIntegrationWithAuth = async (
     authConfig: Record<string, unknown>,
-    authType: AuthType
+    authType: AuthType,
+    credentialData?: { apiKey: string; headerName: string; prefix: string }
   ) => {
     // Generate slug from API name
     const slug = data.detectedApiName
@@ -342,12 +368,32 @@ export function StepConfigureAuth() {
         authType,
         authConfig: {
           ...(validBaseUrl && { baseUrl: validBaseUrl }),
-          ...authConfig,
+          // Don't store the actual API key in authConfig, just the header/prefix config
+          ...(authConfig.headerName ? { headerName: String(authConfig.headerName) } : {}),
+          ...(authConfig.prefix !== undefined ? { prefix: String(authConfig.prefix) } : {}),
         },
         tags: [],
         metadata: {},
         actions: actionsToCreate, // Pass the selected actions!
       });
+
+      // If we have credential data (API key), save it to the credentials endpoint
+      if (credentialData && credentialData.apiKey) {
+        try {
+          await apiClient.post(`/integrations/${integration.id}/credentials`, {
+            type: 'api_key',
+            apiKey: credentialData.apiKey,
+            headerName: credentialData.headerName || 'Authorization',
+            prefix: credentialData.prefix || 'Bearer',
+          });
+        } catch (credError) {
+          console.error('[Auth Config] Failed to save credentials:', credError);
+          // Integration was created, but credentials failed - warn the user
+          toast.warning(
+            'Integration created, but credentials could not be saved. Please add them manually.'
+          );
+        }
+      }
 
       // Store auth config and created integration info
       setAuthConfig(authConfig as typeof data.authConfig);
@@ -377,13 +423,18 @@ export function StepConfigureAuth() {
   };
 
   const handleApiKeySubmit = (formData: ApiKeyFormData) => {
+    const prefix = formData.prefix === 'none' ? '' : formData.prefix;
     createIntegrationWithAuth(
+      {
+        headerName: formData.headerName,
+        prefix: prefix,
+      },
+      'api_key',
       {
         apiKey: formData.apiKey,
         headerName: formData.headerName,
-        prefix: formData.prefix === 'none' ? '' : formData.prefix,
-      },
-      'api_key'
+        prefix: prefix,
+      }
     );
   };
 
@@ -470,7 +521,11 @@ export function StepConfigureAuth() {
         </TabsContent>
 
         <TabsContent value="api_key" className="mt-4">
-          <ApiKeyForm onSubmit={handleApiKeySubmit} isLoading={createIntegration.isPending} />
+          <ApiKeyForm
+            onSubmit={handleApiKeySubmit}
+            isLoading={createIntegration.isPending}
+            apiName={data.detectedApiName}
+          />
         </TabsContent>
 
         <TabsContent value="oauth2" className="mt-4">

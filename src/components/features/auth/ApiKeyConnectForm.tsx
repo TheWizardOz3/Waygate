@@ -34,6 +34,8 @@ interface ApiKeyConnectFormProps {
   integrationName: string;
   headerName?: string;
   prefix?: string;
+  /** Optional hint text about where to find the API key */
+  apiKeyHint?: string;
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
@@ -45,6 +47,7 @@ export function ApiKeyConnectForm({
   integrationName,
   headerName = 'Authorization',
   prefix = 'Bearer',
+  apiKeyHint,
   onSuccess,
   onError,
 }: ApiKeyConnectFormProps) {
@@ -147,7 +150,9 @@ export function ApiKeyConnectForm({
                       </Button>
                     </div>
                   </FormControl>
-                  <FormDescription>Your API key will be encrypted before storage</FormDescription>
+                  <FormDescription>
+                    {apiKeyHint || 'Your API key will be encrypted before storage'}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

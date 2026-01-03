@@ -191,7 +191,15 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
               <code className="font-mono text-sm text-muted-foreground">
                 {action.endpointTemplate}
               </code>
-              <CopyButton value={action.endpointTemplate} label="Endpoint copied" size="sm" />
+              <CopyButton
+                value={
+                  typeof window !== 'undefined' && integration?.slug
+                    ? `${window.location.origin}/api/v1/actions/${integration.slug}/${action.slug}`
+                    : action.endpointTemplate
+                }
+                label="Waygate endpoint copied"
+                size="sm"
+              />
             </div>
           </div>
         </div>

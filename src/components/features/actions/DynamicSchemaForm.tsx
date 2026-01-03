@@ -146,7 +146,7 @@ function SchemaField({ name, schema, required, form, parentPath, compact }: Sche
                 ))}
               </SelectContent>
             </Select>
-            {schema.description && !compact && (
+            {schema.description && (
               <FormDescription className={descClass}>{schema.description}</FormDescription>
             )}
             <FormMessage />
@@ -176,7 +176,7 @@ function SchemaField({ name, schema, required, form, parentPath, compact }: Sche
                   {name}
                   {required && <span className="ml-1 text-destructive">*</span>}
                 </FormLabel>
-                {schema.description && !compact && (
+                {schema.description && (
                   <FormDescription className={descClass}>{schema.description}</FormDescription>
                 )}
               </div>
@@ -214,7 +214,7 @@ function SchemaField({ name, schema, required, form, parentPath, compact }: Sche
                   }}
                 />
               </FormControl>
-              {schema.description && !compact && (
+              {schema.description && (
                 <FormDescription className={descClass}>{schema.description}</FormDescription>
               )}
               <FormMessage />
@@ -282,7 +282,7 @@ function SchemaField({ name, schema, required, form, parentPath, compact }: Sche
                   />
                 )}
               </FormControl>
-              {schema.description && !compact && (
+              {schema.description && (
                 <FormDescription className={descClass}>{schema.description}</FormDescription>
               )}
               <FormMessage />
@@ -326,7 +326,9 @@ function ArrayField({ name, schema, required, form, parentPath, compact }: Schem
           Add
         </Button>
       </div>
-      {schema.description && !compact && <FormDescription>{schema.description}</FormDescription>}
+      {schema.description && (
+        <FormDescription className={compact ? 'text-xs' : ''}>{schema.description}</FormDescription>
+      )}
 
       {values.length === 0 ? (
         <p
@@ -380,7 +382,9 @@ function ObjectField({ name, schema, required, form, parentPath, compact }: Sche
         {name}
         {required && <span className="ml-1 text-destructive">*</span>}
       </FormLabel>
-      {schema.description && !compact && <FormDescription>{schema.description}</FormDescription>}
+      {schema.description && (
+        <FormDescription className={compact ? 'text-xs' : ''}>{schema.description}</FormDescription>
+      )}
 
       <div
         className={
