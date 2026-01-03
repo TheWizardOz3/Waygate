@@ -21,6 +21,7 @@
 | ADR-005 | 2026-01-02 | arch     | active | In-memory circuit breaker with per-circuit tracking   |
 | ADR-006 | 2026-01-02 | arch     | active | Result pattern for execution service                  |
 | ADR-007 | 2026-01-02 | arch     | active | LLM abstraction layer for future multi-model support  |
+| ADR-008 | 2026-01-02 | arch     | active | JSON Schema validation with Ajv and caching           |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -424,5 +425,50 @@ When working with credentials in this project:
 - The encryption key must be exactly 64 hex characters (32 bytes)
 - Use `encryptJson()`/`decryptJson()` for objects, `encrypt()`/`decrypt()` for strings
 - API key validation is O(1) constant-time via bcrypt
+
+---
+
+### ADR-008: JSON Schema Validation with Ajv and Caching
+
+**Date:** 2026-01-02 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+The Action Registry needed runtime validation of action inputs against dynamic JSON Schemas. Zod is great for compile-time TypeScript schemas but doesn't support validating against arbitrary JSON Schema definitions stored in the database.
+
+#### Decision
+
+Implemented JSON Schema validation using Ajv with the following approach:
+
+1. **Ajv with draft-07**: Chose Ajv as the JSON Schema validator with draft-07 specification for broad compatibility
+2. **Validator Caching**: Created `getOrCreateValidator()` that caches compiled validators keyed by schema hash (crypto.createHash)
+3. **Validation Modes**: Support three modes - strict (default), lenient (with defaults/coercion), and passthrough (no validation)
+4. **LLM-Friendly Errors**: Added `formatErrorsForLLM()` that transforms Ajv errors into actionable guidance with suggested fixes
+
+#### Rationale
+
+- **Ajv over alternatives**: Ajv is the most performant and widely-used JSON Schema validator for JavaScript
+- **Caching strategy**: Compiling JSON Schema to validators is expensive; caching by content hash avoids recompilation for identical schemas
+- **draft-07**: Provides good balance of features and compatibility with most API documentation tools
+- **Validation modes**: Different consumers need different strictness - internal services want strict, AI agents benefit from coercion
+
+#### Supersedes
+
+N/A - new pattern
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/actions/json-schema-validator.ts`
+- **Dependencies added:** `ajv`, `ajv-formats`, `@types/json-schema`
+
+#### AI Instructions
+
+When working with JSON Schema validation:
+
+- Use `validateInput()` for action input validation with cached validators
+- Use `formatErrorsForLLM()` to transform validation errors into actionable AI guidance
+- The validator cache is in-memory and resets on server restart - this is intentional for simplicity
+- Schema hashing uses SHA-256 for collision resistance
+- Always prefer Zod for TypeScript-defined schemas; use Ajv only for dynamic/stored JSON Schemas
 
 ---

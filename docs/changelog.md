@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                  |
 | ------- | ---------- | ---------- | -------------------------------------------------------- |
+| 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                        |
 | 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                        |
 | 0.1.0   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)              |
 | 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup |
@@ -57,6 +58,36 @@
 <!-- Add new versions below this line, newest first -->
 
 ## [Unreleased]
+
+_No unreleased changes_
+
+---
+
+## [0.0.6] - 2026-01-02
+
+### Added
+
+- **Action Registry & Schema (Feature #6)** - Complete
+  - Action Zod schemas for type-safe CRUD operations, queries, and API responses
+  - Action repository with Prisma-based CRUD, batch operations, pagination, and filtering
+  - Action service with business logic, tenant isolation, and slug conflict resolution
+  - JSON Schema validator using Ajv with draft-07 support and validator caching
+  - Persist actions function connecting AI scraper output to database
+  - API endpoint: `GET /api/v1/integrations/:id/actions` - list actions with pagination/filters
+  - API endpoint: `GET /api/v1/actions/:integration/:action/schema` - get action schema by slugs
+  - API endpoint: `POST /api/v1/actions/:integration/:action/validate` - pre-execution input validation
+  - LLM-friendly error formatting for AI agent consumption
+  - 93 new tests (75 unit + 18 integration) for action registry components
+
+### Dependencies
+
+- `ajv`: Added for JSON Schema validation (draft-07)
+- `ajv-formats`: Added for format validation (email, uri, date-time, etc.)
+- `@types/json-schema`: Added for TypeScript JSON Schema types
+
+---
+
+## [0.2.0] - 2026-01-02
 
 ### Added
 
