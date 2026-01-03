@@ -93,15 +93,41 @@ export interface ActionDefinition {
 
 /**
  * Pagination configuration for list endpoints
+ * Enhanced to support LLM-friendly limits
  */
 export interface PaginationConfig {
-  type: 'cursor' | 'offset' | 'page' | 'link';
-  pageParam?: string;
-  limitParam?: string;
+  /** Whether pagination is enabled */
+  enabled: boolean;
+  /** Pagination strategy type */
+  strategy: 'cursor' | 'offset' | 'page_number' | 'link_header' | 'auto';
+  /** Cursor parameter name (for cursor strategy) */
   cursorParam?: string;
-  responsePagePath?: string;
-  responseTotalPath?: string;
-  responseNextCursorPath?: string;
+  /** JSONPath to cursor in response */
+  cursorPath?: string;
+  /** Offset parameter name (for offset strategy) */
+  offsetParam?: string;
+  /** Limit parameter name */
+  limitParam?: string;
+  /** Page parameter name (for page_number strategy) */
+  pageParam?: string;
+  /** JSONPath to total count in response */
+  totalPath?: string;
+  /** JSONPath to total pages in response */
+  totalPagesPath?: string;
+  /** JSONPath to data array in response */
+  dataPath?: string;
+  /** JSONPath to hasMore boolean in response */
+  hasMorePath?: string;
+  /** Max pages to fetch (default: 5) */
+  maxPages?: number;
+  /** Max items to fetch (default: 500) */
+  maxItems?: number;
+  /** Max characters to fetch (default: 100000 ~25K tokens) */
+  maxCharacters?: number;
+  /** Max duration in ms (default: 30000) */
+  maxDurationMs?: number;
+  /** Default page size (default: 100) */
+  defaultPageSize?: number;
 }
 
 /**
@@ -563,6 +589,90 @@ function buildEndpointTemplate(baseUrl: string, path: string): string {
 // Pagination Detection
 // =============================================================================
 
+/**
+ * Common pagination parameter names for detection
+ */
+const PAGINATION_PATTERNS = {
+  cursor: {
+    params: [
+      'cursor',
+      'after',
+      'before',
+      'page_token',
+      'pagetoken',
+      'starting_after',
+      'ending_before',
+      'next_cursor',
+      'continuation',
+      'continuation_token',
+    ],
+    responsePaths: [
+      'next_cursor',
+      'nextCursor',
+      'cursor',
+      'pageToken',
+      'nextPageToken',
+      'page_token',
+      'next_page_token',
+      'continuation',
+    ],
+  },
+  offset: {
+    params: ['offset', 'skip', 'start', 'from'],
+    responsePaths: ['offset', 'skip'],
+  },
+  page_number: {
+    params: ['page', 'page_number', 'pagenumber', 'p'],
+    responsePaths: ['page', 'currentPage', 'current_page', 'pageNumber'],
+  },
+  limit: {
+    params: ['limit', 'page_size', 'pagesize', 'per_page', 'perpage', 'count', 'size', 'take'],
+  },
+  total: {
+    responsePaths: [
+      'total',
+      'totalCount',
+      'total_count',
+      'count',
+      'totalResults',
+      'total_results',
+      'totalItems',
+      'total_items',
+    ],
+  },
+  totalPages: {
+    responsePaths: [
+      'totalPages',
+      'total_pages',
+      'pages',
+      'pageCount',
+      'page_count',
+      'lastPage',
+      'last_page',
+    ],
+  },
+  hasMore: {
+    responsePaths: ['hasMore', 'has_more', 'hasNextPage', 'has_next_page', 'moreAvailable', 'more'],
+  },
+  data: {
+    responsePaths: [
+      'data',
+      'results',
+      'items',
+      'records',
+      'entries',
+      'list',
+      'rows',
+      'objects',
+      'values',
+    ],
+  },
+};
+
+/**
+ * Detect pagination configuration from endpoint definition
+ * Enhanced to detect from both parameters AND response schema
+ */
 function detectPaginationConfig(endpoint: ApiEndpoint): PaginationConfig | undefined {
   // Only check GET endpoints (list operations)
   if (endpoint.method !== 'GET') {
@@ -572,42 +682,246 @@ function detectPaginationConfig(endpoint: ApiEndpoint): PaginationConfig | undef
   const queryParams = endpoint.queryParameters || [];
   const paramNames = queryParams.map((p) => p.name.toLowerCase());
 
-  // Check for cursor pagination
-  if (paramNames.some((p) => p.includes('cursor') || p.includes('after') || p.includes('before'))) {
-    const cursorParam = queryParams.find((p) =>
-      ['cursor', 'after', 'page_token', 'starting_after'].includes(p.name.toLowerCase())
-    );
-    return {
-      type: 'cursor',
-      cursorParam: cursorParam?.name,
-      limitParam: queryParams.find((p) =>
-        ['limit', 'page_size', 'per_page', 'count'].includes(p.name.toLowerCase())
-      )?.name,
-    };
+  // Get response schema for additional detection
+  const successResponse = endpoint.responses?.['200'] || endpoint.responses?.['default'];
+  const responseSchema = successResponse?.schema;
+
+  // Detect pagination strategy from parameters
+  const strategy = detectPaginationStrategy(paramNames);
+  if (!strategy) {
+    // No pagination parameters found, but check response schema for hints
+    const responseHints = detectPaginationFromResponse(responseSchema);
+    if (responseHints) {
+      return responseHints;
+    }
+    return undefined;
+  }
+
+  // Build configuration based on detected strategy
+  const config: PaginationConfig = {
+    enabled: true,
+    strategy: strategy,
+    // LLM-friendly defaults
+    maxPages: 5,
+    maxItems: 500,
+    maxCharacters: 100000, // ~25K tokens
+    maxDurationMs: 30000,
+    defaultPageSize: 100,
+  };
+
+  // Find limit parameter
+  const limitParam = queryParams.find((p) =>
+    PAGINATION_PATTERNS.limit.params.includes(p.name.toLowerCase())
+  );
+  if (limitParam) {
+    config.limitParam = limitParam.name;
+  }
+
+  // Strategy-specific configuration
+  switch (strategy) {
+    case 'cursor': {
+      const cursorParam = queryParams.find((p) =>
+        PAGINATION_PATTERNS.cursor.params.includes(p.name.toLowerCase())
+      );
+      if (cursorParam) {
+        config.cursorParam = cursorParam.name;
+      }
+      // Try to detect cursor path from response schema
+      const cursorPath = detectFieldPath(responseSchema, PAGINATION_PATTERNS.cursor.responsePaths);
+      if (cursorPath) {
+        config.cursorPath = cursorPath;
+      }
+      break;
+    }
+
+    case 'offset': {
+      const offsetParam = queryParams.find((p) =>
+        PAGINATION_PATTERNS.offset.params.includes(p.name.toLowerCase())
+      );
+      if (offsetParam) {
+        config.offsetParam = offsetParam.name;
+      }
+      // Detect total count path for offset pagination
+      const totalPath = detectFieldPath(responseSchema, PAGINATION_PATTERNS.total.responsePaths);
+      if (totalPath) {
+        config.totalPath = totalPath;
+      }
+      break;
+    }
+
+    case 'page_number': {
+      const pageParam = queryParams.find((p) =>
+        PAGINATION_PATTERNS.page_number.params.includes(p.name.toLowerCase())
+      );
+      if (pageParam) {
+        config.pageParam = pageParam.name;
+      }
+      // Detect total pages path
+      const totalPagesPath = detectFieldPath(
+        responseSchema,
+        PAGINATION_PATTERNS.totalPages.responsePaths
+      );
+      if (totalPagesPath) {
+        config.totalPagesPath = totalPagesPath;
+      }
+      break;
+    }
+  }
+
+  // Detect common response paths
+  const dataPath = detectFieldPath(responseSchema, PAGINATION_PATTERNS.data.responsePaths);
+  if (dataPath) {
+    config.dataPath = dataPath;
+  }
+
+  const hasMorePath = detectFieldPath(responseSchema, PAGINATION_PATTERNS.hasMore.responsePaths);
+  if (hasMorePath) {
+    config.hasMorePath = hasMorePath;
+  }
+
+  return config;
+}
+
+/**
+ * Detect pagination strategy from query parameter names
+ */
+function detectPaginationStrategy(paramNames: string[]): PaginationConfig['strategy'] | undefined {
+  // Check for cursor pagination (highest priority - most modern)
+  if (
+    paramNames.some((p) => PAGINATION_PATTERNS.cursor.params.some((pattern) => p.includes(pattern)))
+  ) {
+    return 'cursor';
   }
 
   // Check for offset pagination
-  if (paramNames.some((p) => p.includes('offset') || p.includes('skip'))) {
-    return {
-      type: 'offset',
-      pageParam: queryParams.find((p) => p.name.toLowerCase().includes('offset'))?.name || 'offset',
-      limitParam: queryParams.find((p) =>
-        ['limit', 'page_size', 'per_page', 'count'].includes(p.name.toLowerCase())
-      )?.name,
-    };
+  if (
+    paramNames.some((p) =>
+      PAGINATION_PATTERNS.offset.params.some((pattern) => p === pattern || p.includes(pattern))
+    )
+  ) {
+    return 'offset';
   }
 
   // Check for page number pagination
-  if (paramNames.some((p) => p === 'page' || p === 'page_number' || p === 'pagenumber')) {
-    return {
-      type: 'page',
-      pageParam: queryParams.find((p) =>
-        ['page', 'page_number', 'pagenumber'].includes(p.name.toLowerCase())
-      )?.name,
-      limitParam: queryParams.find((p) =>
-        ['limit', 'page_size', 'per_page', 'count', 'size'].includes(p.name.toLowerCase())
-      )?.name,
+  if (paramNames.some((p) => PAGINATION_PATTERNS.page_number.params.includes(p))) {
+    return 'page_number';
+  }
+
+  return undefined;
+}
+
+/**
+ * Detect pagination hints from response schema alone
+ */
+function detectPaginationFromResponse(schema: unknown): PaginationConfig | undefined {
+  if (!schema || typeof schema !== 'object') {
+    return undefined;
+  }
+
+  const schemaObj = schema as Record<string, unknown>;
+  const properties = (schemaObj.properties as Record<string, unknown>) || {};
+  const propertyNames = Object.keys(properties).map((p) => p.toLowerCase());
+
+  // Check if response looks paginated (has data array + pagination indicators)
+  const hasDataArray = propertyNames.some((p) =>
+    PAGINATION_PATTERNS.data.responsePaths.map((r) => r.toLowerCase()).includes(p)
+  );
+
+  if (!hasDataArray) {
+    return undefined;
+  }
+
+  // Check for cursor in response
+  const hasCursor = propertyNames.some((p) =>
+    PAGINATION_PATTERNS.cursor.responsePaths.map((r) => r.toLowerCase()).includes(p)
+  );
+
+  // Check for hasMore in response
+  const hasMoreIndicator = propertyNames.some((p) =>
+    PAGINATION_PATTERNS.hasMore.responsePaths.map((r) => r.toLowerCase()).includes(p)
+  );
+
+  // Check for total/totalPages in response
+  const hasTotal = propertyNames.some((p) =>
+    [...PAGINATION_PATTERNS.total.responsePaths, ...PAGINATION_PATTERNS.totalPages.responsePaths]
+      .map((r) => r.toLowerCase())
+      .includes(p)
+  );
+
+  if (hasCursor || hasMoreIndicator || hasTotal) {
+    const config: PaginationConfig = {
+      enabled: true,
+      strategy: hasCursor ? 'cursor' : 'auto',
+      maxPages: 5,
+      maxItems: 500,
+      maxCharacters: 100000,
+      maxDurationMs: 30000,
+      defaultPageSize: 100,
     };
+
+    // Detect paths
+    const dataPath = detectFieldPath(schema, PAGINATION_PATTERNS.data.responsePaths);
+    if (dataPath) config.dataPath = dataPath;
+
+    const cursorPath = detectFieldPath(schema, PAGINATION_PATTERNS.cursor.responsePaths);
+    if (cursorPath) config.cursorPath = cursorPath;
+
+    const hasMorePath = detectFieldPath(schema, PAGINATION_PATTERNS.hasMore.responsePaths);
+    if (hasMorePath) config.hasMorePath = hasMorePath;
+
+    const totalPath = detectFieldPath(schema, PAGINATION_PATTERNS.total.responsePaths);
+    if (totalPath) config.totalPath = totalPath;
+
+    return config;
+  }
+
+  return undefined;
+}
+
+/**
+ * Detect field path in a schema by checking for matching property names
+ */
+function detectFieldPath(schema: unknown, patterns: string[]): string | undefined {
+  if (!schema || typeof schema !== 'object') {
+    return undefined;
+  }
+
+  const schemaObj = schema as Record<string, unknown>;
+  const properties = (schemaObj.properties as Record<string, unknown>) || {};
+
+  // Check root level properties
+  for (const pattern of patterns) {
+    if (properties[pattern]) {
+      return `$.${pattern}`;
+    }
+    // Case-insensitive check
+    const matchingKey = Object.keys(properties).find(
+      (k) => k.toLowerCase() === pattern.toLowerCase()
+    );
+    if (matchingKey) {
+      return `$.${matchingKey}`;
+    }
+  }
+
+  // Check common wrapper objects (meta, pagination, etc.)
+  const wrappers = ['meta', 'pagination', 'paging', '_meta', 'page_info', 'pageInfo'];
+  for (const wrapper of wrappers) {
+    const wrapperObj = properties[wrapper];
+    if (wrapperObj && typeof wrapperObj === 'object') {
+      const wrapperProps =
+        ((wrapperObj as Record<string, unknown>).properties as Record<string, unknown>) || {};
+      for (const pattern of patterns) {
+        if (wrapperProps[pattern]) {
+          return `$.${wrapper}.${pattern}`;
+        }
+        const matchingKey = Object.keys(wrapperProps).find(
+          (k) => k.toLowerCase() === pattern.toLowerCase()
+        );
+        if (matchingKey) {
+          return `$.${wrapper}.${matchingKey}`;
+        }
+      }
+    }
   }
 
   return undefined;

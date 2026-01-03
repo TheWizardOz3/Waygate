@@ -9,6 +9,7 @@ export { DynamicSchemaForm } from './DynamicSchemaForm';
 export { RequestResponseViewer } from './RequestResponseViewer';
 export { TestHistory, addToTestHistory } from './TestHistory';
 export { QuickTestModal } from './QuickTestModal';
+export { PaginationMetadataDisplay } from './PaginationMetadataDisplay';
 
 // Editor components
 export * from './editor';

@@ -53,6 +53,36 @@ export const ENDPOINT_EXTRACTION_SYSTEM_PROMPT = `You are an API endpoint extrac
 - **parameters**: Path, query, and header parameters with types
 - **requestBody**: Request body schema if applicable
 - **responses**: Expected response schemas by status code
+- **pagination**: Pagination configuration if this is a list endpoint (see below)
+
+## Pagination Detection (IMPORTANT for list endpoints)
+For GET endpoints that return lists/arrays of items, detect pagination:
+
+### Pagination Strategies:
+1. **cursor**: Uses cursor/token-based pagination (next_cursor, pageToken, after, continuation)
+2. **offset**: Uses offset+limit pagination (offset=100&limit=50)
+3. **page_number**: Uses page number pagination (page=2&per_page=50)
+4. **link_header**: Uses Link HTTP header (RFC 5988, common in GitHub/GitLab)
+5. **auto**: When pagination exists but strategy is unclear
+
+### Common Pagination Indicators:
+- Query params: cursor, after, before, page_token, offset, skip, page, page_number, limit, per_page, page_size
+- Response fields: next_cursor, nextPageToken, has_more, hasMore, total, totalCount, totalPages, data, results, items
+
+### For paginated endpoints, include:
+\`\`\`json
+"pagination": {
+  "strategy": "cursor|offset|page_number|link_header|auto",
+  "cursorParam": "cursor",           // param name for cursor
+  "cursorPath": "$.meta.next_cursor", // JSONPath to next cursor in response
+  "offsetParam": "offset",            // param name for offset
+  "limitParam": "limit",              // param name for limit/page_size
+  "pageParam": "page",                // param name for page number
+  "totalPath": "$.meta.total",        // JSONPath to total count
+  "dataPath": "$.data",               // JSONPath to data array
+  "hasMorePath": "$.meta.has_more"    // JSONPath to hasMore boolean
+}
+\`\`\`
 
 ## Parameter Type Mapping
 - Strings: "string"
@@ -69,7 +99,8 @@ Use curly braces for path parameters: /users/{userId}/posts/{postId}
 ## Output Guidelines
 - Extract the 30-50 most important, non-deprecated endpoints
 - If the API has fewer endpoints, extract all non-deprecated ones
-- Ensure each endpoint has at minimum: name, slug, method, path, and description`;
+- Ensure each endpoint has at minimum: name, slug, method, path, and description
+- Always include pagination config for list/collection GET endpoints`;
 
 /**
  * System prompt for authentication detection
@@ -194,6 +225,85 @@ Returns a message object on success.
 };
 
 /**
+ * Example input/output for paginated endpoint extraction
+ */
+export const PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE = {
+  input: `## List Messages
+
+GET /conversations.history
+
+Fetches messages from a channel.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| channel | string | Yes | Channel ID |
+| cursor | string | No | Pagination cursor |
+| limit | integer | No | Number of messages per page (default 100, max 1000) |
+
+### Response
+
+Returns a list of messages with pagination.
+
+\`\`\`json
+{
+  "ok": true,
+  "messages": [
+    { "ts": "1234567890.123456", "text": "Hello" },
+    { "ts": "1234567890.123457", "text": "World" }
+  ],
+  "has_more": true,
+  "response_metadata": {
+    "next_cursor": "dGVhbTpDMDYxRkE1UEI="
+  }
+}
+\`\`\``,
+
+  output: {
+    name: 'List Messages',
+    slug: 'list-messages',
+    method: 'GET',
+    path: '/conversations.history',
+    description: 'Fetches messages from a channel.',
+    pathParameters: [],
+    queryParameters: [
+      { name: 'channel', type: 'string', required: true, description: 'Channel ID' },
+      { name: 'cursor', type: 'string', required: false, description: 'Pagination cursor' },
+      {
+        name: 'limit',
+        type: 'integer',
+        required: false,
+        description: 'Number of messages per page (default 100, max 1000)',
+      },
+    ],
+    responses: {
+      '200': {
+        description: 'Returns a list of messages with pagination.',
+        schema: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            messages: { type: 'array' },
+            has_more: { type: 'boolean' },
+            response_metadata: { type: 'object' },
+          },
+        },
+      },
+    },
+    pagination: {
+      strategy: 'cursor',
+      cursorParam: 'cursor',
+      limitParam: 'limit',
+      cursorPath: '$.response_metadata.next_cursor',
+      dataPath: '$.messages',
+      hasMorePath: '$.has_more',
+    },
+    tags: ['messaging'],
+  },
+};
+
+/**
  * Example input/output for authentication detection
  */
 export const AUTH_DETECTION_EXAMPLE = {
@@ -305,13 +415,21 @@ Return ONLY the JSON object, no markdown formatting.`;
 export function buildEndpointExtractionPrompt(documentationContent: string): string {
   return `${ENDPOINT_EXTRACTION_SYSTEM_PROMPT}
 
-## Example
+## Example 1: Non-paginated POST endpoint
 
 Input documentation:
 ${ENDPOINT_EXTRACTION_EXAMPLE.input}
 
 Expected output:
 ${JSON.stringify(ENDPOINT_EXTRACTION_EXAMPLE.output, null, 2)}
+
+## Example 2: Paginated GET endpoint (with pagination config)
+
+Input documentation:
+${PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE.input}
+
+Expected output:
+${JSON.stringify(PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE.output, null, 2)}
 
 ## Documentation to Parse
 
@@ -320,6 +438,7 @@ ${documentationContent}
 ## Instructions
 
 Extract all API endpoints from the documentation above. Return a JSON array of endpoint objects.
+For list/collection GET endpoints, include pagination configuration if detectable.
 Return ONLY the JSON array, no markdown formatting.`;
 }
 
@@ -415,6 +534,29 @@ export const API_INFO_SCHEMA: LLMResponseSchema = {
 };
 
 /**
+ * Schema for pagination configuration in endpoints
+ */
+export const PAGINATION_CONFIG_SCHEMA: LLMResponseSchema = {
+  type: 'object',
+  properties: {
+    strategy: {
+      type: 'string',
+      enum: ['cursor', 'offset', 'page_number', 'link_header', 'auto'],
+      description: 'Pagination strategy type',
+    },
+    cursorParam: { type: 'string', description: 'Query param name for cursor' },
+    cursorPath: { type: 'string', description: 'JSONPath to next cursor in response' },
+    offsetParam: { type: 'string', description: 'Query param name for offset' },
+    limitParam: { type: 'string', description: 'Query param name for limit/page_size' },
+    pageParam: { type: 'string', description: 'Query param name for page number' },
+    totalPath: { type: 'string', description: 'JSONPath to total count in response' },
+    totalPagesPath: { type: 'string', description: 'JSONPath to total pages in response' },
+    dataPath: { type: 'string', description: 'JSONPath to data array in response' },
+    hasMorePath: { type: 'string', description: 'JSONPath to hasMore boolean in response' },
+  },
+};
+
+/**
  * Schema for a single endpoint
  */
 export const ENDPOINT_SCHEMA: LLMResponseSchema = {
@@ -430,6 +572,7 @@ export const ENDPOINT_SCHEMA: LLMResponseSchema = {
     path: { type: 'string', description: 'API path with parameters' },
     description: { type: 'string', description: 'What the endpoint does' },
     deprecated: { type: 'boolean', description: 'Whether endpoint is deprecated' },
+    pagination: PAGINATION_CONFIG_SCHEMA,
   },
   required: ['name', 'slug', 'method', 'path'],
 };

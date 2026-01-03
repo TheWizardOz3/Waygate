@@ -394,7 +394,7 @@ function buildRequest(
   console.log('[GATEWAY] Final request:', {
     url: finalUrl,
     method: request.method,
-    headers: Object.keys(request.headers),
+    headers: Object.keys(request.headers ?? {}),
     hasBody: !!body,
   });
 

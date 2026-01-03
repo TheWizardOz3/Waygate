@@ -356,8 +356,13 @@ describe('generateActions - Pagination Detection', () => {
     const paginationConfig = result.actions[0].paginationConfig;
 
     expect(paginationConfig).toBeDefined();
-    expect(paginationConfig?.type).toBe('cursor');
+    expect(paginationConfig?.strategy).toBe('cursor');
     expect(paginationConfig?.cursorParam).toBe('cursor');
+    expect(paginationConfig?.enabled).toBe(true);
+    // Check LLM-friendly defaults
+    expect(paginationConfig?.maxPages).toBe(5);
+    expect(paginationConfig?.maxItems).toBe(500);
+    expect(paginationConfig?.maxCharacters).toBe(100000);
   });
 
   it('should detect offset-based pagination', () => {
@@ -375,8 +380,9 @@ describe('generateActions - Pagination Detection', () => {
     const result = generateActions(doc);
     const paginationConfig = result.actions[0].paginationConfig;
 
-    expect(paginationConfig?.type).toBe('offset');
-    expect(paginationConfig?.pageParam).toBe('offset');
+    expect(paginationConfig?.strategy).toBe('offset');
+    expect(paginationConfig?.offsetParam).toBe('offset');
+    expect(paginationConfig?.enabled).toBe(true);
   });
 
   it('should detect page-number pagination', () => {
@@ -394,8 +400,9 @@ describe('generateActions - Pagination Detection', () => {
     const result = generateActions(doc);
     const paginationConfig = result.actions[0].paginationConfig;
 
-    expect(paginationConfig?.type).toBe('page');
+    expect(paginationConfig?.strategy).toBe('page_number');
     expect(paginationConfig?.pageParam).toBe('page');
+    expect(paginationConfig?.enabled).toBe(true);
   });
 
   it('should not detect pagination for POST endpoints', () => {
@@ -410,6 +417,38 @@ describe('generateActions - Pagination Detection', () => {
 
     const result = generateActions(doc);
     expect(result.actions[0].paginationConfig).toBeUndefined();
+  });
+
+  it('should detect pagination from response schema when no pagination params present', () => {
+    const doc = createParsedDoc({
+      endpoints: [
+        createEndpoint({
+          queryParameters: [], // Override default params - no pagination params
+          responses: {
+            '200': {
+              description: 'List of items',
+              schema: {
+                type: 'object',
+                properties: {
+                  data: { type: 'array' },
+                  next_cursor: { type: 'string' },
+                  has_more: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        }),
+      ],
+    });
+
+    const result = generateActions(doc);
+    const paginationConfig = result.actions[0].paginationConfig;
+
+    expect(paginationConfig).toBeDefined();
+    expect(paginationConfig?.enabled).toBe(true);
+    expect(paginationConfig?.dataPath).toBe('$.data');
+    expect(paginationConfig?.cursorPath).toBe('$.next_cursor');
+    expect(paginationConfig?.hasMorePath).toBe('$.has_more');
   });
 });
 

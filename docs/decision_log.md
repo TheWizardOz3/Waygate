@@ -32,6 +32,7 @@
 | ADR-016 | 2026-01-03 | arch     | active  | Wishlist-aware cache validation for scrape jobs         |
 | ADR-017 | 2026-01-03 | arch     | active  | Template auto-detection for schema-driven APIs          |
 | ADR-018 | 2026-01-03 | arch     | active  | Per-credential baseUrl for user-specific APIs           |
+| ADR-019 | 2026-01-03 | arch     | active  | LLM-friendly pagination with token-aware limits         |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -1157,5 +1158,77 @@ When working with state management:
 - Do NOT mix server state into Zustand stores - it defeats caching
 - Use `queryClient.invalidateQueries()` after mutations to refresh related data
 - Wizard stores should reset on unmount to avoid stale state
+
+---
+
+### ADR-019: LLM-Friendly Pagination with Token-Aware Limits
+
+**Date:** 2026-01-03 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+Implementing pagination for API responses required careful consideration of how LLM consumers would use the data. Traditional pagination limits (maxPages, maxItems) don't account for response size, which directly impacts LLM context window constraints and API costs.
+
+#### Decision
+
+Implemented a multi-strategy pagination handler with LLM-friendly defaults:
+
+1. **Strategy Pattern Architecture:**
+   - Abstract `BasePaginationStrategy` with implementations for cursor, offset, page-number, and Link header
+   - Auto-detection via `PaginationDetector` that scores responses against all strategies
+   - Strategies are stateless and reusable across requests
+
+2. **LLM-Friendly Limits (alongside traditional limits):**
+   - `maxCharacters`: 100,000 default (~25K tokens) - fits most LLM context windows
+   - `maxPages`: 5 default - prevents runaway fetches
+   - `maxItems`: 500 default - reasonable dataset size
+   - `maxDurationMs`: 30,000ms default - timeout safety
+
+3. **Token Estimation:**
+   - ~4 characters per token (industry standard approximation)
+   - `estimatedTokens` included in response metadata
+   - Helps LLM consumers budget context window
+
+4. **Presets for Common Use Cases:**
+   - `LLM_OPTIMIZED`: Conservative limits for AI use (~25K tokens)
+   - `QUICK_SAMPLE`: Single page for testing (1 page, 100 items)
+   - `FULL_DATASET`: Larger limits for data sync (50 pages, 5K items)
+
+5. **Request-Level Overrides:**
+   - Per-request limits via `paginationOptions` in Gateway API
+   - Allows consuming apps to customize per-call
+
+#### Rationale
+
+- **Safety First**: Unbounded pagination can timeout, OOM, exhaust rate limits, or exceed LLM context windows
+- **LLM-Centric**: Waygate's primary consumers are AI systems with token constraints
+- **Transparency**: Clear truncation signals (`truncationReason`, `hasMore`, `continuationToken`) help consumers understand incomplete data
+- **Flexibility**: Action-level defaults + request-level overrides = fine-grained control
+- **Strategy Pattern**: Clean separation allows adding new pagination strategies without modifying core logic
+
+#### Alternatives Considered
+
+1. **Only traditional limits (maxPages/maxItems)**: Rejected - doesn't account for variable response sizes
+2. **Automatic unbounded fetching**: Rejected - dangerous without explicit opt-in
+3. **Hard-coded limits**: Rejected - different APIs need different configurations
+4. **Streaming pagination**: Deferred to V1 - added complexity not needed for MVP
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/execution/pagination/`, `src/lib/modules/gateway/`
+- **Breaking changes:** None - new functionality
+- **API changes:** New `paginationOptions` field in Gateway request, new `pagination` metadata in response
+
+#### AI Instructions
+
+When working with pagination:
+
+- ALWAYS check if an action has `paginationConfig.enabled` before assuming pagination support
+- Use `fetchAll: true` with appropriate limits for paginated actions
+- Default limits are conservative - increase if needed but be mindful of context windows
+- Check `metadata.pagination.truncated` to know if data is incomplete
+- Use `continuationToken` to resume pagination in follow-up requests
+- For LLM use cases, prefer character limits over item limits
+- Run `estimateTokens(characterCount)` to budget context window usage
 
 ---

@@ -1,52 +1,47 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-03 (v0.1.12 - Endpoint URL & Logging UUID Fixes)
+**Last Updated**: 2026-01-03 (Pagination Handler Complete)
 
 ---
 
-## Current Milestone: MVP
+## Current Milestone: V0.5 (Polish & Robustness)
 
-**Functionality Summary**: Create AI-powered integrations from API documentation with core execution infrastructure. Developer can input any API documentation, generate typed actions, configure authentication, and invoke actions through a unified API. Focus is on getting the core loop working end-to-end.
+**Functionality Summary**: Add robustness features that make integrations production-ready. Pagination, response validation, field mapping, organization features, and continuous testing ensure reliable data retrieval and transformation.
 
 ### Scope Definition
 
 #### In Scope for This Milestone
 
-- **AI Documentation Scraper**: Crawl and parse API docs to extract capabilities, detect auth methods, identify endpoints
-- **Action Registry & Schema**: Store typed action definitions with JSON Schema validation for inputs/outputs
-- **Multi-type Auth Framework**: Support OAuth2, API Key, Basic Auth, Bearer Token, Custom Headers
-- **Token Refresh Management**: Automatic OAuth token refresh before expiration
-- **Retry Logic & Error Handling**: Exponential backoff, rate limit detection, circuit breaker pattern
-- **Gateway API**: Unified REST API for action invocation (`POST /api/v1/actions/{integration}/{action}`)
-- **Basic Configuration UI**: Web dashboard for integration setup, action browsing, and testing
+- **Pagination Handler**: Auto-handle cursor, offset, page number, and Link header pagination with LLM-friendly limits
+- **Response Validation**: Zod-based schema validation for API responses
+- **Basic Field Mapping**: Configure field transformations between Waygate and consuming apps
+- **Integration & Action Tagging**: Lightweight categorization with filtering in dashboard
+- **Dashboard & Logs Polish**: UX improvements, consistent data display
+- **Continuous Integration Testing**: Scheduled health checks on all integrations
 
 #### Explicitly Out of Scope
 
-| Item                           | Reason for Exclusion                       | Planned Milestone |
-| ------------------------------ | ------------------------------------------ | ----------------- |
-| Pagination Handler             | Polish feature, not required for core loop | V0.5              |
-| Response Validation            | Polish feature, not required for core loop | V0.5              |
-| Basic Field Mapping            | Enhancement to core functionality          | V0.5              |
-| Integration & Action Tagging   | Organization feature, not core             | V0.5              |
-| Dashboard & Logs Polish        | UX refinement, not core                    | V0.5              |
-| Continuous Integration Testing | Reliability feature                        | V0.5              |
-| Smart Data Caching Layer       | Performance optimization                   | V1                |
-| Async Job System               | Scale feature                              | V1                |
-| Auto-Maintenance System        | Advanced automation                        | V2                |
-| Versioning & Rollbacks         | Production safety feature                  | V2                |
-| Full No-Code UI                | Non-technical user enablement              | V2                |
-| Webhook Ingestion              | Event-driven architecture                  | V2                |
-| LLM Tool Wrapping              | AI agent integration                       | V2                |
-| SDK Generation                 | Developer experience                       | V2                |
-| RBAC & Team Management         | Multi-user collaboration                   | V2                |
+| Item                     | Reason for Exclusion          | Planned Milestone |
+| ------------------------ | ----------------------------- | ----------------- |
+| Smart Data Caching Layer | Performance optimization      | V1                |
+| Async Job System         | Scale feature                 | V1                |
+| Multi-App Connections    | Multi-tenancy expansion       | V0.75             |
+| Hybrid Auth Model        | Platform OAuth apps           | V0.75             |
+| Auto-Maintenance System  | Advanced automation           | V2                |
+| Versioning & Rollbacks   | Production safety feature     | V2                |
+| Full No-Code UI          | Non-technical user enablement | V2                |
+| Webhook Ingestion        | Event-driven architecture     | V2                |
+| LLM Tool Wrapping        | AI agent integration          | V2                |
+| SDK Generation           | Developer experience          | V2                |
+| RBAC & Team Management   | Multi-user collaboration      | V2                |
 
 #### Boundaries
 
-- We will NOT build workflow automation or orchestration features (Zapier-style) in this milestone
-- We will NOT maintain a curated catalog of pre-built integrations in this milestone
-- We will NOT build end-user facing components (embeddable widgets, etc.) in this milestone
-- We will NOT support GraphQL as a gateway protocol in this milestone
-- We will NOT pursue compliance certifications (SOC2/HIPAA) in this milestone
+- We will NOT build workflow automation or orchestration features (Zapier-style)
+- We will NOT maintain a curated catalog of pre-built integrations
+- We will NOT build end-user facing components (embeddable widgets, etc.)
+- We will NOT support GraphQL as a gateway protocol
+- We will NOT pursue compliance certifications (SOC2/HIPAA)
 
 ---
 
@@ -65,10 +60,13 @@
 | Token Refresh Management     | 2026-01-02      | Advisory locks, retry logic, cron job, manual refresh API, 505 total tests - [Feature Doc](Features/token-refresh-management.md)                  |
 | Gateway API                  | 2026-01-02      | Unified REST API, action invocation pipeline, health endpoint, request logs, 592 total tests - [Feature Doc](Features/gateway-api.md)             |
 | **Basic Configuration UI**   | 2026-01-02      | Full dashboard with wizard, action CRUD, testing, logs, design system, 592 tests - [Feature Doc](Features/basic-configuration-ui.md)              |
+| **Pagination Handler**       | 2026-01-03      | V0.5 Feature #1 - Auto pagination with cursor/offset/page/link strategies, LLM-friendly limits - [Feature Doc](Features/pagination-handler.md)    |
 
 ### In Progress
 
-_None - MVP is complete!_
+| Feature/Task        | Started | Assignee | Notes                                                           |
+| ------------------- | ------- | -------- | --------------------------------------------------------------- |
+| Response Validation | —       | —        | V0.5 Feature #2 - Zod-based schema validation for API responses |
 
 ### Recent Enhancements (Post-MVP)
 
@@ -83,79 +81,100 @@ _None - MVP is complete!_
 | Intelligent Crawling      | 2026-01-03      | LLM-guided page selection using Firecrawl map + URL triage, wishlist awareness, auth prioritization |
 | UX Navigation Polish      | 2026-01-03      | Clickable logo, clickable cards, copy buttons for endpoints, clickable wizard steps                 |
 
-### Not Started
+### Not Started (V0.5)
 
-_All MVP features are complete! 🎉_
+| Feature/Task                   | Priority | Notes                                           |
+| ------------------------------ | -------- | ----------------------------------------------- |
+| Basic Field Mapping            | P1       | Configure field transformations between systems |
+| Integration & Action Tagging   | P2       | Lightweight categorization with filtering       |
+| Dashboard & Logs Polish        | P2       | UX improvements, consistent data display        |
+| Continuous Integration Testing | P1       | Scheduled health checks on all integrations     |
 
 ---
 
-## MVP Build Order
+## Completed Milestones
 
-The following sequence reflects dependency analysis and optimal implementation order:
+### ✅ MVP (Completed 2026-01-02)
 
-| #   | Feature                          | Dependencies | Complexity | Notes                                                                    |
-| --- | -------------------------------- | ------------ | ---------- | ------------------------------------------------------------------------ |
-| 1   | ~~Project Scaffolding~~          | None         | LOW        | ✅ Complete                                                              |
-| 2   | ~~Database Setup~~               | #1           | MED        | ✅ Complete                                                              |
-| 3   | ~~Authentication Framework~~     | #2           | HIGH       | ✅ Complete - Multi-type auth + API key validation                       |
-| 4   | ~~Retry Logic & Error Handling~~ | #2           | MED        | ✅ Complete - Exponential backoff, circuit breaker, HTTP client          |
-| 5   | ~~AI Documentation Scraper~~     | #2           | HIGH       | ✅ Complete - Firecrawl + LLM + OpenAPI parser + action generator        |
-| 6   | ~~Action Registry & Schema~~     | #5           | HIGH       | ✅ Complete - Zod schemas, repository, service, Ajv validator, REST APIs |
-| 7   | ~~Token Refresh Management~~     | #3           | MED        | ✅ Complete - Advisory locks, retry, cron, manual refresh API            |
-| 8   | ~~Gateway API~~                  | #3, #4, #6   | MED        | ✅ Complete - Unified REST API, invocation pipeline, health, logs        |
-| 9   | ~~Basic Configuration UI~~       | #8           | HIGH       | ✅ Complete - Full dashboard, wizard, action CRUD, testing, logs         |
+**Goal**: Create AI-powered integrations from API documentation with core execution infrastructure.
 
-### Upcoming Work
+| #   | Feature                      | Notes                                                      |
+| --- | ---------------------------- | ---------------------------------------------------------- |
+| 1   | Project Scaffolding          | Next.js 14, TypeScript, Tailwind, Shadcn/ui, Prisma        |
+| 2   | Database Setup               | Supabase config, Prisma schema, seed data                  |
+| 3   | Authentication Framework     | Multi-type auth, encryption, OAuth, API keys               |
+| 4   | Retry Logic & Error Handling | Exponential backoff, circuit breaker, HTTP client          |
+| 5   | AI Documentation Scraper     | Firecrawl + LLM + OpenAPI parser + action generator        |
+| 6   | Action Registry & Schema     | Zod schemas, repository, service, Ajv validator, REST APIs |
+| 7   | Token Refresh Management     | Advisory locks, retry, cron, manual refresh API            |
+| 8   | Gateway API                  | Unified REST API, invocation pipeline, health, logs        |
+| 9   | Basic Configuration UI       | Full dashboard, wizard, action CRUD, testing, logs         |
 
-**🎉 MVP Complete!**
+**Final Test Count**: 592 tests passing
 
-All 9 features for the MVP milestone have been implemented. Next steps:
+---
 
-- Deploy to staging environment
-- End-to-end testing with real API integrations
-- User acceptance testing
-- Production deployment
+## V0.5 Build Order
+
+| #   | Feature                        | Dependencies       | Complexity | Notes                                                          |
+| --- | ------------------------------ | ------------------ | ---------- | -------------------------------------------------------------- |
+| 1   | Pagination Handler             | Action Registry ✅ | MED        | 🚧 IN PROGRESS - [Feature Doc](Features/pagination-handler.md) |
+| 2   | Response Validation            | Action Registry ✅ | MED        | Makes integrations trustworthy                                 |
+| 3   | Basic Field Mapping            | Action Registry ✅ | MED        | Data transformation layer                                      |
+| 4   | Integration & Action Tagging   | None               | LOW        | Organization, can parallel with #3                             |
+| 5   | Dashboard & Logs Polish        | Existing UI        | LOW        | UX improvements, can parallel                                  |
+| 6   | Continuous Integration Testing | Gateway API ✅     | MED        | Scheduled health checks                                        |
 
 ---
 
 ## Future Milestones
 
-### V0.5: Polish & Robustness
+### V0.75: Multi-Tenancy & Connections
 
-**Functionality Summary**: Add robustness features that make integrations production-ready. Multi-app connections, pagination, response validation, field mapping, tagging, continuous testing, and dashboard/logs improvements.
+**Functionality Summary**: Expand platform capabilities for multi-app support and streamlined authentication. Enable multiple consuming apps per integration with separate credentials, and introduce platform-owned OAuth apps for major providers.
 
 **Key Features:**
 
-- **Multi-App Connections** (multiple consuming apps per integration with separate credentials/baseUrls)
-- Pagination Handler (cursor, offset, page number, Link header)
-- Response Validation (Zod-based schema validation)
-- Basic Field Mapping (configure field transformations)
-- Integration & Action Tagging System (lightweight categorization with filtering)
-- Dashboard & Logs Display Polish (ensure data displays properly, consistent UX)
-- Continuous Integration Testing (scheduled health checks on all integrations)
+- **Hybrid Auth Model** (platform-owned OAuth apps for major providers + bring-your-own-app option)
+- **Multi-App Connections** (multiple consuming apps per integration with separate credentials/baseUrls, and also option to use default credentials shared across connected apps)
 
 **Technical Scope:**
 
+- **PlatformConnector entity** (stores Waygate's OAuth app registrations for Slack, Google, Microsoft, etc.)
 - **Connection entity** (links Integration + Credential to consuming App, enables per-app credential isolation)
-- Pagination detection and handling logic
-- Zod-based response validation
-- Field mapping configuration storage and runtime application
-- Tag CRUD for both integrations and actions
-- Filterable tags in dashboard and logs views
-- Cron-based health check scheduler with alerting
+- Platform OAuth app registration with major providers
+- Compliance certification tracking (CASA, publisher verification)
+- Shared rate limit management for platform connectors
+- UI for "one-click connect" vs "bring your own credentials"
+
+**Build Order:**
+
+| #   | Feature               | Dependencies  | Complexity | Notes                                                        |
+| --- | --------------------- | ------------- | ---------- | ------------------------------------------------------------ |
+| 1   | Multi-App Connections | V0.5 complete | HIGH       | Connection entity, per-app credential isolation              |
+| 2   | Hybrid Auth Model     | #1            | HIGH       | Platform connectors, compliance tracking, shared rate limits |
+
+**Rationale for Separate Milestone:**
+
+These features were moved from V0.5 to V0.75 because:
+
+1. They expand capabilities rather than polish existing features
+2. Hybrid Auth requires OAuth app registration and compliance certification (CASA, publisher verification)
+3. Multi-App Connections adds multi-tenancy complexity best tackled after core reliability is proven
+4. Natural sequencing: bulletproof the core first, then expand platform capabilities
 
 ---
 
 ### V1: Scale & Reliability
 
-**Functionality Summary**: Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. System becomes suitable for production applications with moderate scale.
+**Functionality Summary**: Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. Building on V0.75's multi-app foundation, V1 makes the system suitable for production applications with moderate scale.
 
 **Key Features:**
 
 - Smart Data Caching Layer (configurable caching for slow-changing data)
 - Async Job System (background processing for long operations, batch imports)
 - Complex Nested Data Handling
-- Per-App Custom Mappings
+- Per-App Custom Mappings (leverages V0.75's Connection entity)
 - Batch Operations Support
 - Enhanced Logging & Monitoring
 
@@ -163,14 +182,14 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 
 - Upstash Redis for caching layer
 - Trigger.dev for background job queue
-- Per-tenant configuration storage
+- Per-tenant/per-app configuration storage
 - Basic metrics collection and display
 
 ---
 
 ### V2: Full Automation & Self-Service
 
-**Functionality Summary**: Full automation and self-service capabilities. System automatically maintains integrations, supports versioning, provides full no-code experience, and enables AI agent integration. Introduces hybrid authentication model (platform-owned + user-owned credentials).
+**Functionality Summary**: Full automation and self-service capabilities. Building on V0.75's hybrid auth foundation, V2 adds automatic maintenance, versioning, full no-code experience, and AI agent integration.
 
 **Key Features:**
 
@@ -179,8 +198,6 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 - Full No-Code UI (wizard flows, guided setup, visual configuration)
 - Webhook Ingestion (receive and route webhooks from external services)
 - Just-in-Time Auth (on-demand OAuth flows for end users)
-- **Hybrid Auth Model** (platform-owned OAuth apps for major providers + bring-your-own-app option)
-- **Pre-Built Connectors** (Waygate-registered OAuth apps for Slack, Google, Microsoft, etc.)
 - SDK Generation (auto-generate TypeScript/Python client libraries)
 - LLM Tool Wrapping (export actions as LangChain-compatible tools)
 - Sandbox/Production Environments
@@ -193,9 +210,6 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 - Version history storage and diff computation
 - Webhook endpoint router
 - OAuth broker for JIT auth
-- **Platform connector registry** (Waygate's OAuth client credentials for major providers)
-- **Compliance certification management** (CASA, publisher verification tracking)
-- **Shared rate limit management** (quota pooling for platform-owned OAuth apps)
 - Code generation pipeline
 - LangChain tool factory
 - Environment isolation in database
@@ -211,7 +225,7 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 | GraphQL Gateway                 | Alternative to REST for some use cases       | V3 (if demand emerges)        |
 | Multi-Region Deployment         | Global latency optimization                  | V3                            |
 | SOC2/HIPAA Compliance           | Enterprise requirements                      | V3 (if selling to enterprise) |
-| Expanded Platform Connectors    | Additional pre-registered OAuth providers    | Ongoing from V2               |
+| Expanded Platform Connectors    | Additional pre-registered OAuth providers    | Ongoing from V0.75            |
 | Connector Certification Tiers   | Verified vs community-contributed connectors | V3                            |
 
 ---

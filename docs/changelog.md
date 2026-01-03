@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                         |
 | ------- | ---------- | ---------- | --------------------------------------------------------------- |
+| 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                   |
 | 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                   |
 | 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors           |
 | 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.) |
@@ -58,12 +59,51 @@
 ### Breaking
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
+```
+
+---
+
+## [0.5.1] - 2026-01-03
+
+### Added
+
+- **Pagination Handler** - V0.5 Feature #1: Automatic pagination handling for API actions with LLM-friendly limits
+  - Support for 4 pagination strategies: cursor-based, offset/limit, page number, Link header (RFC 5988)
+  - Auto-detection of pagination patterns from API responses
+  - Configurable safety limits: max pages, max items, max characters (~tokens), max duration
+  - LLM-friendly presets: "LLM-Optimized" (~25K tokens), "Full Dataset" (~250K tokens), "Quick Sample" (~2.5K tokens)
+  - Continuation tokens for resumable pagination across requests
+  - Truncation reasons in responses to explain why pagination stopped
+  - Token estimation (~4 characters per token) for LLM context planning
+- **Pagination UI Components**
+  - `PaginationSettings` component for action editor with strategy selection and limit configuration
+  - `PaginationMetadataDisplay` component for showing pagination results in test responses
+  - Quick preset buttons for common use cases
+  - High-limit warnings when configuration may cause issues
+- **Gateway API Extensions**
+  - `pagination` option in action invocation requests with `fetchAll`, `maxPages`, `maxItems`, etc.
+  - `pagination` metadata in responses with `fetchedItems`, `estimatedTokens`, `truncated`, `continuationToken`
+
+### Technical Details
+
+- New module: `src/lib/modules/execution/pagination/`
+  - `pagination.schemas.ts` - Zod schemas with LLM-friendly defaults
+  - `pagination.service.ts` - Orchestrates paginated fetches
+  - `aggregator.ts` - Collects results across pages with character counting
+  - `detector.ts` - Auto-detects pagination strategy from responses
+  - `strategies/` - Strategy implementations (cursor, offset, page-number, link-header)
+- Updated `gateway.schemas.ts` with `GatewayPaginationOptionsSchema` and `PaginationMetadataSchema`
+- Enhanced `action-generator.ts` with comprehensive pagination detection from query params and response schemas
+- Updated `prompts/extract-api.ts` with pagination extraction instructions and examples for AI
 
 ### Dependencies
+
 - {{Package}}: {{old_version}} → {{new_version}}
 
 ### Security
+
 - {{Security fix or update}}
+
 ```
 
 ---
@@ -862,3 +902,4 @@
 - Git repository structure and .cursorrules for AI assistant behavior
 
 ---
+```

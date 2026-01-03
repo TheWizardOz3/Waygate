@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { ABSOLUTE_PAGINATION_LIMITS } from '../execution/pagination';
 
 // =============================================================================
 // Request Schemas
@@ -24,6 +25,39 @@ export const GatewayInvokeRequestSchema = z.record(z.string(), z.unknown());
 export type GatewayInvokeRequest = z.infer<typeof GatewayInvokeRequestSchema>;
 
 /**
+ * Pagination options for action invocation
+ * These override the action's default pagination configuration
+ */
+export const GatewayPaginationOptionsSchema = z.object({
+  /** Fetch all pages up to limits (default: false = single page only) */
+  fetchAll: z.boolean().default(false),
+  /** Override max pages limit */
+  maxPages: z.number().int().min(1).max(ABSOLUTE_PAGINATION_LIMITS.maxPages).optional(),
+  /** Override max items limit */
+  maxItems: z.number().int().min(1).max(ABSOLUTE_PAGINATION_LIMITS.maxItems).optional(),
+  /** Override max characters limit (~4 chars per token) */
+  maxCharacters: z
+    .number()
+    .int()
+    .min(1000)
+    .max(ABSOLUTE_PAGINATION_LIMITS.maxCharacters)
+    .optional(),
+  /** Override max duration in milliseconds */
+  maxDurationMs: z
+    .number()
+    .int()
+    .min(1000)
+    .max(ABSOLUTE_PAGINATION_LIMITS.maxDurationMs)
+    .optional(),
+  /** Override page size for this request */
+  pageSize: z.number().int().min(1).max(ABSOLUTE_PAGINATION_LIMITS.maxPageSize).optional(),
+  /** Resume pagination from a previous truncated result */
+  continuationToken: z.string().optional(),
+});
+
+export type GatewayPaginationOptions = z.infer<typeof GatewayPaginationOptionsSchema>;
+
+/**
  * Options that can be passed with the invocation
  */
 export const GatewayInvokeOptionsSchema = z.object({
@@ -35,6 +69,8 @@ export const GatewayInvokeOptionsSchema = z.object({
   idempotencyKey: z.string().optional(),
   /** Whether to include raw response from external API */
   includeRawResponse: z.boolean().optional(),
+  /** Pagination options for fetching multiple pages */
+  pagination: GatewayPaginationOptionsSchema.optional(),
 });
 
 export type GatewayInvokeOptions = z.infer<typeof GatewayInvokeOptionsSchema>;
@@ -60,6 +96,53 @@ export const ExecutionMetricsSchema = z.object({
 export type ExecutionMetrics = z.infer<typeof ExecutionMetricsSchema>;
 
 // =============================================================================
+// Pagination Metadata
+// =============================================================================
+
+/**
+ * Truncation reasons for pagination
+ */
+export const TruncationReasonSchema = z.enum([
+  'maxPages',
+  'maxItems',
+  'maxCharacters',
+  'maxDuration',
+  'error',
+  'circular',
+]);
+
+export type TruncationReason = z.infer<typeof TruncationReasonSchema>;
+
+/**
+ * Pagination metadata included in paginated responses
+ * Provides LLM-friendly information about what was fetched
+ */
+export const PaginationMetadataSchema = z.object({
+  /** Number of items fetched across all pages */
+  fetchedItems: z.number().int().min(0),
+  /** Number of pages fetched */
+  pagesFetched: z.number().int().min(0),
+  /** Total items available (if API provides this) */
+  totalItems: z.number().int().min(0).optional(),
+  /** Total characters in the aggregated response */
+  fetchedCharacters: z.number().int().min(0),
+  /** Estimated token count (~fetchedCharacters / 4) - useful for LLM context planning */
+  estimatedTokens: z.number().int().min(0),
+  /** Whether more data exists beyond what was fetched */
+  hasMore: z.boolean(),
+  /** Whether pagination was stopped due to a limit being reached */
+  truncated: z.boolean(),
+  /** Why pagination was truncated (if truncated is true) */
+  truncationReason: TruncationReasonSchema.optional(),
+  /** Token to resume pagination from where it stopped */
+  continuationToken: z.string().optional(),
+  /** Total time spent paginating in milliseconds */
+  durationMs: z.number().int().min(0),
+});
+
+export type PaginationMetadata = z.infer<typeof PaginationMetadataSchema>;
+
+// =============================================================================
 // Response Meta
 // =============================================================================
 
@@ -73,6 +156,8 @@ export const ResponseMetaSchema = z.object({
   timestamp: z.string(),
   /** Execution metrics */
   execution: ExecutionMetricsSchema,
+  /** Pagination metadata (present when pagination was used) */
+  pagination: PaginationMetadataSchema.optional(),
 });
 
 export type ResponseMeta = z.infer<typeof ResponseMetaSchema>;

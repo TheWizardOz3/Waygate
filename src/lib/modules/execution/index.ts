@@ -179,3 +179,66 @@ export {
 } from './helpers';
 
 export type { RequestOptions } from './helpers';
+
+// =============================================================================
+// Pagination
+// =============================================================================
+
+export {
+  // Schemas
+  PaginationConfigSchema,
+  PaginationRequestSchema,
+  PaginationMetadataSchema,
+  PaginationStrategySchema,
+  TruncationReasonSchema,
+  // Constants & Presets
+  DEFAULT_PAGINATION_LIMITS,
+  ABSOLUTE_PAGINATION_LIMITS,
+  PaginationPresets,
+  CHARS_PER_TOKEN,
+  // Service
+  PaginationService,
+  paginationService,
+  fetchPaginated,
+  createDefaultPaginationConfig,
+  // Detection
+  detectPaginationStrategy,
+  detectFromSample,
+  detectStrategy,
+  hasMorePages,
+  // Strategies
+  getStrategy,
+  getAllStrategies,
+  cursorStrategy,
+  offsetStrategy,
+  pageNumberStrategy,
+  linkHeaderStrategy,
+  // Aggregation
+  PaginationAggregator,
+  aggregatePages,
+  // Schema helpers
+  mergePaginationConfig,
+  estimateTokens,
+  calculateCharacterCount,
+  applyPreset,
+  hasHighLimits,
+  describeLimits,
+  encodeContinuationToken,
+  decodeContinuationToken,
+} from './pagination';
+
+export type {
+  PaginationConfig,
+  PartialPaginationConfig,
+  PaginationRequest,
+  PaginationMetadata,
+  PaginationStrategy,
+  TruncationReason,
+  PaginationPreset,
+  PageFetcher,
+  PageFetchResponse,
+  PaginatedFetchOptions,
+  PaginatedFetchResult,
+  DetectionResult,
+  AggregationResult,
+} from './pagination';
