@@ -316,9 +316,24 @@ function buildRequest(
   const path = buildUrl(action.endpointTemplate, input);
 
   // Combine baseUrl with path
-  const url = baseUrl
-    ? `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`
-    : path;
+  let url: string;
+  if (baseUrl) {
+    url = `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
+  } else {
+    // No base URL - check if path is already absolute
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      url = path;
+    } else {
+      // Relative path without base URL - this is a configuration error
+      throw new GatewayError(
+        'CONFIGURATION_ERROR',
+        `Integration "${integration.name}" is missing a base URL. ` +
+          `Configure the base URL in the integration settings to execute this action. ` +
+          `Expected format: https://your-api.example.com`,
+        { integrationId: integration.id, path }
+      );
+    }
+  }
 
   // Start with base headers
   const headers: Record<string, string> = {
@@ -394,27 +409,52 @@ function buildUrl(template: string, input: Record<string, unknown>): string {
 
 /**
  * Build URL with query parameters
+ * Handles both absolute URLs (https://...) and relative paths (/api/...)
  */
 function buildUrlWithQuery(
   baseUrl: string,
   params: Record<string, unknown>,
   authParams: Record<string, string> = {}
 ): string {
-  const urlObj = new URL(baseUrl);
+  // Check if we have any params to add
+  const hasParams = Object.keys(params).length > 0 || Object.keys(authParams).length > 0;
 
-  // Add input params
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) {
-      urlObj.searchParams.set(key, String(value));
+  if (!hasParams) {
+    return baseUrl;
+  }
+
+  // For absolute URLs, use URL object
+  if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+    const urlObj = new URL(baseUrl);
+
+    // Add input params
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        urlObj.searchParams.set(key, String(value));
+      }
     }
+
+    // Add auth params
+    for (const [key, value] of Object.entries(authParams)) {
+      urlObj.searchParams.set(key, value);
+    }
+
+    return urlObj.toString();
   }
 
-  // Add auth params
-  for (const [key, value] of Object.entries(authParams)) {
-    urlObj.searchParams.set(key, value);
+  // For relative URLs, build query string manually
+  const allParams = { ...params, ...authParams };
+  const filteredParams = Object.entries(allParams)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+
+  if (filteredParams.length === 0) {
+    return baseUrl;
   }
 
-  return urlObj.toString();
+  // Check if URL already has query params
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${filteredParams.join('&')}`;
 }
 
 /**

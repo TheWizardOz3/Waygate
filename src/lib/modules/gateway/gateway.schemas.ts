@@ -294,6 +294,12 @@ export const GatewayErrorCodes = {
     suggestedAction: 'CHECK_INTEGRATION_CONFIG' as SuggestedAction,
     retryable: false,
   },
+  CONFIGURATION_ERROR: {
+    code: 'CONFIGURATION_ERROR',
+    httpStatus: 400,
+    suggestedAction: 'CHECK_INTEGRATION_CONFIG' as SuggestedAction,
+    retryable: false,
+  },
   CREDENTIALS_MISSING: {
     code: 'CREDENTIALS_MISSING',
     httpStatus: 401,
