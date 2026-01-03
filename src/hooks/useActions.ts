@@ -24,6 +24,7 @@ export const actionKeys = {
     [...actionKeys.lists(), integrationId, filters] as const,
   details: () => [...actionKeys.all, 'detail'] as const,
   detail: (id: string) => [...actionKeys.details(), id] as const,
+  cached: (integrationId: string) => [...actionKeys.all, 'cached', integrationId] as const,
 };
 
 // =============================================================================
@@ -44,12 +45,19 @@ export function useActions(integrationId: string | undefined, params?: Partial<L
 
 /**
  * Hook to fetch a single action by ID
+ * @param actionId - The ID of the action to fetch
+ * @param integrationId - The ID of the integration the action belongs to
  */
-export function useAction(actionId: string | undefined) {
+export function useAction(actionId: string | undefined, integrationId?: string) {
   return useQuery({
     queryKey: actionKeys.detail(actionId!),
-    queryFn: () => client.actions.get(actionId!),
-    enabled: !!actionId,
+    queryFn: () => {
+      if (!integrationId) {
+        throw new Error('integrationId is required to fetch action');
+      }
+      return client.actions.getWithIntegration(actionId!, integrationId);
+    },
+    enabled: !!actionId && !!integrationId,
     staleTime: 60 * 1000, // 1 minute
   });
 }
@@ -154,6 +162,43 @@ export function useBulkDeleteActions() {
     },
     onError: (error: Error) => {
       toast.error('Failed to delete actions', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+/**
+ * Hook to fetch cached actions from previous scrape results
+ * Returns actions that are available but not yet added to the integration
+ */
+export function useCachedActions(integrationId: string | undefined) {
+  return useQuery({
+    queryKey: actionKeys.cached(integrationId!),
+    queryFn: () => client.actions.getCached(integrationId!),
+    enabled: !!integrationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to discover new actions using AI with a wishlist
+ */
+export function useDiscoverActions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ integrationId, wishlist }: { integrationId: string; wishlist: string[] }) =>
+      client.integrations.discoverActions(integrationId, wishlist),
+    onSuccess: (data, { integrationId }) => {
+      // Invalidate cached actions when discovery completes
+      queryClient.invalidateQueries({ queryKey: actionKeys.cached(integrationId) });
+      toast.success('Discovery started', {
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to start discovery', {
         description: error.message,
       });
     },

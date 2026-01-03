@@ -177,6 +177,26 @@ export async function findScrapeJobByUrl(
   });
 }
 
+/**
+ * Finds ALL completed scrape jobs by documentation URL for a tenant
+ * Used to aggregate endpoints from multiple scrape runs
+ */
+export async function findAllScrapeJobsByUrl(
+  tenantId: string,
+  documentationUrl: string
+): Promise<ScrapeJob[]> {
+  return prisma.scrapeJob.findMany({
+    where: {
+      tenantId,
+      documentationUrl,
+      status: ScrapeJobStatus.COMPLETED,
+    },
+    orderBy: {
+      completedAt: 'desc',
+    },
+  });
+}
+
 // =============================================================================
 // Update Operations
 // =============================================================================

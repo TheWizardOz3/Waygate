@@ -32,7 +32,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
   const isEditing = !!actionId;
 
   const { data: integration, isLoading: integrationLoading } = useIntegration(integrationId);
-  const { data: existingAction, isLoading: actionLoading } = useAction(actionId);
+  const { data: existingAction, isLoading: actionLoading } = useAction(actionId, integrationId);
 
   const createAction = useCreateAction();
   const updateAction = useUpdateAction();
@@ -207,6 +207,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           <BasicInfoSection
             form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
             isEditing={isEditing}
+            integrationSlug={integration?.slug}
           />
 
           <SchemaBuilder

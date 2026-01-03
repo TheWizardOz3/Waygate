@@ -14,7 +14,14 @@ import { z } from 'zod';
 /**
  * Authentication types supported by integrations
  */
-export const AuthTypeSchema = z.enum(['oauth2', 'api_key', 'basic', 'bearer', 'custom_header']);
+export const AuthTypeSchema = z.enum([
+  'none',
+  'oauth2',
+  'api_key',
+  'basic',
+  'bearer',
+  'custom_header',
+]);
 export type AuthType = z.infer<typeof AuthTypeSchema>;
 
 /**

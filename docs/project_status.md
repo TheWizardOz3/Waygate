@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-03 (v0.1.4 - UI Polish + Specific Pages Mode)
+**Last Updated**: 2026-01-03 (v0.1.5 - Action Tester + Auth-less APIs + AI Action Discovery)
 
 ---
 
@@ -71,12 +71,13 @@ _None - MVP is complete!_
 
 ### Recent Enhancements (Post-MVP)
 
-| Enhancement           | Completion Date | Notes                                                                                               |
-| --------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
-| Specific Pages Mode   | 2026-01-03      | Skip site mapping, provide exact URLs to scrape. Job cancellation. Better error UI.                 |
-| UI Polish & Bug Fixes | 2026-01-03      | Actions save correctly, credentials panel uses real API, action test endpoints fixed, list view     |
-| Intelligent Crawling  | 2026-01-03      | LLM-guided page selection using Firecrawl map + URL triage, wishlist awareness, auth prioritization |
-| UX Navigation Polish  | 2026-01-03      | Clickable logo, clickable cards, copy buttons for endpoints, clickable wizard steps                 |
+| Enhancement               | Completion Date | Notes                                                                                               |
+| ------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| Action Tester & Auth-less | 2026-01-03      | Improved tester UI layout, auth-less API support, AI-assisted action discovery with wishlist        |
+| Specific Pages Mode       | 2026-01-03      | Skip site mapping, provide exact URLs to scrape. Job cancellation. Better error UI.                 |
+| UI Polish & Bug Fixes     | 2026-01-03      | Actions save correctly, credentials panel uses real API, action test endpoints fixed, list view     |
+| Intelligent Crawling      | 2026-01-03      | LLM-guided page selection using Firecrawl map + URL triage, wishlist awareness, auth prioritization |
+| UX Navigation Polish      | 2026-01-03      | Clickable logo, clickable cards, copy buttons for endpoints, clickable wizard steps                 |
 
 ### Not Started
 
@@ -161,7 +162,7 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 
 ### V2: Full Automation & Self-Service
 
-**Functionality Summary**: Full automation and self-service capabilities. System automatically maintains integrations, supports versioning, provides full no-code experience, and enables AI agent integration.
+**Functionality Summary**: Full automation and self-service capabilities. System automatically maintains integrations, supports versioning, provides full no-code experience, and enables AI agent integration. Introduces hybrid authentication model (platform-owned + user-owned credentials).
 
 **Key Features:**
 
@@ -170,6 +171,8 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 - Full No-Code UI (wizard flows, guided setup, visual configuration)
 - Webhook Ingestion (receive and route webhooks from external services)
 - Just-in-Time Auth (on-demand OAuth flows for end users)
+- **Hybrid Auth Model** (platform-owned OAuth apps for major providers + bring-your-own-app option)
+- **Pre-Built Connectors** (Waygate-registered OAuth apps for Slack, Google, Microsoft, etc.)
 - SDK Generation (auto-generate TypeScript/Python client libraries)
 - LLM Tool Wrapping (export actions as LangChain-compatible tools)
 - Sandbox/Production Environments
@@ -182,6 +185,9 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 - Version history storage and diff computation
 - Webhook endpoint router
 - OAuth broker for JIT auth
+- **Platform connector registry** (Waygate's OAuth client credentials for major providers)
+- **Compliance certification management** (CASA, publisher verification tracking)
+- **Shared rate limit management** (quota pooling for platform-owned OAuth apps)
 - Code generation pipeline
 - LangChain tool factory
 - Environment isolation in database
@@ -190,13 +196,15 @@ All 9 features for the MVP milestone have been implemented. Next steps:
 
 ### Long-Term / Future Considerations
 
-| Feature/Capability              | Rationale                               | Tentative Timeline            |
-| ------------------------------- | --------------------------------------- | ----------------------------- |
-| Pre-built Connector Marketplace | Community-contributed integrations      | V3 (if demand emerges)        |
-| End-User Facing Widget          | Embeddable integration UI for end users | V3                            |
-| GraphQL Gateway                 | Alternative to REST for some use cases  | V3 (if demand emerges)        |
-| Multi-Region Deployment         | Global latency optimization             | V3                            |
-| SOC2/HIPAA Compliance           | Enterprise requirements                 | V3 (if selling to enterprise) |
+| Feature/Capability              | Rationale                                    | Tentative Timeline            |
+| ------------------------------- | -------------------------------------------- | ----------------------------- |
+| Pre-built Connector Marketplace | Community-contributed integrations           | V3 (if demand emerges)        |
+| End-User Facing Widget          | Embeddable integration UI for end users      | V3                            |
+| GraphQL Gateway                 | Alternative to REST for some use cases       | V3 (if demand emerges)        |
+| Multi-Region Deployment         | Global latency optimization                  | V3                            |
+| SOC2/HIPAA Compliance           | Enterprise requirements                      | V3 (if selling to enterprise) |
+| Expanded Platform Connectors    | Additional pre-registered OAuth providers    | Ongoing from V2               |
+| Connector Certification Tiers   | Verified vs community-contributed connectors | V3                            |
 
 ---
 

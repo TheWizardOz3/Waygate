@@ -1,6 +1,8 @@
 'use client';
 
 import { UseFormReturn, FieldValues } from 'react-hook-form';
+import { Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 import {
   FormControl,
   FormDescription,
@@ -19,13 +21,35 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<FieldValues>;
   isEditing: boolean;
+  integrationSlug?: string;
 }
 
-export function BasicInfoSection({ form, isEditing }: BasicInfoSectionProps) {
+export function BasicInfoSection({ form, isEditing, integrationSlug }: BasicInfoSectionProps) {
+  const [copied, setCopied] = useState(false);
+  const actionSlug = form.watch('slug');
+
+  // Construct the Waygate Gateway API endpoint
+  const waygateEndpoint =
+    integrationSlug && actionSlug ? `/api/v1/actions/${integrationSlug}/${actionSlug}` : null;
+
+  const copyToClipboard = async () => {
+    if (!waygateEndpoint) return;
+    try {
+      // Copy full URL with current origin
+      const fullUrl = `${window.location.origin}${waygateEndpoint}`;
+      await navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -125,7 +149,7 @@ export function BasicInfoSection({ form, isEditing }: BasicInfoSectionProps) {
             name="endpointTemplate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Endpoint</FormLabel>
+                <FormLabel>Endpoint Path</FormLabel>
                 <FormControl>
                   <Input placeholder="/chat.postMessage" className="font-mono" {...field} />
                 </FormControl>
@@ -135,6 +159,38 @@ export function BasicInfoSection({ form, isEditing }: BasicInfoSectionProps) {
             )}
           />
         </div>
+
+        {/* Waygate Gateway Endpoint */}
+        {waygateEndpoint && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Waygate Gateway Endpoint
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 font-mono text-sm">
+                <span className="text-foreground">{waygateEndpoint}</span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={copyToClipboard}
+                className="shrink-0"
+                title="Copy full URL"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Call this endpoint with POST to invoke the action. Waygate handles the{' '}
+              {form.watch('httpMethod') || 'HTTP'} request to the underlying API.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

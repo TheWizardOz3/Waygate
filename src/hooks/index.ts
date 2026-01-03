@@ -23,6 +23,8 @@ export {
   useUpdateAction,
   useDeleteAction,
   useBulkDeleteActions,
+  useCachedActions,
+  useDiscoverActions,
   actionKeys,
 } from './useActions';
 

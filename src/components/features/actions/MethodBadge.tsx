@@ -7,6 +7,7 @@ import type { HttpMethod } from '@/lib/modules/actions/action.schemas';
 interface MethodBadgeProps {
   method: HttpMethod | string;
   className?: string;
+  size?: 'sm' | 'default';
 }
 
 const METHOD_STYLES: Record<string, string> = {
@@ -17,14 +18,19 @@ const METHOD_STYLES: Record<string, string> = {
   DELETE: 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400',
 };
 
-export function MethodBadge({ method, className }: MethodBadgeProps) {
+export function MethodBadge({ method, className, size = 'default' }: MethodBadgeProps) {
   const normalizedMethod = method.toUpperCase();
   const styles = METHOD_STYLES[normalizedMethod] || 'bg-muted text-muted-foreground';
 
   return (
     <Badge
       variant="outline"
-      className={cn('font-mono text-xs uppercase tracking-wider', styles, className)}
+      className={cn(
+        'font-mono uppercase tracking-wider',
+        size === 'sm' ? 'px-1 py-0 text-[10px]' : 'text-xs',
+        styles,
+        className
+      )}
     >
       {normalizedMethod}
     </Badge>

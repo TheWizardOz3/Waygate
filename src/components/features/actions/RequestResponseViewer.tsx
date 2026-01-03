@@ -43,50 +43,44 @@ function RequestPanel({
 }: {
   request: NonNullable<RequestResponseViewerProps['request']>;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Collapsed by default
 
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-lg border border-muted bg-muted/20">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between p-4 transition-colors hover:bg-muted/50"
+        className="flex w-full items-center justify-between px-3 py-2 transition-colors hover:bg-muted/50"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
           )}
-          <span className="font-medium">Request</span>
-          <MethodBadge method={request.method} />
+          <span className="text-xs font-medium text-muted-foreground">Request</span>
+          <MethodBadge method={request.method} size="sm" />
+          <code className="max-w-[200px] truncate text-xs text-muted-foreground">
+            {request.url}
+          </code>
         </div>
-        <code className="max-w-[300px] truncate text-sm text-muted-foreground">{request.url}</code>
+        <CopyButton value={request.url} label="URL copied" size="sm" className="h-6 w-6" />
       </button>
 
       {isExpanded && (
-        <div className="space-y-4 border-t p-4">
-          {/* URL */}
-          <div>
-            <h4 className="mb-2 text-sm font-medium">URL</h4>
-            <div className="flex items-start gap-2">
-              <code className="flex-1 break-all text-sm">{request.url}</code>
-              <CopyButton value={request.url} label="URL copied" />
-            </div>
-          </div>
-
-          {/* Headers */}
+        <div className="space-y-3 border-t border-muted p-3">
+          {/* Headers - compact */}
           {request.headers && Object.keys(request.headers).length > 0 && (
             <div>
-              <h4 className="mb-2 text-sm font-medium">Headers</h4>
-              <JsonViewer data={request.headers} />
+              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Headers</h4>
+              <JsonViewer data={request.headers} compact />
             </div>
           )}
 
           {/* Body */}
           {request.body !== undefined && (
             <div>
-              <h4 className="mb-2 text-sm font-medium">Body</h4>
-              <JsonViewer data={request.body} />
+              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Body</h4>
+              <JsonViewer data={request.body} compact />
             </div>
           )}
         </div>
@@ -100,28 +94,19 @@ function ResponsePanel({
 }: {
   response: NonNullable<RequestResponseViewerProps['response']>;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   const isSuccess = response.status >= 200 && response.status < 300;
   const isRedirect = response.status >= 300 && response.status < 400;
   const isClientError = response.status >= 400 && response.status < 500;
 
   return (
     <div className="rounded-lg border">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between p-4 transition-colors hover:bg-muted/50"
-      >
-        <div className="flex items-center gap-3">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-          <span className="font-medium">Response</span>
+      {/* Status header - always visible */}
+      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+        <div className="flex items-center gap-2">
           <Badge
             variant="outline"
             className={cn(
+              'text-xs',
               isSuccess && 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600',
               isRedirect && 'border-blue-500/20 bg-blue-500/10 text-blue-600',
               isClientError && 'border-amber-500/20 bg-amber-500/10 text-amber-600',
@@ -133,29 +118,28 @@ function ResponsePanel({
           >
             {response.status} {response.statusText}
           </Badge>
+          {response.duration !== undefined && (
+            <span className="text-xs text-muted-foreground">{response.duration}ms</span>
+          )}
         </div>
-        {response.duration !== undefined && (
-          <span className="text-sm text-muted-foreground">{response.duration}ms</span>
+        {response.body !== undefined && (
+          <CopyButton
+            value={
+              typeof response.body === 'string'
+                ? response.body
+                : JSON.stringify(response.body, null, 2)
+            }
+            label="Response copied"
+            size="sm"
+            className="h-6 w-6"
+          />
         )}
-      </button>
+      </div>
 
-      {isExpanded && (
-        <div className="space-y-4 border-t p-4">
-          {/* Headers */}
-          {response.headers && Object.keys(response.headers).length > 0 && (
-            <div>
-              <h4 className="mb-2 text-sm font-medium">Headers</h4>
-              <JsonViewer data={response.headers} />
-            </div>
-          )}
-
-          {/* Body */}
-          {response.body !== undefined && (
-            <div>
-              <h4 className="mb-2 text-sm font-medium">Body</h4>
-              <JsonViewer data={response.body} />
-            </div>
-          )}
+      {/* Body - scrollable area */}
+      {response.body !== undefined && (
+        <div className="max-h-[400px] overflow-auto">
+          <JsonViewer data={response.body} />
         </div>
       )}
     </div>
@@ -180,19 +164,27 @@ function ErrorPanel({ error }: { error: NonNullable<RequestResponseViewerProps['
   );
 }
 
-function JsonViewer({ data }: { data: unknown }) {
+function JsonViewer({ data, compact }: { data: unknown; compact?: boolean }) {
   const jsonString = typeof data === 'string' ? data : JSON.stringify(data, null, 2) || '';
 
   return (
     <div className="group relative">
-      <pre className="overflow-x-auto rounded-md bg-muted/50 p-4 text-sm">
+      <pre
+        className={cn(
+          'overflow-x-auto rounded-md bg-muted/50 text-xs',
+          compact ? 'max-h-[120px] overflow-y-auto p-2' : 'p-3'
+        )}
+      >
         <code className="text-foreground">{jsonString}</code>
       </pre>
-      <CopyButton
-        value={jsonString}
-        label="JSON copied"
-        className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
-      />
+      {!compact && (
+        <CopyButton
+          value={jsonString}
+          label="JSON copied"
+          size="sm"
+          className="absolute right-2 top-2 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
+        />
+      )}
     </div>
   );
 }

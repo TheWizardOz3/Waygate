@@ -1596,7 +1596,142 @@ jobs:
 
 ---
 
-## Appendix A: Decision Log Reference
+## Appendix A: Future Architecture - Hybrid Authentication Model (V2)
+
+> This section documents planned architectural changes for V2's hybrid authentication model, where Waygate can act as an OAuth broker for major providers while still supporting user-owned credentials.
+
+### A.1 Overview
+
+The current MVP architecture requires users to bring their own OAuth app credentials for each integration. V2 will introduce a **hybrid model** similar to Merge.dev and Arcade.dev:
+
+1. **Platform-owned credentials** - Waygate registers OAuth apps with major providers (Google, Slack, Microsoft, etc.), completes their security reviews (CASA, publisher verification), and users authenticate through Waygate's registered apps
+2. **User-owned credentials** - Enterprise customers who require their own OAuth app registration for compliance or rate limit reasons can still bring their own credentials
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              V2 HYBRID AUTH MODEL                            │
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐  │
+│   │                     PLATFORM CONNECTORS                                │  │
+│   │   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐                 │  │
+│   │   │   Slack     │   │   Google    │   │  Microsoft  │  ...            │  │
+│   │   │  (Waygate   │   │  (Waygate   │   │  (Waygate   │                 │  │
+│   │   │   OAuth)    │   │   OAuth)    │   │   OAuth)    │                 │  │
+│   │   └──────┬──────┘   └──────┬──────┘   └──────┬──────┘                 │  │
+│   │          │   CASA ✓        │  Verified ✓     │  Verified ✓            │  │
+│   │          └─────────────────┴─────────────────┘                        │  │
+│   │                            │                                           │  │
+│   │                   Shared across all tenants                            │  │
+│   │                   (rate limits pooled)                                 │  │
+│   └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│   ┌───────────────────────────────────────────────────────────────────────┐  │
+│   │                     USER-OWNED CREDENTIALS                             │  │
+│   │   ┌─────────────────────────────────────────────────────────────────┐ │  │
+│   │   │  Enterprise customers bring their own OAuth app registrations   │ │  │
+│   │   │  - Full control over scopes and permissions                     │ │  │
+│   │   │  - Dedicated rate limits                                        │ │  │
+│   │   │  - Required for some enterprise security policies               │ │  │
+│   │   └─────────────────────────────────────────────────────────────────┘ │  │
+│   └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### A.2 New Database Entities
+
+```typescript
+// New table: Platform-registered OAuth connectors
+PlatformConnector: {
+  id: uuid,
+  providerSlug: string,           // 'slack', 'google-workspace', 'microsoft-365'
+  displayName: string,            // 'Slack', 'Google Workspace'
+  authType: enum,                 // oauth2, etc.
+  oauthClientId: string,          // Waygate's OAuth client ID
+  encryptedClientSecret: bytea,   // Encrypted client secret
+  scopes: string[],               // Default scopes Waygate requests
+  certifications: jsonb,          // { casa: { status: 'active', expiresAt: '2026-12-01' } }
+  rateLimits: jsonb,              // { requestsPerMinute: 1000, shared: true }
+  status: enum,                   // active, suspended, deprecated
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+
+// Modified: Integration now supports connector type
+Integration: {
+  ...existing fields...
+  connectorType: enum,            // 'platform' | 'custom' (default: 'custom' for backward compat)
+  platformConnectorId: uuid,      // FK → PlatformConnector (nullable, only if connectorType='platform')
+}
+
+// Modified: IntegrationCredential gains source tracking
+IntegrationCredential: {
+  ...existing fields...
+  credentialSource: enum,         // 'platform' | 'user_owned' (default: 'user_owned')
+}
+```
+
+### A.3 Auth Flow Changes
+
+**Platform-owned flow (new):**
+
+1. User clicks "Connect with Slack" using Waygate's pre-built connector
+2. OAuth redirect uses Waygate's registered client_id
+3. User authorizes Waygate's app (already CASA-verified)
+4. Tokens stored with `credentialSource: 'platform'`
+5. Rate limits are shared across all Waygate users for that provider
+
+**User-owned flow (existing, unchanged):**
+
+1. User configures their own OAuth app credentials
+2. OAuth redirect uses their client_id
+3. Tokens stored with `credentialSource: 'user_owned'`
+4. Rate limits are dedicated to their OAuth app
+
+### A.4 Compliance Management
+
+Waygate will maintain certifications for platform connectors:
+
+| Provider  | Certification Required | Renewal Cycle | Status Tracking            |
+| --------- | ---------------------- | ------------- | -------------------------- |
+| Google    | CASA (Tier 2)          | Annual        | `certifications.casa`      |
+| Microsoft | Publisher Verification | One-time      | `certifications.publisher` |
+| Slack     | App Directory Review   | One-time      | `certifications.appReview` |
+
+Background jobs will alert when certifications approach expiration.
+
+### A.5 Rate Limit Architecture
+
+Platform connectors share rate limits across all tenants:
+
+```typescript
+// Rate limit tracking for platform connectors
+PlatformRateLimit: {
+  platformConnectorId: uuid,
+  windowStart: timestamp,
+  requestCount: integer,
+  // Distributed counter via Redis (V1+ dependency)
+}
+```
+
+Mitigation strategies:
+
+- Request queuing with fair distribution across tenants
+- Priority tiers for paid plans
+- Automatic fallback to user-owned credentials if rate limited
+
+### A.6 Migration Path
+
+The hybrid model will be **additive** - existing user-owned credential flows remain unchanged:
+
+1. **Phase 1**: Add `PlatformConnector` table and `connectorType` field
+2. **Phase 2**: Register Waygate OAuth apps with top 5 providers
+3. **Phase 3**: Build UI for "one-click connect" vs "bring your own"
+4. **Phase 4**: Add compliance tracking dashboard
+5. **Phase 5**: Implement shared rate limit management
+
+---
+
+## Appendix B: Decision Log Reference
 
 For architecture decisions and their rationale, see `decision_log.md`.
 
@@ -1608,10 +1743,11 @@ Key decisions affecting this architecture:
 - **ADR-004:** Next.js API Routes over separate backend (unified deployment)
 - **ADR-005:** Google/GitHub OAuth only for dashboard (no magic links)
 - **ADR-006:** Native Firecrawl SDK initially, LangChain wrapper if needed later
+- **ADR-015:** Hybrid auth model planned for V2 (platform-owned + user-owned credentials)
 
 ---
 
-## Appendix B: Glossary
+## Appendix C: Glossary
 
 | Term                       | Definition                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------- |
@@ -1627,7 +1763,7 @@ Key decisions affecting this architecture:
 
 ---
 
-## Appendix C: Related Documentation
+## Appendix D: Related Documentation
 
 | Document     | Purpose             | Location                      |
 | ------------ | ------------------- | ----------------------------- |
@@ -1638,7 +1774,7 @@ Key decisions affecting this architecture:
 
 ---
 
-## Appendix D: MVP vs Future Scope
+## Appendix E: MVP vs Future Scope
 
 | Capability          | MVP              | V0.5       | V1                | V2           |
 | ------------------- | ---------------- | ---------- | ----------------- | ------------ |

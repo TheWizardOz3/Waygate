@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Code2 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MethodBadge } from './MethodBadge';
@@ -44,7 +44,7 @@ interface TestResult {
 
 export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
   const { data: integration, isLoading: integrationLoading } = useIntegration(integrationId);
-  const { data: action, isLoading: actionLoading } = useAction(actionId);
+  const { data: action, isLoading: actionLoading } = useAction(actionId, integrationId);
 
   const [isExecuting, setIsExecuting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
@@ -77,27 +77,21 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
 
         // Execute the action through the gateway API
         // API endpoint: POST /api/v1/actions/{integration}/{action}
-        const response = await apiClient.post<{
-          data: unknown;
-          meta?: {
-            execution?: {
-              latencyMs: number;
-              cached: boolean;
-            };
-          };
-        }>(`/actions/${integration.slug}/${action.slug}`, input);
+        // Note: apiClient already extracts the 'data' field from the API response
+        const responseData = await apiClient.post<unknown>(
+          `/actions/${integration.slug}/${action.slug}`,
+          input
+        );
 
         const duration = Date.now() - startTime;
-
-        const executionDuration = response.meta?.execution?.latencyMs || duration;
 
         const testResult: TestResult = {
           request: requestPreview,
           response: {
             status: 200,
             statusText: 'OK',
-            body: response.data,
-            duration: executionDuration,
+            body: responseData,
+            duration: duration,
           },
         };
 
@@ -110,7 +104,7 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
           input,
           response: {
             status: 200,
-            duration: executionDuration,
+            duration: duration,
           },
         });
       } catch (err) {
@@ -222,21 +216,21 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
       {/* Description */}
       {action.description && <p className="text-muted-foreground">{action.description}</p>}
 
-      {/* Main content */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left: Input */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Input Parameters</CardTitle>
-              <CardDescription>Fill in the parameters and execute the action</CardDescription>
+      {/* Main content - responsive layout */}
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        {/* Left: Input - compact sidebar */}
+        <div className="space-y-3">
+          <Card className="overflow-hidden">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Parameters</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-3 pt-0">
               <DynamicSchemaForm
                 schema={action.inputSchema as JsonSchema}
                 onSubmit={handleExecute}
                 isLoading={isExecuting}
                 defaultValues={defaultValues}
+                compact
               />
             </CardContent>
           </Card>
@@ -244,25 +238,25 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
           <TestHistory actionId={actionId} onReplay={handleReplay} />
         </div>
 
-        {/* Right: Response */}
+        {/* Right: Response - takes priority */}
         <div>
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Response</CardTitle>
-              <CardDescription>View the request and response details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="result" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="result" className="flex-1">
-                    Result
-                  </TabsTrigger>
-                  <TabsTrigger value="schema" className="flex-1">
-                    Output Schema
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="result" className="mt-4">
+          <Tabs defaultValue="result" className="h-full">
+            <Card className="h-full">
+              <CardHeader className="py-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Response</CardTitle>
+                  <TabsList className="h-7">
+                    <TabsTrigger value="result" className="px-2 py-1 text-xs">
+                      Result
+                    </TabsTrigger>
+                    <TabsTrigger value="schema" className="px-2 py-1 text-xs">
+                      Schema
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </CardHeader>
+              <CardContent className="py-3 pt-0">
+                <TabsContent value="result" className="mt-0">
                   {result ? (
                     <RequestResponseViewer
                       request={result.request}
@@ -270,20 +264,20 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
                       error={result.error}
                     />
                   ) : (
-                    <div className="py-12 text-center text-muted-foreground">
-                      <p>Execute the action to see results</p>
+                    <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed text-muted-foreground">
+                      <p className="text-sm">Execute the action to see results</p>
                     </div>
                   )}
                 </TabsContent>
 
-                <TabsContent value="schema" className="mt-4">
-                  <pre className="overflow-x-auto rounded-md bg-muted/50 p-4 text-sm">
+                <TabsContent value="schema" className="mt-0">
+                  <pre className="max-h-[400px] overflow-auto rounded-md bg-muted/50 p-3 text-xs">
                     <code>{JSON.stringify(action.outputSchema, null, 2)}</code>
                   </pre>
                 </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Tabs>
         </div>
       </div>
     </div>

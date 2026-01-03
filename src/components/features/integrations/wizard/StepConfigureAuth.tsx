@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowRight, Key, Shield, Loader2, Eye, EyeOff, Info } from 'lucide-react';
+import { ArrowRight, Key, Shield, Loader2, Eye, EyeOff, Info, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -288,8 +288,9 @@ export function StepConfigureAuth() {
   const { data, setAuthConfig, setCreatedIntegration, goToStep } = useWizardStore();
   const createIntegration = useCreateIntegration();
 
-  // Detected auth type from API docs
-  const detectedAuthType = data.detectedAuthMethods[0]?.type || 'api_key';
+  // Detected auth type from API docs - default to 'none' if no auth methods detected
+  const detectedAuthType =
+    data.detectedAuthMethods.length > 0 ? data.detectedAuthMethods[0]?.type || 'api_key' : 'none';
   const [selectedAuthType, setSelectedAuthType] = useState<string>(detectedAuthType);
 
   const createIntegrationWithAuth = async (
@@ -373,55 +374,111 @@ export function StepConfigureAuth() {
     );
   };
 
+  const handleNoAuthSubmit = () => {
+    createIntegrationWithAuth({}, 'none');
+  };
+
+  // Format auth type for display
+  const formatAuthType = (type: string) => {
+    switch (type) {
+      case 'oauth2':
+        return 'OAuth 2.0';
+      case 'api_key':
+        return 'API Key';
+      case 'none':
+        return 'No Authentication';
+      default:
+        return type;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Detected auth info */}
-      {data.detectedAuthMethods.length > 0 && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Detected authentication type:{' '}
-            <Badge variant="secondary" className="ml-1">
-              {detectedAuthType === 'oauth2' ? 'OAuth 2.0' : 'API Key'}
-            </Badge>
-          </AlertDescription>
-        </Alert>
-      )}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          {data.detectedAuthMethods.length > 0 ? (
+            <>
+              Detected authentication type:{' '}
+              <Badge variant="secondary" className="ml-1">
+                {formatAuthType(detectedAuthType)}
+              </Badge>
+            </>
+          ) : (
+            <>
+              No authentication detected.{' '}
+              <Badge variant="secondary" className="ml-1">
+                Public API
+              </Badge>
+            </>
+          )}
+        </AlertDescription>
+      </Alert>
 
       {/* Auth type tabs */}
       <Tabs value={selectedAuthType} onValueChange={setSelectedAuthType}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="oauth2" className="gap-2">
-            <Shield className="h-4 w-4" />
-            OAuth 2.0
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="none" className="gap-2">
+            <Globe className="h-4 w-4" />
+            None
           </TabsTrigger>
           <TabsTrigger value="api_key" className="gap-2">
             <Key className="h-4 w-4" />
             API Key
           </TabsTrigger>
+          <TabsTrigger value="oauth2" className="gap-2">
+            <Shield className="h-4 w-4" />
+            OAuth 2.0
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="oauth2" className="mt-4">
-          <OAuth2Form onSubmit={handleOAuth2Submit} isLoading={createIntegration.isPending} />
+        <TabsContent value="none" className="mt-4">
+          <div className="rounded-lg border border-dashed p-6 text-center">
+            <Globe className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 font-medium">No Authentication Required</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
+              This API is publicly accessible and doesn&apos;t require authentication credentials.
+            </p>
+            <Button onClick={handleNoAuthSubmit} disabled={createIntegration.isPending}>
+              {createIntegration.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Integration...
+                </>
+              ) : (
+                <>
+                  Create Integration
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="api_key" className="mt-4">
           <ApiKeyForm onSubmit={handleApiKeySubmit} isLoading={createIntegration.isPending} />
         </TabsContent>
+
+        <TabsContent value="oauth2" className="mt-4">
+          <OAuth2Form onSubmit={handleOAuth2Submit} isLoading={createIntegration.isPending} />
+        </TabsContent>
       </Tabs>
 
-      {/* Skip auth option */}
-      <div className="text-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => createIntegrationWithAuth({}, 'api_key')}
-          disabled={createIntegration.isPending}
-          className="text-muted-foreground"
-        >
-          Skip for now — configure auth later
-        </Button>
-      </div>
+      {/* Skip auth option - only show if not on 'none' tab */}
+      {selectedAuthType !== 'none' && (
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => createIntegrationWithAuth({}, 'none')}
+            disabled={createIntegration.isPending}
+            className="text-muted-foreground"
+          >
+            Skip for now — configure auth later
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

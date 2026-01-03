@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                         |
 | ------- | ---------- | ---------- | --------------------------------------------------------------- |
+| 0.1.5   | 2026-01-03 | patch      | Action tester improvements, auth-less APIs, AI action discovery |
 | 0.1.4   | 2026-01-03 | patch      | UI polish, specific pages mode, action saves fix                |
 | 0.1.3   | 2026-01-03 | patch      | Intelligent crawling with LLM-guided page selection             |
 | 0.1.2   | 2026-01-03 | patch      | UX improvements: clickable logo, cards, copy buttons            |
@@ -63,6 +64,71 @@
 ## Releases
 
 <!-- Add new versions below this line, newest first -->
+
+## [0.1.5] - 2026-01-03
+
+### Added
+
+- **"None" Authentication Type Support**
+  - Added `none` to `AuthType` enum for APIs that don't require authentication
+  - New "None" tab in auth configuration wizard step
+  - Gateway service skips credential validation for auth-less integrations
+  - Database migration for new enum value
+
+- **AI-Assisted Action Discovery**
+  - New "Discover Actions" step in Add Action wizard with wishlist input
+  - API endpoint: `POST /api/v1/integrations/{id}/discover-actions` triggers new scrape with wishlist
+  - Cached actions now aggregate from ALL past scrape jobs (non-destructive discovery)
+  - New `useDiscoverActions` hook for React Query integration
+  - Deduplication by slug ensures newer discoveries take precedence
+
+- **Action Tester Quick Access**
+  - Test button added directly to actions table for quicker access
+  - One-click navigation to action test page from main actions list
+
+### Changed
+
+- **Action Tester UI Layout Improvements**
+  - Responsive grid layout: compact parameters sidebar (320px) + response takes remaining width
+  - Request/Response panels now collapsible and collapsed by default (saves vertical space)
+  - Dynamic form fields use compact mode (smaller padding, font sizes)
+  - Response section takes visual priority over input section
+
+- **Action Detail View Improvements**
+  - Waygate Gateway Endpoint now displayed with full path and copy button
+  - Clarified that all actions are invoked via POST, regardless of underlying HTTP method
+  - Schema Builder shows helpful messages for empty schemas ("No fields defined", "No input parameters required")
+
+- **Actions Table Improvements**
+  - Endpoint copy button now copies full Waygate Gateway URL (not just the path)
+  - Display still shows original API path for clarity
+
+### Fixed
+
+- **Action Detail View 404 Error**
+  - Resolved routing conflict between action ID and integration/action slug routes
+  - Created proper nested route: `/api/v1/integrations/[id]/actions/[actionId]`
+
+- **Response Data Not Showing in Action Tester**
+  - Fixed incorrect data access pattern in response handling
+  - API client was already extracting nested data, component was double-unwrapping
+
+- **Auth-less Integration Testing**
+  - Fixed "CREDENTIALS_MISSING" error for integrations with `authType: none`
+  - Gateway service now correctly handles auth-less invocations
+
+- **Gateway Request Building**
+  - Fixed URL construction to prepend integration's `baseUrl` to action endpoint
+  - Previously only using path without base URL caused "Invalid URL" errors
+
+### Technical Notes
+
+- All linting and type-checking passes
+- New repository function: `findAllScrapeJobsByUrl()` for aggregating scrape results
+- ConnectionStatus component updated to accept `none` auth type
+- Added `cacheable: false` default to wizard-created actions
+
+---
 
 ## [0.1.4] - 2026-01-03
 

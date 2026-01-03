@@ -173,12 +173,15 @@ export async function invokeAction(
       }
     }
 
-    // 3. Get and validate credentials
-    const credential = await getCredential(tenantId, integration.id);
-    validateCredential(credential);
+    // 3. Get and validate credentials (skip for 'none' auth type)
+    let credential: DecryptedCredential | null = null;
+    if (integration.authType !== 'none') {
+      credential = await getCredential(tenantId, integration.id);
+      validateCredential(credential);
+    }
 
     // 4. Build the HTTP request
-    const { request, url } = buildRequest(action, input, credential);
+    const { request, url } = buildRequest(integration, action, input, credential);
 
     // 5. Execute the request
     const executionResult = await executeRequest(request, integration.id, options);
@@ -300,12 +303,22 @@ function validateCredential(credential: DecryptedCredential | null): void {
  * Step 4: Build the HTTP request from action template
  */
 function buildRequest(
+  integration: Integration,
   action: Action,
   input: Record<string, unknown>,
   credential: DecryptedCredential | null
 ): BuiltRequest {
-  // Build the URL with path parameters substituted
-  const url = buildUrl(action.endpointTemplate, input);
+  // Get base URL from integration config
+  const authConfig = integration.authConfig as Record<string, unknown> | null;
+  const baseUrl = (authConfig?.baseUrl as string) || '';
+
+  // Build the path with parameter substitution
+  const path = buildUrl(action.endpointTemplate, input);
+
+  // Combine baseUrl with path
+  const url = baseUrl
+    ? `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? '' : '/'}${path}`
+    : path;
 
   // Start with base headers
   const headers: Record<string, string> = {
@@ -321,7 +334,7 @@ function buildRequest(
   }
 
   // Apply credentials
-  const authConfig = applyCredentials(headers, credential);
+  const credentialConfig = applyCredentials(headers, credential);
 
   // Build query params for GET requests with remaining input
   let finalUrl = url;
@@ -330,22 +343,22 @@ function buildRequest(
     finalUrl = buildUrlWithQuery(
       url,
       queryParams as Record<string, unknown>,
-      authConfig.queryParams
+      credentialConfig.queryParams
     );
-  } else if (authConfig.queryParams && Object.keys(authConfig.queryParams).length > 0) {
+  } else if (credentialConfig.queryParams && Object.keys(credentialConfig.queryParams).length > 0) {
     // Add auth query params even for non-GET requests
-    finalUrl = buildUrlWithQuery(url, {}, authConfig.queryParams);
+    finalUrl = buildUrlWithQuery(url, {}, credentialConfig.queryParams);
   }
 
   // Merge body params for non-GET requests
-  if (body && authConfig.bodyParams && Object.keys(authConfig.bodyParams).length > 0) {
-    body = { ...(body as Record<string, unknown>), ...authConfig.bodyParams };
+  if (body && credentialConfig.bodyParams && Object.keys(credentialConfig.bodyParams).length > 0) {
+    body = { ...(body as Record<string, unknown>), ...credentialConfig.bodyParams };
   }
 
   const request: HttpClientRequest = {
     url: finalUrl,
     method: action.httpMethod as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-    headers: { ...headers, ...authConfig.headers },
+    headers: { ...headers, ...credentialConfig.headers },
     body,
   };
 

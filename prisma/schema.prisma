@@ -16,6 +16,7 @@ datasource db {
 
 /// Authentication type for integrations
 enum AuthType {
+  none
   oauth2
   api_key
   basic

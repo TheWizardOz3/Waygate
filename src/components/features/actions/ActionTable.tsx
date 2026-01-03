@@ -55,11 +55,18 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { MethodBadge } from './MethodBadge';
 import { DeleteActionDialog, BulkDeleteActionsDialog } from './DeleteActionDialog';
 import { BulkActionBar } from './BulkActionBar';
-import { useActions, useBulkDeleteActions } from '@/hooks';
+import { useActions, useBulkDeleteActions, useIntegration } from '@/hooks';
 import type { ActionResponse } from '@/lib/modules/actions/action.schemas';
 
 interface ActionTableProps {
   integrationId: string;
+}
+
+/**
+ * Build the Waygate Gateway API endpoint for an action
+ */
+function buildWaygateEndpoint(integrationSlug: string, actionSlug: string): string {
+  return `/api/v1/actions/${integrationSlug}/${actionSlug}`;
 }
 
 export function ActionTable({ integrationId }: ActionTableProps) {
@@ -72,7 +79,10 @@ export function ActionTable({ integrationId }: ActionTableProps) {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const { data, isLoading, isError } = useActions(integrationId);
+  const { data: integration } = useIntegration(integrationId);
   const bulkDelete = useBulkDeleteActions();
+
+  const integrationSlug = integration?.slug;
 
   // Filter by method and source
   const filteredActions = useMemo(() => {
@@ -151,15 +161,21 @@ export function ActionTable({ integrationId }: ActionTableProps) {
         header: 'Endpoint',
         cell: ({ row }) => {
           const endpoint = row.getValue('endpointTemplate') as string;
-          const method = row.original.httpMethod;
-          // Full endpoint path for copying
-          const fullEndpoint = `${method} ${endpoint}`;
+          const actionSlug = row.original.slug;
+          // Build the full Waygate Gateway URL for copying
+          const waygateEndpoint = integrationSlug
+            ? buildWaygateEndpoint(integrationSlug, actionSlug)
+            : endpoint;
+          const fullUrl =
+            typeof window !== 'undefined' && integrationSlug
+              ? `${window.location.origin}${waygateEndpoint}`
+              : waygateEndpoint;
           return (
             <div className="group/endpoint flex items-center gap-1">
               <code className="text-sm text-muted-foreground">{endpoint}</code>
               <CopyButton
-                value={fullEndpoint}
-                label="Endpoint copied"
+                value={fullUrl}
+                label="Waygate endpoint copied"
                 size="sm"
                 className="opacity-0 transition-opacity group-hover/endpoint:opacity-100"
                 showTooltip={false}
@@ -184,40 +200,56 @@ export function ActionTable({ integrationId }: ActionTableProps) {
       {
         id: 'actions',
         cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/integrations/${integrationId}/actions/${row.original.id}`}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/integrations/${integrationId}/actions/${row.original.id}/test`}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Test
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setActionToDelete(row.original)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-1">
+            {/* Quick Test Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-accent"
+              asChild
+              title="Test action"
+            >
+              <Link href={`/integrations/${integrationId}/actions/${row.original.id}/test`}>
+                <Play className="h-4 w-4" />
+                <span className="sr-only">Test</span>
+              </Link>
+            </Button>
+            {/* More Actions Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/integrations/${integrationId}/actions/${row.original.id}`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/integrations/${integrationId}/actions/${row.original.id}/test`}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Test
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setActionToDelete(row.original)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ),
-        size: 50,
+        size: 80,
       },
     ],
-    [integrationId]
+    [integrationId, integrationSlug]
   );
 
   const table = useReactTable({

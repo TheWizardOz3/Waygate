@@ -33,7 +33,7 @@ export type ConnectionState = 'connected' | 'expired' | 'error' | 'disconnected'
 interface ConnectionStatusProps {
   integrationId: string;
   integrationName: string;
-  authType: 'oauth2' | 'api_key' | 'basic' | 'bearer' | 'custom_header';
+  authType: 'oauth2' | 'api_key' | 'basic' | 'bearer' | 'custom_header' | 'none';
   status: ConnectionState;
   lastRefreshed?: Date | string;
   expiresAt?: Date | string;

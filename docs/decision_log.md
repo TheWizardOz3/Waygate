@@ -12,26 +12,27 @@
 
 ## Quick Reference Index
 
-| ID      | Date       | Category | Status | Summary                                                 |
-| ------- | ---------- | -------- | ------ | ------------------------------------------------------- |
-| ADR-001 | 2026-01-01 | infra    | active | Prisma 7 requires pg adapter instead of URL in schema   |
-| ADR-002 | 2026-01-02 | infra    | active | Prisma 7 config file requires explicit env loading      |
-| ADR-003 | 2026-01-02 | infra    | active | Environment variable file strategy for secrets          |
-| ADR-004 | 2026-01-01 | arch     | active | Dual encryption strategy for credentials                |
-| ADR-005 | 2026-01-02 | arch     | active | In-memory circuit breaker with per-circuit tracking     |
-| ADR-006 | 2026-01-02 | arch     | active | Result pattern for execution service                    |
-| ADR-007 | 2026-01-02 | arch     | active | LLM abstraction layer for future multi-model support    |
-| ADR-008 | 2026-01-02 | arch     | active | JSON Schema validation with Ajv and caching             |
-| ADR-009 | 2026-01-02 | arch     | active | PostgreSQL advisory locks for token refresh             |
-| ADR-010 | 2026-01-02 | api      | active | Unified dynamic gateway endpoint over per-action routes |
-| ADR-011 | 2026-01-02 | ui       | active | CSS variable-based design system for global theming     |
-| ADR-012 | 2026-01-02 | ui       | active | Zustand for wizard state, React Query for server state  |
-| ADR-013 | 2026-01-02 | arch     | active | Gemini 3.0 as default LLM, crawl-first scraping         |
-| ADR-014 | 2026-01-03 | arch     | active | Dual scraping modes: auto-discover vs specific pages    |
+| ID      | Date       | Category | Status  | Summary                                                 |
+| ------- | ---------- | -------- | ------- | ------------------------------------------------------- |
+| ADR-001 | 2026-01-01 | infra    | active  | Prisma 7 requires pg adapter instead of URL in schema   |
+| ADR-002 | 2026-01-02 | infra    | active  | Prisma 7 config file requires explicit env loading      |
+| ADR-003 | 2026-01-02 | infra    | active  | Environment variable file strategy for secrets          |
+| ADR-004 | 2026-01-01 | arch     | active  | Dual encryption strategy for credentials                |
+| ADR-005 | 2026-01-02 | arch     | active  | In-memory circuit breaker with per-circuit tracking     |
+| ADR-006 | 2026-01-02 | arch     | active  | Result pattern for execution service                    |
+| ADR-007 | 2026-01-02 | arch     | active  | LLM abstraction layer for future multi-model support    |
+| ADR-008 | 2026-01-02 | arch     | active  | JSON Schema validation with Ajv and caching             |
+| ADR-009 | 2026-01-02 | arch     | active  | PostgreSQL advisory locks for token refresh             |
+| ADR-010 | 2026-01-02 | api      | active  | Unified dynamic gateway endpoint over per-action routes |
+| ADR-011 | 2026-01-02 | ui       | active  | CSS variable-based design system for global theming     |
+| ADR-012 | 2026-01-02 | ui       | active  | Zustand for wizard state, React Query for server state  |
+| ADR-013 | 2026-01-02 | arch     | active  | Gemini 3.0 as default LLM, crawl-first scraping         |
+| ADR-014 | 2026-01-03 | arch     | active  | Dual scraping modes: auto-discover vs specific pages    |
+| ADR-015 | 2026-01-03 | arch     | planned | Hybrid auth model: platform-owned + user-owned creds    |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
-**Statuses:** `active` | `superseded` | `reverted`
+**Statuses:** `active` | `superseded` | `reverted` | `planned`
 
 ---
 
@@ -68,6 +69,123 @@
 ## Log Entries
 
 <!-- Add new entries below this line, newest first -->
+
+### ADR-015: Hybrid Authentication Model (Platform-Owned + User-Owned Credentials)
+
+**Date:** 2026-01-03 | **Category:** arch | **Status:** planned
+
+#### Trigger
+
+Analysis of the iPaaS market (Merge.dev, Arcade.dev) revealed a key architectural question: should Waygate absorb OAuth app registration and compliance burden (CASA, publisher verification) once, allowing all users to benefit? Or continue requiring users to bring their own OAuth credentials?
+
+Current MVP requires users to bring their own OAuth app credentials for each integration they create. This creates friction for SMB users who:
+
+1. Must register OAuth apps with each provider (Google, Slack, Microsoft)
+2. Must complete security reviews (Google CASA is particularly onerous)
+3. Must manage OAuth client credentials and renewals
+4. Face long delays before connecting to providers with strict review processes
+
+#### Decision
+
+Planned for V2: Implement a **hybrid authentication model** that offers both:
+
+1. **Platform-owned credentials** (new, default for supported providers)
+   - Waygate registers as OAuth app with major providers (Slack, Google, Microsoft, etc.)
+   - Waygate completes CASA, publisher verification, app directory reviews once
+   - Users authenticate via Waygate's pre-registered OAuth apps ("one-click connect")
+   - Tokens stored with `credentialSource: 'platform'`
+   - Rate limits shared across all Waygate users (requires quota management)
+
+2. **User-owned credentials** (existing, preserved for enterprise)
+   - Enterprise customers bring their own OAuth app registrations
+   - Required for: dedicated rate limits, custom scopes, compliance policies
+   - Tokens stored with `credentialSource: 'user_owned'`
+   - No changes to current MVP flow
+
+Key architectural additions:
+
+- `PlatformConnector` table for Waygate's OAuth registrations
+- `connectorType` field on `Integration` (platform vs custom)
+- Compliance certification tracking with expiration alerts
+- Shared rate limit management (Redis-backed in V1+)
+
+#### Rationale
+
+**Business drivers:**
+
+- Removes major adoption friction for SMB users
+- Differentiates from "bring your own everything" platforms
+- Enables instant connectivity without weeks of OAuth review delays
+- Similar model proven by Merge.dev, Arcade.dev, Zapier
+
+**Trade-offs accepted:**
+
+- Waygate assumes compliance liability for platform connectors
+- Ongoing certification maintenance (CASA is annual)
+- Shared rate limits require careful quota management
+- Some enterprise customers will still need user-owned option
+
+**Why hybrid over platform-only:**
+
+- Enterprise security policies often require their own OAuth app
+- Some use cases need dedicated rate limits
+- Provides escape hatch if platform connector hits issues
+- Gradual rollout possible (add providers over time)
+
+#### Supersedes
+
+N/A - extends existing user-owned credential model without replacing it
+
+#### Migration
+
+**V2 Implementation Plan:**
+
+Phase 1 - Database schema:
+
+- Add `PlatformConnector` table
+- Add `connectorType` to `Integration`
+- Add `credentialSource` to `IntegrationCredential`
+- Migrations backward-compatible (existing = 'custom'/'user_owned')
+
+Phase 2 - Platform registration:
+
+- Register Waygate OAuth apps with top providers
+- Complete CASA for Google
+- Complete publisher verification for Microsoft
+- Complete Slack app directory review
+
+Phase 3 - UI/UX:
+
+- "One-click connect" buttons for platform connectors
+- "Bring your own app" advanced option
+- Compliance status indicators in dashboard
+
+Phase 4 - Operations:
+
+- Certification tracking and renewal alerts
+- Shared rate limit monitoring dashboard
+- Automatic fallback to user-owned if rate limited
+
+**Affected files (future):**
+
+- `prisma/schema.prisma` - new tables
+- `src/lib/modules/credentials/` - dual credential sources
+- `src/lib/modules/auth/oauth-providers/` - platform connector support
+- `src/components/features/integrations/` - connection type selection UI
+
+#### AI Instructions
+
+When working on authentication-related features:
+
+- MVP uses user-owned credentials only - do NOT add platform connector logic yet
+- The hybrid model is planned for V2; keep current architecture clean
+- When V2 work begins, ensure backward compatibility with existing user-owned credentials
+- Platform connectors will need their own migration path and admin UI
+- Rate limit management for platform connectors requires Redis (V1 dependency)
+- Never hardcode Waygate's OAuth client secrets - use environment variables
+- Compliance certifications should be tracked as structured data, not free-form
+
+---
 
 ### ADR-014: Dual Scraping Modes - Auto-Discover vs Specific Pages
 

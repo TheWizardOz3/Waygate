@@ -82,10 +82,15 @@ export function SchemaBuilder({ title, description, schema, onChange }: SchemaBu
           <TabsContent value="visual" className="mt-0">
             {fields.length === 0 ? (
               <div className="rounded-lg border border-dashed py-8 text-center">
-                <p className="mb-4 text-sm text-muted-foreground">No fields defined yet</p>
-                <Button variant="outline" onClick={handleAddField}>
+                <p className="mb-2 text-sm font-medium text-muted-foreground">No fields defined</p>
+                <p className="mb-4 text-xs text-muted-foreground">
+                  {title.toLowerCase().includes('input')
+                    ? 'This action requires no input parameters'
+                    : 'No response structure was documented'}
+                </p>
+                <Button variant="outline" size="sm" onClick={handleAddField}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Field
+                  Add Field Manually
                 </Button>
               </div>
             ) : (

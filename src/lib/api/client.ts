@@ -160,6 +160,18 @@ export const client = {
     delete(id: string) {
       return apiClient.delete<void>(`/integrations/${id}`);
     },
+
+    /**
+     * Discover new actions for an integration using AI with a wishlist
+     * Returns a job ID to poll for results
+     */
+    discoverActions(id: string, wishlist: string[], forceRescrape?: boolean) {
+      return apiClient.post<{
+        jobId: string;
+        message: string;
+        existingEndpointCount: number;
+      }>(`/integrations/${id}/discover-actions`, { wishlist, forceRescrape });
+    },
   },
 
   /**
@@ -221,20 +233,63 @@ export const client = {
       );
     },
 
-    get(id: string) {
-      return apiClient.get<ActionResponse>(`/actions/${id}`);
+    get(id: string, integrationId?: string) {
+      // If integrationId is provided, use nested route; otherwise fetch action to get integrationId first
+      if (integrationId) {
+        return apiClient.get<ActionResponse>(`/integrations/${integrationId}/actions/${id}`);
+      }
+      // Fallback: try to get action by fetching from all known integrations
+      // For now, throw an error since we need the integration context
+      throw new Error('integrationId is required to fetch action. Use getWithIntegration instead.');
+    },
+
+    getWithIntegration(actionId: string, integrationId: string) {
+      return apiClient.get<ActionResponse>(`/integrations/${integrationId}/actions/${actionId}`);
     },
 
     create(input: CreateActionInput) {
       return apiClient.post<ActionResponse>('/actions', input);
     },
 
-    update(id: string, input: UpdateActionInput) {
+    update(id: string, input: UpdateActionInput, integrationId?: string) {
+      if (integrationId) {
+        return apiClient.patch<ActionResponse>(
+          `/integrations/${integrationId}/actions/${id}`,
+          input
+        );
+      }
+      // Fallback to old route for backwards compatibility
       return apiClient.patch<ActionResponse>(`/actions/${id}`, input);
     },
 
-    delete(id: string) {
+    delete(id: string, integrationId?: string) {
+      if (integrationId) {
+        return apiClient.delete<void>(`/integrations/${integrationId}/actions/${id}`);
+      }
+      // Fallback to old route for backwards compatibility
       return apiClient.delete<void>(`/actions/${id}`);
+    },
+
+    /**
+     * Get cached actions from previous scrape results
+     * Returns actions that are available but not yet added to the integration
+     */
+    getCached(integrationId: string) {
+      return apiClient.get<{
+        actions: Array<{
+          name: string;
+          slug: string;
+          method: string;
+          path: string;
+          description?: string;
+          parameters?: unknown[];
+          responseSchema?: unknown;
+          alreadyAdded: boolean;
+        }>;
+        scrapeJobId: string | null;
+        documentationUrl: string | null;
+        canRescrape: boolean;
+      }>(`/integrations/${integrationId}/cached-actions`);
     },
   },
 };
