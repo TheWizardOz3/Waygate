@@ -56,7 +56,8 @@ export function SchemaTab({
           <TabsContent value="input" className="mt-0">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Define the parameters this action accepts. These will be validated when the action is invoked.
+                Define the parameters this action accepts. These will be validated when the action
+                is invoked.
               </p>
               <JsonSchemaEditor schema={inputSchema} onChange={onInputChange} />
             </div>
@@ -75,4 +76,3 @@ export function SchemaTab({
     </Card>
   );
 }
-

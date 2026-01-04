@@ -240,6 +240,7 @@ model ScrapeJob {
   specificUrls     String[]        @default([]) @map("specific_urls") // When provided, skips site mapping
   wishlist         String[]        @default([])
   progress         Int             @default(0)
+  progressDetails  Json?           @map("progress_details") // Structured progress: {stage, message, pagesFound, pagesScraped, chunksTotal, chunksProcessed, endpointsFound}
   result           Json?           // Parsed API structure
   error            Json?           // Error details if failed
   cachedContentKey String?         @map("cached_content_key") @db.VarChar(255)

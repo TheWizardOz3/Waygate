@@ -129,9 +129,9 @@ Waygate differentiates from existing solutions through:
   - Tablet: 640px - 1024px (full functionality, adapted layout)
   - Desktop: > 1024px (optimal experience)
 
-### 2.5 Interaction Patterns (V1+)
+### 2.5 Interaction Patterns (V1.1+)
 
-> **Note:** Detailed interaction design is deferred to V1. MVP will use sensible defaults from Shadcn/ui components.
+> **Note:** Detailed interaction design is deferred to V1.1. MVP through V1 will use sensible defaults from Shadcn/ui components.
 
 **MVP Defaults:**
 
@@ -139,7 +139,7 @@ Waygate differentiates from existing solutions through:
 - **Error Handling:** Toast notifications for errors, inline validation messages
 - **Empty States:** Basic placeholder text with action buttons
 
-**V1 Enhancements (Deferred):**
+**V1.1 Enhancements (Deferred):**
 
 - Custom animations (150-300ms transitions, page fade/slide)
 - Skeleton loaders for all content areas
@@ -153,35 +153,39 @@ Waygate differentiates from existing solutions through:
 
 ### 3.1 Feature Overview Matrix
 
-| Feature                               | Priority | Milestone | Complexity | Dependencies        |
-| ------------------------------------- | -------- | --------- | ---------- | ------------------- |
-| AI Documentation Scraper              | P0       | MVP       | HIGH       | None                |
-| Action Registry & Schema              | P0       | MVP       | HIGH       | Doc Scraper         |
-| Authentication Framework (Multi-type) | P0       | MVP       | HIGH       | None                |
-| Token Refresh Management              | P0       | MVP       | MED        | Auth Framework      |
-| Retry Logic & Error Handling          | P0       | MVP       | MED        | None                |
-| Gateway API                           | P0       | MVP       | MED        | All above           |
-| Basic Configuration UI                | P0       | MVP       | MED        | Gateway API         |
-| Basic Field Mapping                   | P1       | V0.5      | MED        | Action Registry     |
-| Pagination Handler                    | P1       | V0.5      | MED        | Action Registry     |
-| Response Validation                   | P1       | V0.5      | MED        | Action Registry     |
-| Integration Tagging System            | P2       | V0.5      | LOW        | None                |
-| Smart Data Caching Layer              | P0       | V1        | HIGH       | Gateway API         |
-| Async Job System                      | P0       | V1        | HIGH       | Caching Layer       |
-| Continuous Integration Testing        | P0       | V1        | MED        | Gateway API         |
-| Complex Nested Data Handling          | P1       | V1        | MED        | Action Registry     |
-| Per-App Custom Mappings               | P1       | V1        | MED        | Field Mapping       |
-| Batch Operations Support              | P1       | V1        | MED        | Async Jobs          |
-| Auto-Maintenance System               | P0       | V2        | HIGH       | Testing, Scraper    |
-| Versioning & Rollbacks                | P0       | V2        | HIGH       | Action Registry     |
-| Full No-Code UI (Wizards)             | P1       | V2        | HIGH       | All Config Features |
-| Webhook Ingestion                     | P1       | V2        | MED        | Gateway API         |
-| Just-in-Time Auth                     | P2       | V2        | HIGH       | Auth Framework      |
-| SDK Generation                        | P2       | V2        | HIGH       | Action Registry     |
-| LLM Tool Wrapping                     | P1       | V2        | MED        | Action Registry     |
-| Sandbox/Production Environments       | P1       | V2        | MED        | Gateway API         |
-| Schema Drift Detection                | P2       | V2        | MED        | Auto-Maintenance    |
-| RBAC & Team Management                | P1       | V2        | MED        | Auth Framework      |
+| Feature                               | Priority | Milestone | Complexity | Dependencies          |
+| ------------------------------------- | -------- | --------- | ---------- | --------------------- |
+| AI Documentation Scraper              | P0       | MVP       | HIGH       | None                  |
+| Action Registry & Schema              | P0       | MVP       | HIGH       | Doc Scraper           |
+| Authentication Framework (Multi-type) | P0       | MVP       | HIGH       | None                  |
+| Token Refresh Management              | P0       | MVP       | MED        | Auth Framework        |
+| Retry Logic & Error Handling          | P0       | MVP       | MED        | None                  |
+| Gateway API                           | P0       | MVP       | MED        | All above             |
+| Basic Configuration UI                | P0       | MVP       | MED        | Gateway API           |
+| Basic Field Mapping                   | P1       | V0.5      | MED        | Action Registry       |
+| Pagination Handler                    | P1       | V0.5      | MED        | Action Registry       |
+| Response Validation                   | P1       | V0.5      | MED        | Action Registry       |
+| Integration Tagging System            | P2       | V0.5      | LOW        | None                  |
+| Multi-App Connections                 | P0       | V0.75     | HIGH       | V0.5                  |
+| Hybrid Auth Model                     | P0       | V0.75     | HIGH       | Multi-App Connections |
+| Continuous Integration Testing        | P0       | V0.75     | MED        | Gateway API           |
+| Per-App Custom Mappings               | P1       | V0.75     | MED        | Field Mapping         |
+| UI & Stability Cleanup                | P0       | V1        | MED        | V0.75                 |
+| Smart Data Caching Layer              | P0       | V1.1      | HIGH       | V1                    |
+| Async Job System                      | P0       | V1.1      | HIGH       | Caching Layer         |
+| Complex Nested Data Handling          | P1       | V1.1      | MED        | Action Registry       |
+| Batch Operations Support              | P1       | V1.1      | MED        | Async Jobs            |
+| Enhanced Logging & Monitoring         | P1       | V1.1      | MED        | Gateway API           |
+| Sandbox/Production Environments       | P1       | V2        | MED        | V1.1                  |
+| Versioning & Rollbacks                | P0       | V2        | HIGH       | Sandbox/Prod Envs     |
+| Schema Drift Detection                | P1       | V2        | MED        | Versioning            |
+| Auto-Maintenance System               | P0       | V2        | HIGH       | Schema Drift          |
+| Full No-Code UI (Wizards)             | P1       | V2.1      | HIGH       | V2                    |
+| RBAC & Team Management                | P1       | V2.1      | MED        | Auth Framework        |
+| Just-in-Time Auth                     | P2       | V2.1      | HIGH       | RBAC                  |
+| Webhook Ingestion                     | P1       | V2.2      | MED        | V2.1                  |
+| SDK Generation                        | P2       | V2.2      | HIGH       | Action Registry       |
+| LLM Tool Wrapping                     | P1       | V2.2      | MED        | Action Registry       |
 
 ### 3.2 Detailed Feature Specifications
 
@@ -795,7 +799,7 @@ Integration Config → "Connect" → Redirect to Provider
 
 ---
 
-### 5.2 V0.5 (Polish & Robustness)
+### 5.2 V0.5 (Polish & Robustness) ✅ COMPLETE
 
 **Functionality Summary:** Add the robustness features that make integrations production-ready. Pagination, response validation, field mapping, and organization features.
 
@@ -830,33 +834,105 @@ Integration Config → "Connect" → Redirect to Provider
 
 ---
 
-### 5.3 V1 (Version 1.0)
+### 5.3 V0.75 (Multi-Tenancy & Expanded Capabilities)
 
-**Functionality Summary:** Add intelligent data caching, asynchronous operations, continuous testing, and enhanced configuration flexibility. System becomes suitable for production applications with moderate scale.
+**Functionality Summary:** Expand platform capabilities for multi-app support, streamlined authentication, continuous testing, and per-app configuration flexibility. Enable multiple consuming apps per integration with separate credentials, and introduce platform-owned OAuth apps for major providers.
+
+**User Goals:**
+
+- Connect multiple apps to the same integration with separate credentials
+- Use platform-managed OAuth for major providers (one-click connect)
+- Know immediately when integrations break via health checks
+- Configure different field mappings for different consuming apps
+
+**Features Included:**
+| Feature | Description | Acceptance Criteria |
+|---------|-------------|---------------------|
+| Multi-App Connections | Multiple consuming apps per integration with separate credentials/baseUrls | Can connect App A and App B to same Slack integration |
+| Hybrid Auth Model | Platform-owned OAuth apps for major providers + bring-your-own-app option | One-click connect for supported providers |
+| Continuous Integration Testing | Scheduled health checks on all integrations | Early detection of API changes/failures |
+| Per-App Custom Mappings | Consuming apps can define their own field mappings | Different apps need different data shapes |
+
+**Technical Scope:**
+
+- **PlatformConnector entity** (stores Waygate's OAuth app registrations for Slack, Google, Microsoft, etc.)
+- **Connection entity** (links Integration + Credential to consuming App, enables per-app credential isolation)
+- Platform OAuth app registration with major providers
+- Compliance certification tracking (CASA, publisher verification)
+- Shared rate limit management for platform connectors
+- UI for "one-click connect" vs "bring your own credentials"
+- Cron-based health check scheduler
+- Per-app field mapping configuration
+
+**Definition of Done:**
+
+- Can connect multiple apps to same integration with different credentials
+- Platform OAuth works for at least one major provider (e.g., Slack)
+- Health checks run daily, alerts on failures
+- Consuming apps can override field mappings
+
+---
+
+### 5.4 V1 (UI & Stability Cleanup)
+
+**Functionality Summary:** Comprehensive cleanup pass focusing on service integration, UI polish, and stability. Ensure all services are working together seamlessly and configuration screens are organized into a more usable format.
+
+**User Goals:**
+
+- Experience a polished, professional UI
+- Navigate configuration screens easily and logically
+- Trust that all features work reliably together
+- Find what they need without confusion
+
+**Features Included:**
+| Feature | Description | Acceptance Criteria |
+|---------|-------------|---------------------|
+| Service Integration | Verify all services connect and communicate properly | End-to-end flows work without manual intervention |
+| Configuration UI Cleanup | Reorganize config screens for better usability | Clear navigation, logical grouping |
+| Stability Pass | Fix edge cases, improve error handling | No critical bugs or broken workflows |
+| Polish | Loading states, empty states, responsive design | Consistent UI patterns across all screens |
+
+**Technical Scope:**
+
+- Audit and fix service-to-service communication
+- Reorganize configuration screen layouts
+- Implement consistent loading/error states
+- Improve responsive design
+- Fix edge cases and error handling
+
+**Definition of Done:**
+
+- All services working together without manual intervention
+- Configuration screens reorganized with clear navigation
+- No critical bugs or broken workflows
+- Consistent UI patterns across all screens
+
+---
+
+### 5.5 V1.1 (Scale & Reliability)
+
+**Functionality Summary:** Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. Building on V0.75's multi-app foundation, V1.1 makes the system suitable for production applications with moderate scale.
 
 **User Goals:**
 
 - Reduce API calls through intelligent caching
 - Handle bulk operations efficiently
-- Know immediately when integrations break
-- Configure different behaviors for different consuming apps
+- Monitor system health with enhanced logging
+- Process long-running operations in the background
 
 **Features Added/Evolved:**
 | Feature | Change from MVP | Rationale |
 |---------|-----------------|-----------|
 | Smart Data Caching Layer | NEW - Configurable caching for slow-changing data (user lists, schemas, metadata) | Reduce API calls, improve latency |
 | Async Job System | NEW - Background processing for long operations, batch imports | Handle bulk operations, rate limits |
-| Continuous Integration Testing | NEW - Scheduled health checks on all integrations | Early detection of API changes/failures |
 | Complex Nested Data Handling | ENHANCED - Better support for deeply nested API responses | Handle real-world API complexity |
-| Per-App Custom Mappings | ENHANCED - Consuming apps can define their own field mappings | Different apps need different data shapes |
 | Batch Operations Support | NEW - Queue and batch high-volume write operations | Avoid rate limits on bulk actions |
 | Enhanced Logging & Monitoring | ENHANCED - Structured logs, basic metrics dashboard | Production observability |
 
 **Technical Scope:**
 
-- Redis for caching layer
-- Background job queue (Bull/BullMQ or similar)
-- Cron-based health check scheduler
+- Upstash Redis for caching layer
+- Trigger.dev or BullMQ for background job queue
 - Per-tenant configuration storage
 - Basic metrics collection and display
 
@@ -864,60 +940,112 @@ Integration Config → "Connect" → Redirect to Provider
 
 - Can configure cacheable actions with TTL
 - Bulk imports complete via background jobs
-- Health checks run daily, alerts on failures
-- Consuming apps can override field mappings
 - High-volume writes batched automatically
+- Basic metrics dashboard showing system health
 
 ---
 
-### 5.4 V2 (Version 2.0)
+### 5.6 V2 (Maintenance & Safety)
 
-**Functionality Summary:** Full automation and self-service capabilities. System automatically maintains integrations, supports versioning, provides full no-code experience, and enables AI agent integration through LLM tool generation.
+**Functionality Summary:** Automatic maintenance, versioning, and environment management. Keep integrations healthy and provide safety nets for production systems.
 
 **User Goals:**
 
 - Integrations maintain themselves automatically
 - Roll back when updates cause problems
-- Non-technical team members can configure integrations
-- AI agents can use integrations as tools
+- Test changes safely before deploying to production
+- Know when APIs change unexpectedly
 
 **Features Added/Evolved:**
-| Feature | Change from MVP | Rationale |
-|---------|-----------------|-----------|
-| Auto-Maintenance System | NEW - Detect API changes, auto-update with approval workflow | Reduce manual maintenance burden |
-| Versioning & Rollbacks | NEW - Track integration versions, per-app pinning, instant rollback | Production safety and stability |
-| Full No-Code UI | ENHANCED - Wizard flows, guided setup, visual configuration | Enable non-technical users |
-| Webhook Ingestion | NEW - Receive and route webhooks from external services | Real-time event handling |
-| Just-in-Time Auth | NEW - On-demand OAuth flows for end users | Enable user-facing integrations |
-| SDK Generation | NEW - Auto-generate TypeScript/Python client libraries | Better developer experience |
-| LLM Tool Wrapping | NEW - Export actions as LangChain-compatible tools | Power AI agent applications |
+| Feature | Change from V1.1 | Rationale |
+|---------|------------------|-----------|
 | Sandbox/Production Environments | NEW - Separate testing and production configurations | Safe testing, confident deployments |
+| Versioning & Rollbacks | NEW - Track integration versions, per-app pinning, instant rollback | Production safety and stability |
 | Schema Drift Detection | NEW - Alert when API responses change from documented schema | Proactive issue detection |
-| Advanced Error Mapping | ENHANCED - Custom error transformations per consuming app | Unified error handling across integrations |
-| RBAC & Team Management | NEW - Role-based access control, team invitations | Multi-user collaboration |
+| Auto-Maintenance System | NEW - Detect API changes, auto-update with approval workflow | Reduce manual maintenance burden |
 
 **Technical Scope:**
 
-- Scheduled documentation re-scraping
-- Version history storage and diff computation
-- Webhook endpoint router
-- OAuth broker for JIT auth
-- Code generation pipeline
-- LangChain tool factory
 - Environment isolation in database
+- Version history storage and diff computation
+- Scheduled documentation re-scraping
+- Schema comparison and drift alerts
 
 **Definition of Done:**
 
-- Integrations auto-update when APIs change (with approval)
+- Can switch integrations between sandbox and production
 - Can roll back to any previous version
+- Alerts trigger when API schemas change
+- Auto-updates proposed with approval workflow
+
+---
+
+### 5.7 V2.1 (Self-Service & Access)
+
+**Functionality Summary:** Enable non-technical users and expand access control. Full no-code experience with team collaboration features.
+
+**User Goals:**
+
+- Non-technical team members can configure integrations
+- Control who can access and modify integrations
+- End users can authenticate on-demand
+- Manage teams and permissions effectively
+
+**Features Added/Evolved:**
+| Feature | Change from V2 | Rationale |
+|---------|----------------|-----------|
+| Full No-Code UI | ENHANCED - Wizard flows, guided setup, visual configuration | Enable non-technical users |
+| RBAC & Team Management | NEW - Role-based access control, team invitations | Multi-user collaboration |
+| Just-in-Time Auth | NEW - On-demand OAuth flows for end users | Enable user-facing integrations |
+
+**Technical Scope:**
+
+- Enhanced wizard flows with visual builders
+- OAuth broker for JIT auth
+- Role and permission system in database
+- Team invitation and management flows
+
+**Definition of Done:**
+
 - Complete integration setup possible without touching code
-- Webhooks route to consuming apps
+- Can assign roles (owner, admin, developer, viewer)
+- End users can authenticate via JIT OAuth flow
+- Team management UI fully functional
+
+---
+
+### 5.8 V2.2 (Developer Experience & AI Integration)
+
+**Functionality Summary:** Expand developer tooling and enable AI agent integration through LLM tool generation and webhooks.
+
+**User Goals:**
+
+- AI agents can use integrations as tools
+- Receive real-time events via webhooks
+- Generate SDKs for faster integration in consuming apps
+
+**Features Added/Evolved:**
+| Feature | Change from V2.1 | Rationale |
+|---------|------------------|-----------|
+| Webhook Ingestion | NEW - Receive and route webhooks from external services | Real-time event handling |
+| SDK Generation | NEW - Auto-generate TypeScript/Python client libraries | Better developer experience |
+| LLM Tool Wrapping | NEW - Export actions as LangChain-compatible tools | Power AI agent applications |
+
+**Technical Scope:**
+
+- Webhook endpoint router
+- Code generation pipeline
+- LangChain tool factory
+
+**Definition of Done:**
+
+- Webhooks route to consuming apps reliably
 - Can generate TypeScript SDK for any integration
 - Can export action as LangChain tool definition
 
 ---
 
-### 5.5 Not In Scope (Explicit Exclusions)
+### 5.9 Not In Scope (Explicit Exclusions)
 
 **Rationale:** Maintaining focus on core integration gateway functionality. These items may be valuable but would dilute focus or are better handled by specialized tools.
 
@@ -1004,9 +1132,9 @@ Integration Config → "Connect" → Redirect to Provider
 | AI Service         | Documentation scraping, parsing      | Firecrawl + LangChain + Gemini 3 Pro | MVP       |
 | Execution Engine   | Action invocation, retry logic       | Custom TypeScript                    | MVP       |
 | Credential Vault   | Secure credential storage            | Supabase + encryption                | MVP       |
-| Cache Service      | Smart caching layer                  | Upstash Redis                        | V1        |
-| Job Queue          | Background job processing            | Trigger.dev or BullMQ                | V1        |
-| Health Monitor     | Continuous integration testing       | Custom + Cron                        | V1        |
+| Health Monitor     | Continuous integration testing       | Custom + Cron                        | V0.75     |
+| Cache Service      | Smart caching layer                  | Upstash Redis                        | V1.1      |
+| Job Queue          | Background job processing            | Trigger.dev or BullMQ                | V1.1      |
 
 ### 6.2 Technology Stack
 
@@ -1039,7 +1167,7 @@ Integration Config → "Connect" → Redirect to Provider
 | ----------------- | ---------------------------- | -------------------------------------------------------------- |
 | Hosting           | Vercel                       | Integrated with Next.js, excellent DX, edge functions          |
 | Database          | Supabase (PostgreSQL)        | Managed Postgres, built-in auth, real-time, row-level security |
-| Cache             | Upstash Redis                | Serverless Redis, works well with Vercel (V1+)                 |
+| Cache             | Upstash Redis                | Serverless Redis, works well with Vercel (V1.1+)               |
 | Object Storage    | Supabase Storage             | Integrated with Supabase, simple API                           |
 | AI Models         | Google Gemini 3 Pro          | Primary model for doc parsing and action generation            |
 | Web Scraping      | Firecrawl                    | Managed scraping, handles JS/anti-bot/rate-limits              |
@@ -1296,29 +1424,29 @@ This format is designed to be **LLM-friendly** — an AI agent reading this erro
   - Row-Level Security (RLS) in Supabase for database-level enforcement
   - Single owner role with full access
 
-#### Authorization Model (V2 - Deferred)
+#### Authorization Model (V2.1 - Deferred)
 
 - **Type:** RBAC (Role-Based Access Control)
-- **Roles (V2):**
+- **Roles (V2.1):**
   - `owner`: Full access to tenant resources
   - `admin`: Manage integrations and settings
   - `developer`: Invoke actions, view logs
   - `viewer`: Read-only access
-- **Permission Structure (V2):**
+- **Permission Structure (V2.1):**
   - Fine-grained permissions per integration
   - Team invitations and role assignment
   - Audit trail for permission changes
 
 ### 6.6 Third-Party Integrations
 
-| Service             | Purpose                                   | Integration Method | Criticality     |
-| ------------------- | ----------------------------------------- | ------------------ | --------------- |
-| Supabase            | Database, Auth, Storage                   | SDK                | CRITICAL        |
-| Google Gemini 3 Pro | AI document processing, action generation | API                | CRITICAL        |
-| Firecrawl           | Web scraping for API documentation        | API                | CRITICAL        |
-| Vercel              | Hosting, Edge functions                   | Platform           | CRITICAL        |
-| Upstash             | Redis caching (V1+)                       | SDK                | IMPORTANT (V1+) |
-| Resend              | Transactional email (alerts)              | API                | NICE_TO_HAVE    |
+| Service             | Purpose                                   | Integration Method | Criticality       |
+| ------------------- | ----------------------------------------- | ------------------ | ----------------- |
+| Supabase            | Database, Auth, Storage                   | SDK                | CRITICAL          |
+| Google Gemini 3 Pro | AI document processing, action generation | API                | CRITICAL          |
+| Firecrawl           | Web scraping for API documentation        | API                | CRITICAL          |
+| Vercel              | Hosting, Edge functions                   | Platform           | CRITICAL          |
+| Upstash             | Redis caching (V1.1+)                     | SDK                | IMPORTANT (V1.1+) |
+| Resend              | Transactional email (alerts)              | API                | NICE_TO_HAVE      |
 
 ### 6.7 Security Requirements
 
@@ -1363,8 +1491,8 @@ This format is designed to be **LLM-friendly** — an AI agent reading this erro
 
 #### Monitoring & Observability
 
-- **APM Tool:** Vercel Analytics (basic), consider Sentry for V1+
-- **Log Aggregation:** Vercel Logs (basic), consider Axiom for V1+
+- **APM Tool:** Vercel Analytics (basic), consider Sentry for V1.1+
+- **Log Aggregation:** Vercel Logs (basic), consider Axiom for V1.1+
 - **Alerting:** Email alerts for: integration health failures, auth failures, error rate spikes
 
 ### 6.9 Testing Strategy
@@ -1375,7 +1503,7 @@ This format is designed to be **LLM-friendly** — an AI agent reading this erro
 | Integration Tests | Critical paths      | Vitest + MSW             | Developer      |
 | E2E Tests         | Happy paths         | Playwright               | Developer      |
 | API Tests         | All endpoints       | Thunder Client / Postman | Developer      |
-| Performance Tests | Latency benchmarks  | k6 (V1+)                 | Developer      |
+| Performance Tests | Latency benchmarks  | k6 (V1.1+)               | Developer      |
 
 ### 6.10 DevOps & Deployment
 
@@ -1392,7 +1520,7 @@ This format is designed to be **LLM-friendly** — an AI agent reading this erro
 
 - **Method:** Rolling (Vercel default - instant, zero-downtime)
 - **Rollback Plan:** Vercel instant rollback to previous deployment
-- **Feature Flags:** Environment variables initially; consider LaunchDarkly for V2
+- **Feature Flags:** Environment variables initially; consider LaunchDarkly for V2+
 
 #### CI/CD Pipeline
 
@@ -1419,13 +1547,13 @@ Push to main → GitHub Actions (lint, type-check, test) → Vercel Build → De
 
 ### 7.2 Scalability Requirements
 
-| Dimension           | MVP Target | V1 Target | Scaling Strategy           |
-| ------------------- | ---------- | --------- | -------------------------- |
-| Concurrent Users    | 10         | 100       | Vercel auto-scaling        |
-| Integrations        | 20         | 100       | Database indexing          |
-| Actions/Integration | 50         | 100       | Lazy loading, pagination   |
-| Requests/Second     | 10         | 100       | Vercel Edge, caching       |
-| Data Volume         | 1GB        | 10GB      | Supabase scaling, archival |
+| Dimension           | MVP Target | V1.1 Target | Scaling Strategy           |
+| ------------------- | ---------- | ----------- | -------------------------- |
+| Concurrent Users    | 10         | 100         | Vercel auto-scaling        |
+| Integrations        | 20         | 100         | Database indexing          |
+| Actions/Integration | 50         | 100         | Lazy loading, pagination   |
+| Requests/Second     | 10         | 100         | Vercel Edge, caching       |
+| Data Volume         | 1GB        | 10GB        | Supabase scaling, archival |
 
 ### 7.3 Reliability & Availability
 
@@ -1481,8 +1609,8 @@ Push to main → GitHub Actions (lint, type-check, test) → Vercel Build → De
 
 | Question                                                          | Context                                       | Decision Needed By |
 | ----------------------------------------------------------------- | --------------------------------------------- | ------------------ |
-| Should we support custom JavaScript transforms in field mappings? | More powerful but security risk               | V1 planning        |
-| What's the strategy for handling webhooks from external APIs?     | Need endpoint management, security            | V2 planning        |
+| Should we support custom JavaScript transforms in field mappings? | More powerful but security risk               | V1.1 planning      |
+| What's the strategy for handling webhooks from external APIs?     | Need endpoint management, security            | V2.2 planning      |
 | Should rate limits be configurable per-tenant or fixed?           | Flexibility vs complexity                     | MVP finalization   |
 | How do we handle integrations that require on-premise deployment? | Some enterprise APIs don't allow cloud access | V3 (if ever)       |
 

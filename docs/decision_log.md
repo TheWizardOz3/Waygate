@@ -12,30 +12,31 @@
 
 ## Quick Reference Index
 
-| ID      | Date       | Category | Status  | Summary                                                 |
-| ------- | ---------- | -------- | ------- | ------------------------------------------------------- |
-| ADR-001 | 2026-01-01 | infra    | active  | Prisma 7 requires pg adapter instead of URL in schema   |
-| ADR-002 | 2026-01-02 | infra    | active  | Prisma 7 config file requires explicit env loading      |
-| ADR-003 | 2026-01-02 | infra    | active  | Environment variable file strategy for secrets          |
-| ADR-004 | 2026-01-01 | arch     | active  | Dual encryption strategy for credentials                |
-| ADR-005 | 2026-01-02 | arch     | active  | In-memory circuit breaker with per-circuit tracking     |
-| ADR-006 | 2026-01-02 | arch     | active  | Result pattern for execution service                    |
-| ADR-007 | 2026-01-02 | arch     | active  | LLM abstraction layer for future multi-model support    |
-| ADR-008 | 2026-01-02 | arch     | active  | JSON Schema validation with Ajv and caching             |
-| ADR-009 | 2026-01-02 | arch     | active  | PostgreSQL advisory locks for token refresh             |
-| ADR-010 | 2026-01-02 | api      | active  | Unified dynamic gateway endpoint over per-action routes |
-| ADR-011 | 2026-01-02 | ui       | active  | CSS variable-based design system for global theming     |
-| ADR-012 | 2026-01-02 | ui       | active  | Zustand for wizard state, React Query for server state  |
-| ADR-013 | 2026-01-02 | arch     | active  | Gemini 3.0 as default LLM, crawl-first scraping         |
-| ADR-014 | 2026-01-03 | arch     | active  | Dual scraping modes: auto-discover vs specific pages    |
-| ADR-015 | 2026-01-03 | arch     | planned | Hybrid auth model: platform-owned + user-owned creds    |
-| ADR-016 | 2026-01-03 | arch     | active  | Wishlist-aware cache validation for scrape jobs         |
-| ADR-017 | 2026-01-03 | arch     | active  | Template auto-detection for schema-driven APIs          |
-| ADR-018 | 2026-01-03 | arch     | active  | Per-credential baseUrl for user-specific APIs           |
-| ADR-019 | 2026-01-03 | arch     | active  | LLM-friendly pagination with token-aware limits         |
-| ADR-020 | 2026-01-03 | arch     | active  | Response validation with Zod and three-mode strategy    |
-| ADR-021 | 2026-01-04 | ui       | active  | Hash-based tag colors for consistent categorization     |
-| ADR-022 | 2026-01-04 | api      | active  | Enriched log responses with integration/action names    |
+| ID      | Date       | Category | Status  | Summary                                                       |
+| ------- | ---------- | -------- | ------- | ------------------------------------------------------------- |
+| ADR-001 | 2026-01-01 | infra    | active  | Prisma 7 requires pg adapter instead of URL in schema         |
+| ADR-002 | 2026-01-02 | infra    | active  | Prisma 7 config file requires explicit env loading            |
+| ADR-003 | 2026-01-02 | infra    | active  | Environment variable file strategy for secrets                |
+| ADR-004 | 2026-01-01 | arch     | active  | Dual encryption strategy for credentials                      |
+| ADR-005 | 2026-01-02 | arch     | active  | In-memory circuit breaker with per-circuit tracking           |
+| ADR-006 | 2026-01-02 | arch     | active  | Result pattern for execution service                          |
+| ADR-007 | 2026-01-02 | arch     | active  | LLM abstraction layer for future multi-model support          |
+| ADR-008 | 2026-01-02 | arch     | active  | JSON Schema validation with Ajv and caching                   |
+| ADR-009 | 2026-01-02 | arch     | active  | PostgreSQL advisory locks for token refresh                   |
+| ADR-010 | 2026-01-02 | api      | active  | Unified dynamic gateway endpoint over per-action routes       |
+| ADR-011 | 2026-01-02 | ui       | active  | CSS variable-based design system for global theming           |
+| ADR-012 | 2026-01-02 | ui       | active  | Zustand for wizard state, React Query for server state        |
+| ADR-013 | 2026-01-02 | arch     | active  | Gemini 3.0 as default LLM, crawl-first scraping               |
+| ADR-014 | 2026-01-03 | arch     | active  | Dual scraping modes: auto-discover vs specific pages          |
+| ADR-015 | 2026-01-03 | arch     | planned | Hybrid auth model: platform-owned + user-owned creds          |
+| ADR-016 | 2026-01-03 | arch     | active  | Wishlist-aware cache validation for scrape jobs               |
+| ADR-017 | 2026-01-03 | arch     | active  | Template auto-detection for schema-driven APIs                |
+| ADR-018 | 2026-01-03 | arch     | active  | Per-credential baseUrl for user-specific APIs                 |
+| ADR-019 | 2026-01-03 | arch     | active  | LLM-friendly pagination with token-aware limits               |
+| ADR-020 | 2026-01-03 | arch     | active  | Response validation with Zod and three-mode strategy          |
+| ADR-021 | 2026-01-04 | ui       | active  | Hash-based tag colors for consistent categorization           |
+| ADR-022 | 2026-01-04 | api      | active  | Enriched log responses with integration/action names          |
+| ADR-023 | 2026-01-04 | arch     | active  | Simplified flat-schema prompts for Gemini endpoint extraction |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -76,6 +77,54 @@
 ## Log Entries
 
 <!-- Add new entries below this line, newest first -->
+
+### ADR-023: Simplified Flat-Schema Prompts for Gemini Endpoint Extraction
+
+**Date:** 2026-01-04 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+Endpoint extraction was hanging for 5+ minutes and timing out. Investigation revealed:
+
+1. The `ENDPOINT_EXTRACTION_SYSTEM_PROMPT` instructed Gemini to extract complex nested data (pathParameters, queryParameters, requestBody, responses, pagination)
+2. The `ENDPOINT_SCHEMA` only defined flat fields (name, slug, method, path, description)
+3. This contradiction caused Gemini to struggle, generating garbage or timing out
+4. Additionally, `gemini-3-pro-preview` defaults to `thinking_level: high` which adds latency
+
+#### Decision
+
+1. **Simplified prompts**: Removed all instructions for nested extraction. Prompt now only requests the 5 flat fields that match the schema.
+2. **Low thinking mode**: Added `thinkingConfig: { thinkingLevel: 'low' }` for faster extraction tasks.
+3. **Schema constraints**: Added `maxLength` properties to string fields to prevent hallucination.
+4. **Null byte sanitization**: Added `rawText.replace(/\u0000/g, '')` before JSON parsing.
+5. **Wishlist coverage fix**: Changed from `.some()` to `.every()` in `getUncoveredWishlistItems()`.
+
+#### Rationale
+
+- **Prompt/schema alignment**: LLMs perform best when instructions exactly match the expected output format. Complex instructions with simple schemas confuse the model.
+- **Thinking overhead**: For extraction tasks, deep reasoning isn't needed - pattern matching is sufficient. Low thinking reduces latency from minutes to seconds.
+- **Schema constraints**: Without `maxLength`, Gemini occasionally generates thousands of random words in string fields.
+- **Fail-safe parsing**: Null bytes in LLM output cause PostgreSQL to reject the data entirely.
+
+#### Supersedes
+
+N/A - Enhancement to existing endpoint extraction
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/ai/prompts/extract-api.ts`, `src/lib/modules/ai/llm/providers/gemini.ts`
+- **Find:** Complex prompt instructions mentioning `pathParameters`, `requestBody`, `responses`
+- **Replace with:** Simple prompt requesting only `name`, `slug`, `method`, `path`, `description`
+- **Verify:** `npm run test -- --run tests/unit/ai/extract-api-prompts.test.ts`
+
+#### AI Instructions
+
+- When modifying endpoint extraction prompts, ALWAYS ensure the prompt instructions match the schema fields exactly
+- Do NOT add complex nested extraction without also updating the schema
+- For Gemini 3, use `thinkingLevel: 'low'` for extraction/parsing tasks, `high` only for reasoning
+- Always sanitize LLM output for null bytes before database storage
+
+---
 
 ### ADR-018: Per-Credential Base URL for User-Specific APIs
 

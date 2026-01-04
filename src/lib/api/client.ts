@@ -248,7 +248,8 @@ export const client = {
     },
 
     create(input: CreateActionInput) {
-      return apiClient.post<ActionResponse>('/actions', input);
+      // Actions must be created under an integration
+      return apiClient.post<ActionResponse>(`/integrations/${input.integrationId}/actions`, input);
     },
 
     update(id: string, input: UpdateActionInput, integrationId?: string) {

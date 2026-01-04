@@ -168,15 +168,15 @@ enum ScrapeJobStatus {
 | `src/lib/modules/ai/intelligent-crawler.ts`   | **LLM-guided page selection: Map → Triage → Scrape (default mode)**    |
 | `src/lib/modules/ai/doc-scraper.ts`           | Firecrawl integration for URL scraping and basic BFS crawling          |
 | `src/lib/modules/ai/openapi-parser.ts`        | Direct OpenAPI/Swagger specification parsing                           |
-| `src/lib/modules/ai/document-parser.ts`       | AI-powered content extraction using chunking and parallel processing   |
+| `src/lib/modules/ai/document-parser.ts`       | AI-powered content extraction with single-shot parsing (800K char cap) |
 | `src/lib/modules/ai/action-generator.ts`      | Transforms ParsedApiDoc into ActionDefinitions with JSON Schema        |
 | `src/lib/modules/ai/scrape-job.service.ts`    | Job lifecycle, async processing, and status management                 |
 | `src/lib/modules/ai/scrape-job.repository.ts` | Database CRUD operations for ScrapeJob                                 |
 | `src/lib/modules/ai/scrape-job.schemas.ts`    | Zod schemas for API validation and ParsedApiDoc structure              |
-| `src/lib/modules/ai/prompts/extract-api.ts`   | Specialized prompts for endpoint, auth, and rate limit extraction      |
+| `src/lib/modules/ai/prompts/extract-api.ts`   | Simplified flat-schema prompts for reliable Gemini endpoint extraction |
 | `src/lib/modules/ai/storage.ts`               | Supabase Storage integration with gzip compression                     |
 | `src/lib/modules/ai/llm/client.ts`            | Centralized LLM model management and provider factory                  |
-| `src/lib/modules/ai/llm/providers/gemini.ts`  | Google Gemini client with structured output support                    |
+| `src/lib/modules/ai/llm/providers/gemini.ts`  | Gemini 3 client with low-thinking mode and maxLength schema support    |
 | `src/lib/modules/ai/llm/types.ts`             | LLM provider interface for future extensibility                        |
 | `src/app/api/v1/scrape/route.ts`              | POST /scrape (create job) + GET /scrape (list jobs)                    |
 | `src/app/api/v1/scrape/[jobId]/route.ts`      | GET /scrape/:jobId (job status)                                        |

@@ -34,143 +34,33 @@ Always return valid JSON matching the requested schema. Do not include markdown 
 
 /**
  * System prompt specifically for endpoint extraction
+ * SIMPLIFIED: Only extracts flat endpoint objects (name, slug, method, path, description)
  */
-export const ENDPOINT_EXTRACTION_SYSTEM_PROMPT = `You are an API endpoint extraction specialist. Extract API endpoints from the documentation.
+export const ENDPOINT_EXTRACTION_SYSTEM_PROMPT = `You are an API endpoint extraction specialist. Extract API endpoints from documentation and return them as a JSON array.
 
-## CRITICAL PRIORITIES (Follow This Order):
-1. **SKIP deprecated endpoints** - Do NOT include any endpoint marked as deprecated, legacy, or scheduled for removal
-2. **Focus on core functionality first** - Prioritize the most commonly used, essential endpoints (CRUD operations, main features)
-3. **Quality over quantity** - Extract complete, accurate information for fewer endpoints rather than incomplete data for many
-4. **Skip admin/internal endpoints** - Unless specifically requested, skip administrative, internal, or rarely-used endpoints
-
-## For Each Endpoint, Extract:
+## WHAT TO EXTRACT
+For each endpoint, extract ONLY these 5 fields:
 - **name**: Human-readable name (e.g., "Send Message", "List Users")
-- **slug**: URL-safe identifier (e.g., "send-message", "list-users")
+- **slug**: URL-safe identifier (e.g., "send-message", "list-users")  
 - **method**: HTTP method (GET, POST, PUT, PATCH, DELETE)
-- **path**: API path with parameters (e.g., "/users/{id}/messages")
-- **description**: What the endpoint does
-- **deprecated**: Set to true ONLY if keeping for reference, otherwise omit deprecated endpoints entirely
-- **parameters**: Path, query, and header parameters with types
-- **requestBody**: Request body schema if applicable
-- **responses**: Expected response schemas by status code (BE SPECIFIC - see Schema Strictness below)
-- **pagination**: Pagination configuration if this is a list endpoint (see below)
+- **path**: API path (e.g., "/users/{id}/messages")
+- **description**: Brief description of what the endpoint does
 
-## Schema Strictness (IMPORTANT for Response Validation)
+## PRIORITIES
+1. Skip deprecated endpoints
+2. Focus on core CRUD operations and main features
+3. Skip admin/internal endpoints unless specifically requested
+4. Extract 10-30 of the most important endpoints
 
-When extracting response schemas, be as specific as possible. This enables strict validation at runtime.
+## OUTPUT FORMAT
+Return ONLY a JSON array. No markdown, no explanations, no code blocks.
 
-### Do NOT use generic "object" or "any" types when details are available:
-
-❌ BAD - Too generic:
-\`\`\`json
-{
-  "type": "object",
-  "properties": {
-    "data": { "type": "object" },
-    "user": { "type": "object" }
-  }
-}
-\`\`\`
-
-✅ GOOD - Specific types:
-\`\`\`json
-{
-  "type": "object",
-  "properties": {
-    "data": {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "created_at": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "name"]
-    },
-    "user": {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "user", "guest"] }
-      },
-      "required": ["id", "email"]
-    }
-  },
-  "required": ["data"]
-}
-\`\`\`
-
-### Guidelines for Strict Schemas:
-
-1. **Always extract "required" arrays** - List fields that are always present
-2. **Use specific formats** - "date-time", "email", "uri", "uuid" when documented
-3. **Use enums for known values** - If docs list specific allowed values, use enum
-4. **Mark nullable fields** - Use "nullable": true if docs say field can be null
-5. **Specify array item types** - Don't just use "array", specify "items" schema
-6. **Extract nested objects** - When example JSON is provided, infer full structure
-7. **Note optional fields** - Don't add to "required" array unless explicitly required
-
-### Schema Confidence Indicators:
-
-Include these in your response:
-- **schemaConfidence**: "high" | "medium" | "low"
-  - high: Full schema is documented with types and examples
-  - medium: Partial schema, some inference needed
-  - low: Mostly inferred from examples or conventions
-  
-### When to be Lenient:
-
-If documentation is vague or only shows partial examples:
-- Use \`{ "type": "object", "additionalProperties": true }\` for unknown structures
-- Use \`{ "type": "array" }\` without items if array contents vary
-- Add a note: "schemaNote": "Partial schema - response may have additional fields"
-
-## Pagination Detection (IMPORTANT for list endpoints)
-For GET endpoints that return lists/arrays of items, detect pagination:
-
-### Pagination Strategies:
-1. **cursor**: Uses cursor/token-based pagination (next_cursor, pageToken, after, continuation)
-2. **offset**: Uses offset+limit pagination (offset=100&limit=50)
-3. **page_number**: Uses page number pagination (page=2&per_page=50)
-4. **link_header**: Uses Link HTTP header (RFC 5988, common in GitHub/GitLab)
-5. **auto**: When pagination exists but strategy is unclear
-
-### Common Pagination Indicators:
-- Query params: cursor, after, before, page_token, offset, skip, page, page_number, limit, per_page, page_size
-- Response fields: next_cursor, nextPageToken, has_more, hasMore, total, totalCount, totalPages, data, results, items
-
-### For paginated endpoints, include:
-\`\`\`json
-"pagination": {
-  "strategy": "cursor|offset|page_number|link_header|auto",
-  "cursorParam": "cursor",           // param name for cursor
-  "cursorPath": "$.meta.next_cursor", // JSONPath to next cursor in response
-  "offsetParam": "offset",            // param name for offset
-  "limitParam": "limit",              // param name for limit/page_size
-  "pageParam": "page",                // param name for page number
-  "totalPath": "$.meta.total",        // JSONPath to total count
-  "dataPath": "$.data",               // JSONPath to data array
-  "hasMorePath": "$.meta.has_more"    // JSONPath to hasMore boolean
-}
-\`\`\`
-
-## Parameter Type Mapping
-- Strings: "string"
-- Numbers: "number" or "integer"
-- Booleans: "boolean"
-- Arrays: "array"
-- Objects: "object"
-- Dates: "string" (with format note)
-- Enums: "string" (with enum values listed)
-
-## Path Parameter Format
-Use curly braces for path parameters: /users/{userId}/posts/{postId}
-
-## Output Guidelines
-- Extract the 30-50 most important, non-deprecated endpoints
-- If the API has fewer endpoints, extract all non-deprecated ones
-- Ensure each endpoint has at minimum: name, slug, method, path, and description
-- Always include pagination config for list/collection GET endpoints`;
+Example output:
+[
+  {"name": "List Users", "slug": "list-users", "method": "GET", "path": "/users", "description": "Returns all users"},
+  {"name": "Get User", "slug": "get-user", "method": "GET", "path": "/users/{id}", "description": "Get a user by ID"},
+  {"name": "Create User", "slug": "create-user", "method": "POST", "path": "/users", "description": "Creates a new user"}
+]`;
 
 /**
  * System prompt for authentication detection
@@ -222,7 +112,7 @@ export const RATE_LIMIT_DETECTION_SYSTEM_PROMPT = `You are an API rate limit spe
 // =============================================================================
 
 /**
- * Example input/output for endpoint extraction
+ * Example input/output for endpoint extraction (SIMPLIFIED - flat output only)
  */
 export const ENDPOINT_EXTRACTION_EXAMPLE = {
   input: `## Send a Message
@@ -236,168 +126,35 @@ Sends a message to a channel.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | channel | string | Yes | Channel ID |
-| text | string | Yes | Message text |
-| thread_ts | string | No | Thread timestamp |
+| text | string | Yes | Message text |`,
 
-### Response
-
-Returns a message object on success.
-
-\`\`\`json
-{
-  "ok": true,
-  "channel": "C1234567890",
-  "ts": "1234567890.123456",
-  "message": {
-    "text": "Hello world",
-    "username": "bot"
-  }
-}
-\`\`\``,
-
+  // SIMPLIFIED: Only flat fields matching ENDPOINT_SCHEMA
   output: {
     name: 'Send Message',
     slug: 'send-message',
     method: 'POST',
     path: '/chat.postMessage',
     description: 'Sends a message to a channel.',
-    pathParameters: [],
-    queryParameters: [],
-    requestBody: {
-      contentType: 'application/json',
-      required: true,
-      schema: {
-        type: 'object',
-        properties: {
-          channel: { type: 'string', description: 'Channel ID' },
-          text: { type: 'string', description: 'Message text' },
-          thread_ts: { type: 'string', description: 'Thread timestamp' },
-        },
-        required: ['channel', 'text'],
-      },
-    },
-    responses: {
-      '200': {
-        description: 'Returns a message object on success.',
-        schema: {
-          type: 'object',
-          properties: {
-            ok: { type: 'boolean', description: 'Success indicator' },
-            channel: { type: 'string', description: 'Channel ID where message was posted' },
-            ts: { type: 'string', description: 'Message timestamp (unique ID)' },
-            message: {
-              type: 'object',
-              description: 'The posted message object',
-              properties: {
-                text: { type: 'string', description: 'Message text content' },
-                username: { type: 'string', description: 'Username of sender' },
-              },
-              required: ['text'],
-            },
-          },
-          required: ['ok', 'channel', 'ts'],
-        },
-        schemaConfidence: 'high',
-      },
-    },
-    tags: ['messaging'],
   },
 };
 
 /**
- * Example input/output for paginated endpoint extraction
+ * Example input/output for paginated endpoint extraction (SIMPLIFIED - flat output only)
  */
 export const PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE = {
   input: `## List Messages
 
 GET /conversations.history
 
-Fetches messages from a channel.
+Fetches messages from a channel with pagination.`,
 
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| channel | string | Yes | Channel ID |
-| cursor | string | No | Pagination cursor |
-| limit | integer | No | Number of messages per page (default 100, max 1000) |
-
-### Response
-
-Returns a list of messages with pagination.
-
-\`\`\`json
-{
-  "ok": true,
-  "messages": [
-    { "ts": "1234567890.123456", "text": "Hello" },
-    { "ts": "1234567890.123457", "text": "World" }
-  ],
-  "has_more": true,
-  "response_metadata": {
-    "next_cursor": "dGVhbTpDMDYxRkE1UEI="
-  }
-}
-\`\`\``,
-
+  // SIMPLIFIED: Only flat fields matching ENDPOINT_SCHEMA
   output: {
     name: 'List Messages',
     slug: 'list-messages',
     method: 'GET',
     path: '/conversations.history',
-    description: 'Fetches messages from a channel.',
-    pathParameters: [],
-    queryParameters: [
-      { name: 'channel', type: 'string', required: true, description: 'Channel ID' },
-      { name: 'cursor', type: 'string', required: false, description: 'Pagination cursor' },
-      {
-        name: 'limit',
-        type: 'integer',
-        required: false,
-        description: 'Number of messages per page (default 100, max 1000)',
-      },
-    ],
-    responses: {
-      '200': {
-        description: 'Returns a list of messages with pagination.',
-        schema: {
-          type: 'object',
-          properties: {
-            ok: { type: 'boolean', description: 'Success indicator' },
-            messages: {
-              type: 'array',
-              description: 'List of message objects',
-              items: {
-                type: 'object',
-                properties: {
-                  ts: { type: 'string', description: 'Message timestamp (unique ID)' },
-                  text: { type: 'string', description: 'Message text content' },
-                },
-                required: ['ts', 'text'],
-              },
-            },
-            has_more: { type: 'boolean', description: 'Whether more messages exist' },
-            response_metadata: {
-              type: 'object',
-              properties: {
-                next_cursor: { type: 'string', description: 'Cursor for next page' },
-              },
-            },
-          },
-          required: ['ok', 'messages'],
-        },
-        schemaConfidence: 'high',
-      },
-    },
-    pagination: {
-      strategy: 'cursor',
-      cursorParam: 'cursor',
-      limitParam: 'limit',
-      cursorPath: '$.response_metadata.next_cursor',
-      dataPath: '$.messages',
-      hasMorePath: '$.has_more',
-    },
-    tags: ['messaging'],
+    description: 'Fetches messages from a channel with pagination.',
   },
 };
 
@@ -469,10 +226,10 @@ Individual endpoints may have lower limits:
       requests: 100,
       window: 60,
     },
-    perEndpoint: {
-      '/search': { requests: 10, window: 60 },
-      '/bulk-import': { requests: 5, window: 3600 },
-    },
+    perEndpoint: [
+      { endpoint: '/search', requests: 10, window: 60 },
+      { endpoint: '/bulk-import', requests: 5, window: 3600 },
+    ],
   },
 };
 
@@ -509,35 +266,25 @@ Return ONLY the JSON object, no markdown formatting.`;
 
 /**
  * Build a prompt for endpoint extraction only
+ * SIMPLIFIED: Only extracts flat endpoint objects to match ENDPOINT_SCHEMA
  */
 export function buildEndpointExtractionPrompt(documentationContent: string): string {
   return `${ENDPOINT_EXTRACTION_SYSTEM_PROMPT}
-
-## Example 1: Non-paginated POST endpoint
-
-Input documentation:
-${ENDPOINT_EXTRACTION_EXAMPLE.input}
-
-Expected output:
-${JSON.stringify(ENDPOINT_EXTRACTION_EXAMPLE.output, null, 2)}
-
-## Example 2: Paginated GET endpoint (with pagination config)
-
-Input documentation:
-${PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE.input}
-
-Expected output:
-${JSON.stringify(PAGINATED_ENDPOINT_EXTRACTION_EXAMPLE.output, null, 2)}
 
 ## Documentation to Parse
 
 ${documentationContent}
 
-## Instructions
+## Task
 
-Extract all API endpoints from the documentation above. Return a JSON array of endpoint objects.
-For list/collection GET endpoints, include pagination configuration if detectable.
-Return ONLY the JSON array, no markdown formatting.`;
+Extract API endpoints from the documentation above. Return a JSON array where each endpoint has ONLY these fields:
+- name: Human-readable name
+- slug: URL-safe identifier  
+- method: GET, POST, PUT, PATCH, or DELETE
+- path: The API path
+- description: Brief description
+
+Return ONLY the JSON array. No markdown, no explanations.`;
 }
 
 /**
@@ -585,7 +332,7 @@ ${documentationContent}
 ## Instructions
 
 Extract rate limit information from the documentation above. Return a JSON object with default and per-endpoint limits.
-If no rate limits are found, return: { "default": null, "perEndpoint": {} }
+If no rate limits are found, return: { "default": null, "perEndpoint": [] }
 Return ONLY the JSON object, no markdown formatting.`;
 }
 
@@ -633,6 +380,7 @@ export const API_INFO_SCHEMA: LLMResponseSchema = {
 
 /**
  * Schema for pagination configuration in endpoints
+ * Note: All fields except strategy are nullable - OMIT them entirely if not found in docs
  */
 export const PAGINATION_CONFIG_SCHEMA: LLMResponseSchema = {
   type: 'object',
@@ -640,37 +388,80 @@ export const PAGINATION_CONFIG_SCHEMA: LLMResponseSchema = {
     strategy: {
       type: 'string',
       enum: ['cursor', 'offset', 'page_number', 'link_header', 'auto'],
-      description: 'Pagination strategy type',
+      description: 'Pagination strategy type - REQUIRED if pagination exists',
     },
-    cursorParam: { type: 'string', description: 'Query param name for cursor' },
-    cursorPath: { type: 'string', description: 'JSONPath to next cursor in response' },
-    offsetParam: { type: 'string', description: 'Query param name for offset' },
-    limitParam: { type: 'string', description: 'Query param name for limit/page_size' },
-    pageParam: { type: 'string', description: 'Query param name for page number' },
-    totalPath: { type: 'string', description: 'JSONPath to total count in response' },
-    totalPagesPath: { type: 'string', description: 'JSONPath to total pages in response' },
-    dataPath: { type: 'string', description: 'JSONPath to data array in response' },
-    hasMorePath: { type: 'string', description: 'JSONPath to hasMore boolean in response' },
+    cursorParam: {
+      type: 'string',
+      description: 'Query param name for cursor. OMIT if not in docs. Example: "cursor"',
+      maxLength: 50,
+      nullable: true,
+    },
+    cursorPath: {
+      type: 'string',
+      description: 'JSONPath to next cursor. OMIT if not in docs. Example: "$.next_cursor"',
+      maxLength: 100,
+      nullable: true,
+    },
+    offsetParam: {
+      type: 'string',
+      description: 'Query param name for offset. OMIT if not in docs. Example: "offset"',
+      maxLength: 50,
+      nullable: true,
+    },
+    limitParam: {
+      type: 'string',
+      description: 'Query param name for limit. OMIT if not in docs. Example: "limit"',
+      maxLength: 50,
+      nullable: true,
+    },
+    pageParam: {
+      type: 'string',
+      description: 'Query param name for page. OMIT if not in docs. Example: "page"',
+      maxLength: 50,
+      nullable: true,
+    },
+    totalPath: {
+      type: 'string',
+      description: 'JSONPath to total count. OMIT if not in docs. Example: "$.total"',
+      maxLength: 100,
+      nullable: true,
+    },
+    totalPagesPath: {
+      type: 'string',
+      description: 'JSONPath to total pages. OMIT if not in docs. Example: "$.pages"',
+      maxLength: 100,
+      nullable: true,
+    },
+    dataPath: {
+      type: 'string',
+      description: 'JSONPath to data array. OMIT if not in docs. Example: "$.results"',
+      maxLength: 100,
+      nullable: true,
+    },
+    hasMorePath: {
+      type: 'string',
+      description: 'JSONPath to hasMore boolean. OMIT if not in docs. Example: "$.has_more"',
+      maxLength: 100,
+      nullable: true,
+    },
   },
 };
 
 /**
- * Schema for a single endpoint
+ * Schema for a single endpoint - KEEP IT SIMPLE
+ * No nested objects - just flat fields for reliable extraction
  */
 export const ENDPOINT_SCHEMA: LLMResponseSchema = {
   type: 'object',
   properties: {
-    name: { type: 'string', description: 'Human-readable endpoint name' },
-    slug: { type: 'string', description: 'URL-safe identifier' },
-    method: {
+    name: {
       type: 'string',
-      enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      description: 'HTTP method',
+      description: 'Human-readable name like "List Users" or "Create Database"',
     },
-    path: { type: 'string', description: 'API path with parameters' },
-    description: { type: 'string', description: 'What the endpoint does' },
-    deprecated: { type: 'boolean', description: 'Whether endpoint is deprecated' },
-    pagination: PAGINATION_CONFIG_SCHEMA,
+    slug: { type: 'string', description: 'URL-safe slug like "list-users" or "create-database"' },
+    method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] },
+    path: { type: 'string', description: 'API path like "/users" or "/databases/{database_id}"' },
+    description: { type: 'string', description: 'One sentence description', nullable: true },
   },
   required: ['name', 'slug', 'method', 'path'],
 };
@@ -714,6 +505,7 @@ export const AUTH_METHODS_ARRAY_SCHEMA: LLMResponseSchema = {
 
 /**
  * Schema for rate limits extraction
+ * Note: perEndpoint uses array format since Gemini requires OBJECT types to have defined properties
  */
 export const RATE_LIMITS_SCHEMA: LLMResponseSchema = {
   type: 'object',
@@ -726,8 +518,16 @@ export const RATE_LIMITS_SCHEMA: LLMResponseSchema = {
       },
     },
     perEndpoint: {
-      type: 'object',
+      type: 'array',
       description: 'Endpoint-specific rate limits',
+      items: {
+        type: 'object',
+        properties: {
+          endpoint: { type: 'string', description: 'Endpoint path' },
+          requests: { type: 'number', description: 'Number of requests allowed' },
+          window: { type: 'number', description: 'Time window in seconds' },
+        },
+      },
     },
   },
 };

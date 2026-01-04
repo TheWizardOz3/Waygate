@@ -24,11 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useMappings,
   useMappingConfig,
@@ -44,10 +40,11 @@ interface MappingsTabProps {
 
 export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
   const { data: mappingsData, isLoading, refetch } = useMappings(actionId, integrationId);
-  const { data: config, mutateAsync: updateConfig, isPending: configPending } = useMappingConfig(
-    actionId,
-    integrationId
-  );
+  const {
+    data: config,
+    mutateAsync: updateConfig,
+    isPending: configPending,
+  } = useMappingConfig(actionId, integrationId);
 
   const mappings = mappingsData?.mappings ?? [];
   const enabled = config?.enabled ?? false;
@@ -112,7 +109,8 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
                   <Info className="h-3.5 w-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <strong>Passthrough:</strong> Return original data if mapping fails (safe).<br/>
+                  <strong>Passthrough:</strong> Return original data if mapping fails (safe).
+                  <br />
                   <strong>Strict:</strong> Fail the request if mapping fails.
                 </TooltipContent>
               </Tooltip>
@@ -122,7 +120,7 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
               onValueChange={handleChangeFailureMode}
               disabled={configPending}
             >
-              <SelectTrigger className="w-36 h-8">
+              <SelectTrigger className="h-8 w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -155,11 +153,7 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
                     onDelete={refetch}
                   />
                 ))}
-                <AddMappingRow
-                  actionId={actionId}
-                  integrationId={integrationId}
-                  onAdd={refetch}
-                />
+                <AddMappingRow actionId={actionId} integrationId={integrationId} onAdd={refetch} />
               </TableBody>
             </Table>
           </div>
@@ -170,7 +164,8 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
                 No mappings configured. Use the row above to add your first mapping.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Example: <code className="bg-muted px-1 rounded">$.data.user_email</code> → <code className="bg-muted px-1 rounded">$.email</code>
+                Example: <code className="rounded bg-muted px-1">$.data.user_email</code> →{' '}
+                <code className="rounded bg-muted px-1">$.email</code>
               </p>
             </div>
           )}
@@ -215,7 +210,7 @@ function MappingRow({ mapping, actionId, integrationId, onDelete }: MappingRowPr
         </Badge>
       </TableCell>
       <TableCell>
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
           {mapping.sourcePath}
         </code>
       </TableCell>
@@ -223,7 +218,7 @@ function MappingRow({ mapping, actionId, integrationId, onDelete }: MappingRowPr
         <ArrowRight className="h-3 w-3 text-muted-foreground" />
       </TableCell>
       <TableCell>
-        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
           {mapping.targetPath}
         </code>
       </TableCell>
@@ -320,7 +315,7 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
           value={sourcePath}
           onChange={(e) => setSourcePath(e.target.value)}
           placeholder="$.data.field"
-          className="h-7 text-xs font-mono"
+          className="h-7 font-mono text-xs"
         />
       </TableCell>
       <TableCell>
@@ -331,11 +326,14 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
           value={targetPath}
           onChange={(e) => setTargetPath(e.target.value)}
           placeholder="$.field"
-          className="h-7 text-xs font-mono"
+          className="h-7 font-mono text-xs"
         />
       </TableCell>
       <TableCell>
-        <Select value={coercionType} onValueChange={(v) => setCoercionType(v as CoercionType | 'none')}>
+        <Select
+          value={coercionType}
+          onValueChange={(v) => setCoercionType(v as CoercionType | 'none')}
+        >
           <SelectTrigger className="h-7 w-20 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -365,4 +363,3 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
     </TableRow>
   );
 }
-

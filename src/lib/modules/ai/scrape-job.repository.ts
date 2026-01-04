@@ -30,6 +30,7 @@ export interface CreateScrapeJobInput {
 export interface UpdateScrapeJobInput {
   status?: ScrapeJobStatus;
   progress?: number;
+  progressDetails?: Prisma.InputJsonValue;
   result?: Prisma.InputJsonValue;
   error?: Prisma.InputJsonValue;
   cachedContentKey?: string | null;
@@ -210,10 +211,29 @@ export async function updateScrapeJob(id: string, input: UpdateScrapeJobInput): 
     data: {
       ...(input.status !== undefined && { status: input.status }),
       ...(input.progress !== undefined && { progress: input.progress }),
+      ...(input.progressDetails !== undefined && { progressDetails: input.progressDetails }),
       ...(input.result !== undefined && { result: input.result }),
       ...(input.error !== undefined && { error: input.error }),
       ...(input.cachedContentKey !== undefined && { cachedContentKey: input.cachedContentKey }),
       ...(input.completedAt !== undefined && { completedAt: input.completedAt }),
+    },
+  });
+}
+
+/**
+ * Updates progress details for a scrape job
+ * Convenience method for updating detailed progress information
+ */
+export async function updateScrapeJobProgressDetails(
+  id: string,
+  progressDetails: Prisma.InputJsonValue,
+  progress?: number
+): Promise<ScrapeJob> {
+  return prisma.scrapeJob.update({
+    where: { id },
+    data: {
+      progressDetails,
+      ...(progress !== undefined && { progress }),
     },
   });
 }

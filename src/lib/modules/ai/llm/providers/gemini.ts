@@ -58,6 +58,8 @@ interface GeminiSchemaInternal {
   required?: string[];
   enum?: string[];
   nullable?: boolean;
+  maxLength?: number;
+  minLength?: number;
 }
 
 /**
@@ -97,6 +99,15 @@ function convertToGeminiSchema(
     result.nullable = schema.nullable;
   }
 
+  // String length constraints - critical for preventing hallucination
+  if ('maxLength' in schema && schema.maxLength !== undefined) {
+    result.maxLength = schema.maxLength;
+  }
+
+  if ('minLength' in schema && schema.minLength !== undefined) {
+    result.minLength = schema.minLength;
+  }
+
   return result;
 }
 
@@ -129,11 +140,18 @@ export class GeminiProvider implements LLMProvider {
     const startTime = Date.now();
 
     // Build generation config
+    // For Gemini 3: Use thinking_level: "low" for faster responses on extraction tasks
+    // See: https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const generationConfig: GenerationConfig & { responseSchema?: any } = {
+    const generationConfig: GenerationConfig & { responseSchema?: any; thinkingConfig?: any } = {
       temperature: options.temperature ?? DEFAULT_TEMPERATURE,
       maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
       topP: options.topP ?? DEFAULT_TOP_P,
+      // Use low thinking level for faster extraction - Gemini 3 defaults to "high" which is slow
+      // See: https://ai.google.dev/gemini-api/docs/gemini-3#thinking_level
+      thinkingConfig: {
+        thinkingLevel: 'low',
+      },
     };
 
     // Add JSON response format if schema provided
@@ -166,7 +184,8 @@ export class GeminiProvider implements LLMProvider {
 
       const durationMs = Date.now() - startTime;
       const response = result.response;
-      const rawText = response.text();
+      // Sanitize response: remove null bytes that PostgreSQL can't store
+      const rawText = response.text().replace(/\u0000/g, '');
 
       // Extract usage metadata if available
       const usageMetadata = response.usageMetadata;

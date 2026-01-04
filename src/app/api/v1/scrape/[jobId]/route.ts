@@ -56,6 +56,11 @@ export const GET = withApiAuth(async (request: NextRequest, { tenant }) => {
       response.currentStep = job.currentStep;
     }
 
+    // Add progress details if available (new in v0.2)
+    if ('progressDetails' in job && job.progressDetails) {
+      response.progressDetails = job.progressDetails;
+    }
+
     // Add result for completed jobs
     if (job.status === 'COMPLETED' && 'result' in job) {
       response.result = job.result;

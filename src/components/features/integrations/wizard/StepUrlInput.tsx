@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,6 +14,7 @@ import {
   FileText,
   Search,
   RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Form,
   FormControl,
@@ -33,6 +35,82 @@ import {
 } from '@/components/ui/form';
 import { useWizardStore } from '@/stores/wizard.store';
 import { useScrapeJob } from '@/hooks/useScrapeJob';
+
+/**
+ * Analyze a URL to determine if it's likely a guide/overview page
+ * rather than actual API reference documentation
+ */
+function analyzeDocUrl(url: string): { isLikelyGuide: boolean; suggestion: string | null } {
+  if (!url) return { isLikelyGuide: false, suggestion: null };
+
+  const lowerUrl = url.toLowerCase();
+
+  // Patterns that indicate API reference (good)
+  const apiReferencePatterns = [
+    '/api/',
+    '/methods',
+    '/reference',
+    '/endpoints',
+    '/rest/',
+    '/graphql',
+    '/v1/',
+    '/v2/',
+    '/v3/',
+    'api.',
+    '/docs/api',
+    '/api-reference',
+  ];
+
+  // If URL already looks like API reference, no warning needed
+  if (apiReferencePatterns.some((pattern) => lowerUrl.includes(pattern))) {
+    return { isLikelyGuide: false, suggestion: null };
+  }
+
+  // Patterns that indicate guide/overview pages (warning)
+  const guidePatterns = [
+    '/guides',
+    '/quickstart',
+    '/getting-started',
+    '/overview',
+    '/tutorials',
+    '/learn',
+    '/intro',
+    '/welcome',
+    '/docs/guides',
+    '/documentation',
+  ];
+
+  // Check if URL ends at docs root (common pattern for landing pages)
+  const endsAtDocsRoot = /\/docs\/?$|\/documentation\/?$|\/developer\/?$/i.test(url);
+
+  if (guidePatterns.some((pattern) => lowerUrl.includes(pattern)) || endsAtDocsRoot) {
+    // Try to suggest a better URL
+    let suggestion: string | null = null;
+
+    try {
+      const parsed = new URL(url);
+      const host = parsed.host;
+
+      // Common patterns for where API docs live
+      if (host.includes('slack')) {
+        suggestion = 'Try https://api.slack.com/methods for Web API endpoints';
+      } else if (host.includes('github')) {
+        suggestion = 'Try the /rest/ or /graphql/ sections for API reference';
+      } else if (host.includes('stripe')) {
+        suggestion = 'Try https://stripe.com/docs/api for API reference';
+      } else {
+        suggestion =
+          'Look for sections labeled "API Reference", "Methods", "Endpoints", or "REST API"';
+      }
+    } catch {
+      suggestion = 'Look for sections labeled "API Reference", "Methods", or "Endpoints"';
+    }
+
+    return { isLikelyGuide: true, suggestion };
+  }
+
+  return { isLikelyGuide: false, suggestion: null };
+}
 
 type ScrapeMode = 'auto' | 'specific';
 
@@ -59,6 +137,10 @@ export function StepUrlInput() {
       wishlistInput: '',
     },
   });
+
+  // Watch the URL field to provide real-time warnings
+  const documentationUrl = form.watch('documentationUrl');
+  const urlAnalysis = useMemo(() => analyzeDocUrl(documentationUrl || ''), [documentationUrl]);
 
   const addWishlistItem = () => {
     const input = form.getValues('wishlistInput')?.trim();
@@ -180,29 +262,47 @@ export function StepUrlInput() {
 
         {/* Auto-discover: Documentation URL */}
         {scrapeMode === 'auto' && (
-          <FormField
-            control={form.control}
-            name="documentationUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  API Documentation URL
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://api.example.com/docs"
-                    className="font-mono text-sm"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Enter the root URL — we&apos;ll map the site and find API documentation pages.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
+          <>
+            <FormField
+              control={form.control}
+              name="documentationUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    API Documentation URL
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://api.example.com/docs"
+                      className="font-mono text-sm"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Enter the root URL — we&apos;ll map the site and find API documentation pages.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Warning when URL looks like a guide page */}
+            {urlAnalysis.isLikelyGuide && (
+              <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-sm">
+                  <span className="font-medium">This looks like a guide or overview page</span> — it
+                  may not contain API endpoint documentation.
+                  {urlAnalysis.suggestion && (
+                    <span className="mt-1 block text-muted-foreground">
+                      💡 {urlAnalysis.suggestion}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
             )}
-          />
+          </>
         )}
 
         {/* Specific pages: Multiple URLs */}

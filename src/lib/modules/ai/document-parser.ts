@@ -34,12 +34,8 @@ import type {
 export interface ParseOptions {
   /** Source URLs for metadata */
   sourceUrls?: string[];
-  /** Model to use for parsing (defaults to gemini-1.5-flash) */
+  /** Model to use for parsing (defaults to gemini-2.0-pro) */
   model?: LLMModelId;
-  /** Whether to use chunked parsing for large documents */
-  chunkedParsing?: boolean;
-  /** Maximum content length before chunking (default: 100000 chars) */
-  maxContentLength?: number;
   /** Callback for progress updates */
   onProgress?: (message: string) => void;
 }
@@ -83,20 +79,17 @@ export type ParseErrorCode =
 // Constants
 // =============================================================================
 
-/** Maximum content length before using chunked parsing */
-const DEFAULT_MAX_CONTENT_LENGTH = 100_000;
+/** Maximum content length for single-shot processing (~200K tokens) */
+const MAX_CONTENT_LENGTH = 800_000;
 
 /** Default model for parsing - Pro for better reasoning and longer outputs */
 const DEFAULT_MODEL: LLMModelId = 'gemini-3-pro';
 
-/** Chunk size for large documents */
-const CHUNK_SIZE = 50_000;
-
-/** Overlap between chunks to maintain context */
-const CHUNK_OVERLAP = 2_000;
-
 /** Max output tokens for endpoint extraction (high for extracting many endpoints) */
 const ENDPOINT_EXTRACTION_MAX_TOKENS = 32768;
+
+/** Timeout for endpoint extraction - longer due to large content size */
+const ENDPOINT_EXTRACTION_TIMEOUT_MS = 300_000; // 5 minutes
 
 // =============================================================================
 // Main Parser
@@ -128,33 +121,34 @@ export async function parseApiDocumentation(
 ): Promise<ParseResult> {
   const startTime = Date.now();
   const warnings: string[] = [];
-  const maxContentLength = options.maxContentLength ?? DEFAULT_MAX_CONTENT_LENGTH;
 
   // Validate content
   if (!content || content.trim().length === 0) {
     throw new ParseError('EMPTY_CONTENT', 'Documentation content is empty');
   }
 
-  options.onProgress?.('Starting AI documentation parsing...');
-
-  // Check if we need chunked parsing
-  const useChunking = options.chunkedParsing ?? content.length > maxContentLength;
-
-  let doc: ParsedApiDoc;
-  let confidence: number;
-
-  if (useChunking && content.length > maxContentLength) {
-    options.onProgress?.('Document is large, using chunked parsing...');
-    const result = await parseInChunks(content, options);
-    doc = result.doc;
-    confidence = result.confidence;
-    warnings.push(...result.warnings);
-  } else {
-    const result = await parseSingleDocument(content, options);
-    doc = result.doc;
-    confidence = result.confidence;
-    warnings.push(...result.warnings);
+  // Truncate if over limit (800K chars ≈ 200K tokens)
+  let processContent = content;
+  if (content.length > MAX_CONTENT_LENGTH) {
+    const originalLength = content.length;
+    processContent = content.slice(0, MAX_CONTENT_LENGTH);
+    warnings.push(
+      `Content truncated from ${(originalLength / 1000).toFixed(0)}K to ${(MAX_CONTENT_LENGTH / 1000).toFixed(0)}K chars`
+    );
+    console.log(
+      `[Document Parser] Content truncated: ${originalLength} -> ${MAX_CONTENT_LENGTH} chars`
+    );
   }
+
+  options.onProgress?.(
+    `Starting AI documentation parsing (${(processContent.length / 1000).toFixed(0)}K chars)...`
+  );
+
+  // Single-shot parsing - no chunking needed with 1M token context window
+  const result = await parseSingleDocument(processContent, options);
+  const doc = result.doc;
+  const confidence = result.confidence;
+  warnings.push(...result.warnings);
 
   // Add metadata
   doc.metadata = {
@@ -254,133 +248,6 @@ async function parseSingleDocument(
 }
 
 // =============================================================================
-// Chunked Parsing
-// =============================================================================
-
-/**
- * Parse a large document by splitting into chunks
- */
-async function parseInChunks(
-  content: string,
-  options: ParseOptions
-): Promise<{ doc: ParsedApiDoc; confidence: number; warnings: string[] }> {
-  const warnings: string[] = [];
-  const llm = getLLM(options.model ?? DEFAULT_MODEL);
-
-  // Split content into overlapping chunks
-  const chunks = splitIntoChunks(content, CHUNK_SIZE, CHUNK_OVERLAP);
-  options.onProgress?.(`Split document into ${chunks.length} chunks`);
-
-  // Extract API info from first chunk (usually has overview)
-  options.onProgress?.('Extracting API information from overview...');
-  const apiInfo = await extractApiInfo(chunks[0], llm);
-
-  // Extract endpoints from all chunks
-  options.onProgress?.('Extracting endpoints from all chunks...');
-  const allEndpoints: ApiEndpoint[] = [];
-  const endpointConfidences: number[] = [];
-
-  for (let i = 0; i < chunks.length; i++) {
-    options.onProgress?.(`Processing chunk ${i + 1}/${chunks.length}...`);
-    const result = await extractEndpoints(chunks[i], llm);
-    allEndpoints.push(...result.data);
-    endpointConfidences.push(result.confidence);
-    warnings.push(...result.warnings);
-  }
-
-  // Deduplicate endpoints by slug
-  const uniqueEndpoints = deduplicateEndpoints(allEndpoints);
-
-  // Extract auth from first few chunks (usually in getting started sections)
-  const authChunks = chunks.slice(0, Math.min(3, chunks.length)).join('\n\n');
-  const authMethods = await extractAuthMethods(authChunks, llm);
-
-  // Extract rate limits (often in first or last chunk)
-  const rateLimitContent = chunks[0] + '\n\n' + chunks[chunks.length - 1];
-  const rateLimits = await extractRateLimits(rateLimitContent, llm);
-
-  // Calculate confidence
-  const avgEndpointConfidence =
-    endpointConfidences.length > 0
-      ? endpointConfidences.reduce((a, b) => a + b, 0) / endpointConfidences.length
-      : 0.5;
-
-  const confidence =
-    (apiInfo.confidence + avgEndpointConfidence + authMethods.confidence + rateLimits.confidence) /
-    4;
-
-  // Build document
-  const doc: ParsedApiDoc = {
-    name: apiInfo.data.name || 'Unknown API',
-    description: apiInfo.data.description,
-    baseUrl: apiInfo.data.baseUrl || 'https://api.example.com',
-    version: apiInfo.data.version,
-    authMethods: authMethods.data,
-    endpoints: uniqueEndpoints,
-    rateLimits: rateLimits.data,
-  };
-
-  warnings.push(...apiInfo.warnings, ...authMethods.warnings, ...rateLimits.warnings);
-
-  if (allEndpoints.length !== uniqueEndpoints.length) {
-    warnings.push(
-      `Deduplicated ${allEndpoints.length - uniqueEndpoints.length} duplicate endpoints across chunks`
-    );
-  }
-
-  return { doc, confidence, warnings };
-}
-
-/**
- * Split content into overlapping chunks
- */
-function splitIntoChunks(content: string, chunkSize: number, overlap: number): string[] {
-  const chunks: string[] = [];
-  let start = 0;
-
-  while (start < content.length) {
-    const end = Math.min(start + chunkSize, content.length);
-    chunks.push(content.slice(start, end));
-
-    // Move start forward, accounting for overlap
-    start = end - overlap;
-
-    // Avoid infinite loop if overlap is larger than remaining content
-    if (start >= content.length - overlap) {
-      break;
-    }
-  }
-
-  return chunks;
-}
-
-/**
- * Deduplicate endpoints by slug
- */
-function deduplicateEndpoints(endpoints: ApiEndpoint[]): ApiEndpoint[] {
-  const seen = new Map<string, ApiEndpoint>();
-
-  for (const endpoint of endpoints) {
-    const key = `${endpoint.method}:${endpoint.path}`;
-    if (!seen.has(key)) {
-      seen.set(key, endpoint);
-    } else {
-      // Merge: keep the one with more complete data
-      const existing = seen.get(key)!;
-      if (
-        (endpoint.description && !existing.description) ||
-        (endpoint.requestBody && !existing.requestBody) ||
-        Object.keys(endpoint.responses || {}).length > Object.keys(existing.responses || {}).length
-      ) {
-        seen.set(key, endpoint);
-      }
-    }
-  }
-
-  return Array.from(seen.values());
-}
-
-// =============================================================================
 // Component Extractors
 // =============================================================================
 
@@ -455,6 +322,7 @@ async function extractEndpoints(
     const result = await llm.generate<ApiEndpoint[]>(prompt, {
       responseSchema: ENDPOINTS_ARRAY_SCHEMA,
       maxOutputTokens: ENDPOINT_EXTRACTION_MAX_TOKENS, // Higher limit for extracting many endpoints
+      timeout: ENDPOINT_EXTRACTION_TIMEOUT_MS, // Extended timeout for large content
     });
 
     console.log(`[extractEndpoints] LLM returned ${result.content?.length ?? 0} endpoints`);
@@ -584,8 +452,7 @@ async function extractRateLimits(
     });
 
     // Check if we got meaningful data
-    const hasData =
-      result.content?.default || Object.keys(result.content?.perEndpoint || {}).length > 0;
+    const hasData = result.content?.default || (result.content?.perEndpoint?.length ?? 0) > 0;
 
     return {
       data: hasData ? result.content : undefined,

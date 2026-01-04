@@ -79,6 +79,7 @@ const mockJob = {
   specificUrls: [] as string[],
   wishlist: ['send message'],
   progress: 0,
+  progressDetails: null,
   result: null,
   error: null,
   cachedContentKey: null,
@@ -529,5 +530,72 @@ describe('ScrapeJobError', () => {
   it('should be instanceof Error', () => {
     const error = new ScrapeJobError('TEST', 'Test');
     expect(error instanceof Error).toBe(true);
+  });
+});
+
+// =============================================================================
+// Wishlist Coverage Logic Tests (Fixed in this session)
+// =============================================================================
+
+describe('Wishlist Coverage Logic', () => {
+  // Import the actual function to test
+  // Note: getUncoveredWishlistItems is not exported, so we test via createScrapeJob behavior
+
+  it('should use cached job when all wishlist words are covered', async () => {
+    // Setup: cached job with endpoints that cover "list users" wishlist item
+    const cachedJobWithMatchingEndpoints = {
+      ...mockCompletedJob,
+      result: {
+        endpoints: [
+          { name: 'List Users', slug: 'list-users', method: 'GET', path: '/users' },
+          { name: 'Get User', slug: 'get-user', method: 'GET', path: '/users/{id}' },
+        ],
+      },
+    };
+
+    const { findScrapeJobByUrl } = await import('@/lib/modules/ai/scrape-job.repository');
+    vi.mocked(findScrapeJobByUrl).mockResolvedValueOnce(cachedJobWithMatchingEndpoints);
+
+    const { createScrapeJob } = await import('@/lib/modules/ai/scrape-job.service');
+    const result = await createScrapeJob('tenant-1', {
+      documentationUrl: 'https://docs.example.com',
+      wishlist: ['list users'], // Both words "list" and "users" are in the cached endpoints
+    });
+
+    // Should return the cached job
+    expect(result.jobId).toBe(cachedJobWithMatchingEndpoints.id);
+    expect(result.status).toBe('COMPLETED');
+  });
+
+  it('should create new job when wishlist words are only partially covered', async () => {
+    // Setup: cached job with endpoints that only partially match "list databases"
+    const cachedJobWithPartialMatch = {
+      ...mockCompletedJob,
+      result: {
+        endpoints: [
+          { name: 'List Users', slug: 'list-users', method: 'GET', path: '/users' },
+          // Has "list" but not "databases"
+        ],
+      },
+    };
+
+    const { findScrapeJobByUrl, createScrapeJob: createJob } =
+      await import('@/lib/modules/ai/scrape-job.repository');
+    vi.mocked(findScrapeJobByUrl).mockResolvedValueOnce(cachedJobWithPartialMatch);
+    vi.mocked(createJob).mockResolvedValueOnce({
+      ...mockJob,
+      id: 'new-job-id',
+      status: 'PENDING' as ScrapeJobStatus,
+    });
+
+    const { createScrapeJob } = await import('@/lib/modules/ai/scrape-job.service');
+    const result = await createScrapeJob('tenant-1', {
+      documentationUrl: 'https://docs.example.com',
+      wishlist: ['list databases'], // "databases" is NOT in the cached endpoints
+    });
+
+    // Should create a NEW job because wishlist is not fully covered
+    expect(result.jobId).toBe('new-job-id');
+    expect(result.status).toBe('PENDING');
   });
 });

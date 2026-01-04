@@ -1,39 +1,35 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-04 (Dashboard Polish & Tagging Feature Finalized - v0.5.5)
+**Last Updated**: 2026-01-04 (AI Scraper Reliability Fixes)
 
 ---
 
-## Current Milestone: V0.5 (Polish & Robustness)
+## Current Milestone: V0.75 (Multi-Tenancy & Expanded Capabilities)
 
-**Functionality Summary**: Add robustness features that make integrations production-ready. Pagination, response validation, field mapping, organization features, and continuous testing ensure reliable data retrieval and transformation.
+**Functionality Summary**: Expand platform capabilities for multi-app support, streamlined authentication, continuous testing, and per-app configuration flexibility.
 
 ### Scope Definition
 
 #### In Scope for This Milestone
 
-- **Pagination Handler**: Auto-handle cursor, offset, page number, and Link header pagination with LLM-friendly limits
-- **Response Validation**: Zod-based schema validation for API responses
-- **Basic Field Mapping**: Configure field transformations between Waygate and consuming apps
-- **Integration & Action Tagging**: Lightweight categorization with filtering in dashboard
-- **Dashboard & Logs Polish**: UX improvements, consistent data display
+- **Multi-App Connections**: Multiple consuming apps per integration with separate credentials/baseUrls
+- **Hybrid Auth Model**: Platform-owned OAuth apps for major providers + bring-your-own-app option
 - **Continuous Integration Testing**: Scheduled health checks on all integrations
+- **Per-App Custom Mappings**: Consuming apps can define their own field mappings
 
 #### Explicitly Out of Scope
 
 | Item                     | Reason for Exclusion          | Planned Milestone |
 | ------------------------ | ----------------------------- | ----------------- |
-| Smart Data Caching Layer | Performance optimization      | V1                |
-| Async Job System         | Scale feature                 | V1                |
-| Multi-App Connections    | Multi-tenancy expansion       | V0.75             |
-| Hybrid Auth Model        | Platform OAuth apps           | V0.75             |
+| Smart Data Caching Layer | Performance optimization      | V1.1              |
+| Async Job System         | Scale feature                 | V1.1              |
 | Auto-Maintenance System  | Advanced automation           | V2                |
 | Versioning & Rollbacks   | Production safety feature     | V2                |
-| Full No-Code UI          | Non-technical user enablement | V2                |
-| Webhook Ingestion        | Event-driven architecture     | V2                |
-| LLM Tool Wrapping        | AI agent integration          | V2                |
-| SDK Generation           | Developer experience          | V2                |
-| RBAC & Team Management   | Multi-user collaboration      | V2                |
+| Full No-Code UI          | Non-technical user enablement | V2.1              |
+| Webhook Ingestion        | Event-driven architecture     | V2.2              |
+| LLM Tool Wrapping        | AI agent integration          | V2.2              |
+| SDK Generation           | Developer experience          | V2.2              |
+| RBAC & Team Management   | Multi-user collaboration      | V2.1              |
 
 #### Boundaries
 
@@ -71,14 +67,18 @@ _No features currently in progress_
 
 ### Next Up
 
-| Feature                        | Priority | Notes                                     |
-| ------------------------------ | -------- | ----------------------------------------- |
-| Continuous Integration Testing | P2       | V0.5 Feature #5 - Scheduled health checks |
+| Feature                        | Priority | Notes                                               |
+| ------------------------------ | -------- | --------------------------------------------------- |
+| Multi-App Connections          | P1       | V0.75 Feature #1 - Connection entity, per-app creds |
+| Hybrid Auth Model              | P1       | V0.75 Feature #2 - Platform connectors              |
+| Continuous Integration Testing | P1       | V0.75 Feature #3 - Scheduled health checks          |
+| Per-App Custom Mappings        | P2       | V0.75 Feature #4 - Per-app field mapping overrides  |
 
 ### Recent Enhancements (Post-MVP)
 
 | Enhancement               | Completion Date | Notes                                                                                               |
 | ------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| AI Scraper Reliability    | 2026-01-04      | Simplified prompts, Gemini 3 low-thinking mode, null byte sanitization, wishlist coverage fix       |
 | Credential Saving & UI    | 2026-01-03      | Credentials POST endpoint, wizard saves creds, API key guidance, param descriptions, copy URL fixes |
 | Template Auto-Detection   | 2026-01-03      | AI auto-detects PostgREST/Supabase patterns, offers to add template actions in Review step          |
 | Smart Cache Invalidation  | 2026-01-03      | Wishlist-aware cache validation, force fresh scrape option in wizard, better cache decision logging |
@@ -88,11 +88,14 @@ _No features currently in progress_
 | Intelligent Crawling      | 2026-01-03      | LLM-guided page selection using Firecrawl map + URL triage, wishlist awareness, auth prioritization |
 | UX Navigation Polish      | 2026-01-03      | Clickable logo, clickable cards, copy buttons for endpoints, clickable wizard steps                 |
 
-### Not Started (V0.5)
+### Not Started (V0.75)
 
-| Feature/Task                   | Priority | Notes                                       |
-| ------------------------------ | -------- | ------------------------------------------- |
-| Continuous Integration Testing | P1       | Scheduled health checks on all integrations |
+| Feature/Task                   | Priority | Notes                                              |
+| ------------------------------ | -------- | -------------------------------------------------- |
+| Multi-App Connections          | P1       | Connection entity, per-app credential isolation    |
+| Hybrid Auth Model              | P1       | Platform connectors, compliance tracking           |
+| Continuous Integration Testing | P1       | Scheduled health checks on all integrations        |
+| Per-App Custom Mappings        | P2       | Consuming apps can define their own field mappings |
 
 ---
 
@@ -118,66 +121,67 @@ _No features currently in progress_
 
 ---
 
-## V0.5 Build Order
+### ✅ V0.5 (Completed 2026-01-04)
 
-| #   | Feature                        | Dependencies       | Complexity | Notes                                                                                     |
-| --- | ------------------------------ | ------------------ | ---------- | ----------------------------------------------------------------------------------------- |
-| 1   | Pagination Handler             | Action Registry ✅ | MED        | ✅ COMPLETE - [Feature Doc](Features/pagination-handler.md)                               |
-| 2   | Response Validation            | Action Registry ✅ | MED        | ✅ COMPLETE - [Feature Doc](Features/response-validation.md)                              |
-| 3   | Basic Field Mapping            | Action Registry ✅ | MED        | ✅ COMPLETE - [Feature Doc](Features/basic-field-mapping.md)                              |
-| 4   | Dashboard Polish & Tagging     | Existing UI        | MED        | 🔄 IN PROGRESS - [Feature Doc](Features/dashboard-polish-and-tagging.md) (combines #4+#5) |
-| 5   | Continuous Integration Testing | Gateway API ✅     | MED        | Scheduled health checks                                                                   |
+**Goal**: Add robustness features that make integrations production-ready.
+
+| #   | Feature                    | Notes                                                           |
+| --- | -------------------------- | --------------------------------------------------------------- |
+| 1   | Pagination Handler         | Auto pagination with cursor/offset/page/link strategies         |
+| 2   | Response Validation        | Zod-based schema validation with strict/warn/lenient modes      |
+| 3   | Basic Field Mapping        | JSONPath mapping, type coercion, fail-open mode                 |
+| 4   | Dashboard Polish & Tagging | Integration/action tags, tag filters, real stats, enriched logs |
+
+---
+
+## V0.75 Build Order
+
+| #   | Feature                        | Dependencies     | Complexity | Notes                                              |
+| --- | ------------------------------ | ---------------- | ---------- | -------------------------------------------------- |
+| 1   | Multi-App Connections          | V0.5 complete    | HIGH       | Connection entity, per-app credential isolation    |
+| 2   | Hybrid Auth Model              | #1               | HIGH       | Platform connectors, compliance tracking           |
+| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | Scheduled health checks on all integrations        |
+| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | Consuming apps can define their own field mappings |
+
+**Rationale:**
+
+1. Multi-App Connections and Hybrid Auth expand platform capabilities for multi-tenancy
+2. Continuous Integration Testing ensures reliability before scaling
+3. Per-App Custom Mappings enables different consuming apps to have different data shapes
 
 ---
 
 ## Future Milestones
 
-### V0.75: Multi-Tenancy & Connections
+### V1: UI & Stability Cleanup
 
-**Functionality Summary**: Expand platform capabilities for multi-app support and streamlined authentication. Enable multiple consuming apps per integration with separate credentials, and introduce platform-owned OAuth apps for major providers.
+**Functionality Summary**: Comprehensive cleanup pass focusing on service integration, UI polish, and stability. Ensure all services are working together seamlessly and configuration screens are organized into a more usable format.
 
-**Key Features:**
+**Key Focus Areas:**
 
-- **Hybrid Auth Model** (platform-owned OAuth apps for major providers + bring-your-own-app option)
-- **Multi-App Connections** (multiple consuming apps per integration with separate credentials/baseUrls, and also option to use default credentials shared across connected apps)
+- **Service Integration**: Verify all services connect and communicate properly end-to-end
+- **Configuration UI Cleanup**: Reorganize config screens for better usability and logical flow
+- **Stability Pass**: Fix edge cases, improve error handling, ensure consistent behavior
+- **Polish**: Loading states, empty states, responsive design improvements
 
-**Technical Scope:**
+**Definition of Done:**
 
-- **PlatformConnector entity** (stores Waygate's OAuth app registrations for Slack, Google, Microsoft, etc.)
-- **Connection entity** (links Integration + Credential to consuming App, enables per-app credential isolation)
-- Platform OAuth app registration with major providers
-- Compliance certification tracking (CASA, publisher verification)
-- Shared rate limit management for platform connectors
-- UI for "one-click connect" vs "bring your own credentials"
-
-**Build Order:**
-
-| #   | Feature               | Dependencies  | Complexity | Notes                                                        |
-| --- | --------------------- | ------------- | ---------- | ------------------------------------------------------------ |
-| 1   | Multi-App Connections | V0.5 complete | HIGH       | Connection entity, per-app credential isolation              |
-| 2   | Hybrid Auth Model     | #1            | HIGH       | Platform connectors, compliance tracking, shared rate limits |
-
-**Rationale for Separate Milestone:**
-
-These features were moved from V0.5 to V0.75 because:
-
-1. They expand capabilities rather than polish existing features
-2. Hybrid Auth requires OAuth app registration and compliance certification (CASA, publisher verification)
-3. Multi-App Connections adds multi-tenancy complexity best tackled after core reliability is proven
-4. Natural sequencing: bulletproof the core first, then expand platform capabilities
+- All services working together without manual intervention
+- Configuration screens reorganized with clear navigation
+- No critical bugs or broken workflows
+- Consistent UI patterns across all screens
 
 ---
 
-### V1: Scale & Reliability
+### V1.1: Scale & Reliability
 
-**Functionality Summary**: Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. Building on V0.75's multi-app foundation, V1 makes the system suitable for production applications with moderate scale.
+**Functionality Summary**: Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. Building on V0.75's multi-app foundation, V1.1 makes the system suitable for production applications with moderate scale.
 
 **Key Features:**
 
 - Smart Data Caching Layer (configurable caching for slow-changing data)
 - Async Job System (background processing for long operations, batch imports)
 - Complex Nested Data Handling
-- Per-App Custom Mappings (leverages V0.75's Connection entity)
 - Batch Operations Support
 - Enhanced Logging & Monitoring
 
@@ -185,37 +189,98 @@ These features were moved from V0.5 to V0.75 because:
 
 - Upstash Redis for caching layer
 - Trigger.dev for background job queue
-- Per-tenant/per-app configuration storage
+- Per-tenant configuration storage
 - Basic metrics collection and display
+
+**Build Order:**
+
+| #   | Feature                  | Dependencies    | Complexity | Notes                                          |
+| --- | ------------------------ | --------------- | ---------- | ---------------------------------------------- |
+| 1   | Smart Data Caching Layer | V1 complete     | HIGH       | Configurable caching with TTL                  |
+| 2   | Async Job System         | #1              | HIGH       | Background processing for long operations      |
+| 3   | Complex Nested Data      | Action Registry | MED        | Better support for deeply nested API responses |
+| 4   | Batch Operations Support | #2              | MED        | Queue and batch high-volume write operations   |
+| 5   | Enhanced Logging         | Gateway API     | MED        | Structured logs, basic metrics dashboard       |
 
 ---
 
-### V2: Full Automation & Self-Service
+### V2: Maintenance & Safety
 
-**Functionality Summary**: Full automation and self-service capabilities. Building on V0.75's hybrid auth foundation, V2 adds automatic maintenance, versioning, full no-code experience, and AI agent integration.
+**Functionality Summary**: Automatic maintenance, versioning, and environment management. Keep integrations healthy and provide safety nets for production systems.
 
 **Key Features:**
 
 - Auto-Maintenance System (detect API changes, auto-update with approval workflow)
 - Versioning & Rollbacks (track versions, per-app pinning, instant rollback)
-- Full No-Code UI (wizard flows, guided setup, visual configuration)
-- Webhook Ingestion (receive and route webhooks from external services)
-- Just-in-Time Auth (on-demand OAuth flows for end users)
-- SDK Generation (auto-generate TypeScript/Python client libraries)
-- LLM Tool Wrapping (export actions as LangChain-compatible tools)
-- Sandbox/Production Environments
-- Schema Drift Detection
-- RBAC & Team Management
+- Sandbox/Production Environments (separate testing and production configurations)
+- Schema Drift Detection (alert when API responses change from documented schema)
 
 **Technical Scope:**
 
 - Scheduled documentation re-scraping
 - Version history storage and diff computation
-- Webhook endpoint router
+- Environment isolation in database
+
+**Build Order:**
+
+| #   | Feature                         | Dependencies  | Complexity | Notes                                         |
+| --- | ------------------------------- | ------------- | ---------- | --------------------------------------------- |
+| 1   | Sandbox/Production Environments | V1.1 complete | MED        | Separate testing and production configs       |
+| 2   | Versioning & Rollbacks          | #1            | HIGH       | Track versions, per-app pinning, rollback     |
+| 3   | Schema Drift Detection          | #2            | MED        | Alert when API responses change               |
+| 4   | Auto-Maintenance System         | #2, #3        | HIGH       | Detect API changes, auto-update with approval |
+
+---
+
+### V2.1: Self-Service & Access
+
+**Functionality Summary**: Enable non-technical users and expand access control. Full no-code experience with team collaboration features.
+
+**Key Features:**
+
+- Full No-Code UI (wizard flows, guided setup, visual configuration)
+- Just-in-Time Auth (on-demand OAuth flows for end users)
+- RBAC & Team Management (role-based access control, team invitations)
+
+**Technical Scope:**
+
+- Enhanced wizard flows with visual builders
 - OAuth broker for JIT auth
+- Role and permission system in database
+
+**Build Order:**
+
+| #   | Feature                | Dependencies | Complexity | Notes                                     |
+| --- | ---------------------- | ------------ | ---------- | ----------------------------------------- |
+| 1   | Full No-Code UI        | V2 complete  | HIGH       | Wizard flows, guided setup, visual config |
+| 2   | RBAC & Team Management | #1           | MED        | Roles, permissions, team invitations      |
+| 3   | Just-in-Time Auth      | #2           | HIGH       | On-demand OAuth flows for end users       |
+
+---
+
+### V2.2: Developer Experience & AI Integration
+
+**Functionality Summary**: Expand developer tooling and enable AI agent integration through LLM tool generation and webhooks.
+
+**Key Features:**
+
+- Webhook Ingestion (receive and route webhooks from external services)
+- SDK Generation (auto-generate TypeScript/Python client libraries)
+- LLM Tool Wrapping (export actions as LangChain-compatible tools)
+
+**Technical Scope:**
+
+- Webhook endpoint router
 - Code generation pipeline
 - LangChain tool factory
-- Environment isolation in database
+
+**Build Order:**
+
+| #   | Feature           | Dependencies  | Complexity | Notes                                        |
+| --- | ----------------- | ------------- | ---------- | -------------------------------------------- |
+| 1   | Webhook Ingestion | V2.1 complete | MED        | Receive and route webhooks                   |
+| 2   | SDK Generation    | #1            | HIGH       | Auto-generate TypeScript/Python SDKs         |
+| 3   | LLM Tool Wrapping | #1            | MED        | Export actions as LangChain-compatible tools |
 
 ---
 

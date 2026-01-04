@@ -14,6 +14,7 @@ import {
   findScrapeJobById,
   updateScrapeJob,
   updateScrapeJobStatus as repoUpdateJobStatus,
+  updateScrapeJobProgressDetails,
   markScrapeJobFailed as repoMarkJobFailed,
   markScrapeJobCompleted as repoMarkJobCompleted,
 } from './scrape-job.repository';
@@ -28,17 +29,19 @@ import {
   type ParsedApiDoc,
   type ScrapeJobStatusType,
   type DetectedTemplate,
+  type ProgressDetails,
   isJobInProgress,
 } from './scrape-job.schemas';
 import { scrapeDocumentation, crawlDocumentation, isScrapeError } from './doc-scraper';
-import { intelligentCrawl } from './intelligent-crawler';
-import type { IntelligentCrawlProgress } from './intelligent-crawler';
+import { triageDocumentation } from './triage';
+import type { TriageResult } from './triage';
+import { scrapeInParallel } from './parallel-scraper';
 import { parseApiDocumentation, isParseError } from './document-parser';
 import { parseOpenApiSpec, isOpenApiSpec, isOpenApiParseError } from './openapi-parser';
 import { storeScrapedContent, getScrapedContentByJobId, isStorageError } from './storage';
 import { detectTemplate } from './templates/detector';
 
-import type { ScrapeJob } from '@prisma/client';
+import type { ScrapeJob, Prisma } from '@prisma/client';
 
 // =============================================================================
 // Constants
@@ -118,9 +121,10 @@ function getUncoveredWishlistItems(
   const uncovered: string[] = [];
   for (const item of newWishlist) {
     const itemLower = item.toLowerCase();
-    // Check if any word from the wishlist item appears in cached endpoints
+    // Check if ALL significant words from the wishlist item appear in cached endpoints
+    // Using every() instead of some() to ensure the match is meaningful
     const words = itemLower.split(/\s+/).filter((w) => w.length > 2);
-    const isCovered = words.some((word) => cachedEndpointsText.includes(word));
+    const isCovered = words.length > 0 && words.every((word) => cachedEndpointsText.includes(word));
     if (!isCovered) {
       uncovered.push(item);
     }
@@ -330,6 +334,33 @@ export async function updateJobProgress(jobId: string, progress: number): Promis
   return updateScrapeJob(jobId, { progress });
 }
 
+/**
+ * Updates detailed progress information for a job
+ *
+ * @param jobId - The job ID to update
+ * @param details - Partial progress details to merge
+ * @param progress - Optional overall progress value (0-100)
+ * @returns Updated job
+ */
+export async function updateProgressDetails(
+  jobId: string,
+  details: Partial<ProgressDetails>,
+  progress?: number
+): Promise<ScrapeJob> {
+  const fullDetails: ProgressDetails = {
+    stage: details.stage ?? 'triage',
+    message: details.message ?? 'Processing...',
+    updatedAt: new Date().toISOString(),
+    ...details,
+  };
+
+  return updateScrapeJobProgressDetails(
+    jobId,
+    fullDetails as unknown as Prisma.InputJsonValue,
+    progress
+  );
+}
+
 // =============================================================================
 // Complete/Fail Job
 // =============================================================================
@@ -394,6 +425,8 @@ function formatJobResponse(
     status: job.status,
     progress: job.progress,
     documentationUrl: job.documentationUrl,
+    // Include progressDetails if available
+    progressDetails: job.progressDetails as ProgressDetails | undefined,
     createdAt: job.createdAt.toISOString(),
     updatedAt: job.updatedAt.toISOString(),
   };
@@ -417,10 +450,11 @@ function formatJobResponse(
     };
   }
 
-  // In progress job - add current step based on status
+  // In progress job - add current step based on status (from progressDetails if available)
+  const progressDetails = job.progressDetails as ProgressDetails | null;
   return {
     ...baseResponse,
-    currentStep: getStepDescription(job.status),
+    currentStep: progressDetails?.message ?? getStepDescription(job.status),
   };
 }
 
@@ -602,33 +636,148 @@ export async function processJob(
       await updateJobProgress(jobId, 25);
     } else if (crawlMode) {
       if (useIntelligentCrawl) {
-        // Intelligent crawling: Map site → LLM triage → Scrape best pages
-        onProgress?.('CRAWLING', 'Using intelligent crawling with LLM-guided page selection...');
-        const crawlResult = await intelligentCrawl(documentationUrl, {
-          maxPages,
-          wishlist: job.wishlist ?? [],
-          onProgress: (p: IntelligentCrawlProgress) => {
-            // Map intelligent crawl stages to our progress
-            const stageMap: Record<string, string> = {
-              mapping: 'CRAWLING',
-              triaging: 'CRAWLING',
-              scraping: 'CRAWLING',
-              completed: 'CRAWLING',
-              error: 'CRAWLING',
-            };
-            onProgress?.(stageMap[p.stage] || 'CRAWLING', p.message);
-          },
-        });
-        scrapedContent = crawlResult.aggregatedContent;
-        sourceUrls = crawlResult.pages.filter((p) => p.success).map((p) => p.url);
+        // NEW: Triage-first approach - Map site → Scrape landing → LLM triage → Parallel scrape
+        onProgress?.('CRAWLING', 'Analyzing documentation structure...');
 
-        // Log intelligent crawl stats
-        console.log(
-          `[Intelligent Crawl] Discovered ${crawlResult.totalUrlsDiscovered} URLs, ` +
-            `selected ${crawlResult.prioritizedUrls.length}, ` +
-            `scraped ${crawlResult.pagesCrawled} pages`
+        // Step 1: Triage the documentation
+        await updateProgressDetails(
+          jobId,
+          {
+            stage: 'triage',
+            message: 'Mapping documentation site...',
+          },
+          5
         );
-        await updateJobProgress(jobId, 25);
+
+        let triageResult: TriageResult;
+
+        try {
+          triageResult = await triageDocumentation(documentationUrl, {
+            maxPages: Math.min(maxPages, 20), // Cap at 20 pages for broader coverage
+            wishlist: job.wishlist ?? [],
+            onProgress: (message) => {
+              onProgress?.('CRAWLING', message);
+            },
+          });
+        } catch (triageError) {
+          // Triage failed - do NOT fall back to aggressive crawling
+          // Instead, report the error clearly
+          console.error('[Scrape Job] Triage failed:', triageError);
+
+          const errorMessage = triageError instanceof Error ? triageError.message : 'Unknown error';
+          throw new ScrapeJobError(
+            'TRIAGE_FAILED',
+            `Failed to analyze documentation: ${errorMessage}. Please try a different URL or check if the site is accessible.`,
+            500
+          );
+        }
+
+        // Continue with triage results
+        {
+          // Update progress with triage results
+          await updateProgressDetails(
+            jobId,
+            {
+              stage: 'triage',
+              message: `Found ${triageResult.totalUrlsFound} pages, selected ${triageResult.prioritizedPages.length} to analyze`,
+              apiName: triageResult.apiName,
+              pagesFound: triageResult.totalUrlsFound,
+              pagesSelected: triageResult.prioritizedPages.length,
+              isLargeApi: triageResult.isLargeApi,
+            },
+            15
+          );
+
+          console.log(
+            `[Triage] API: ${triageResult.apiName}, ` +
+              `Pages found: ${triageResult.totalUrlsFound}, ` +
+              `Selected: ${triageResult.prioritizedPages.length}, ` +
+              `Large API: ${triageResult.isLargeApi}`
+          );
+
+          // Step 2: Parallel scrape the selected pages
+          await updateProgressDetails(
+            jobId,
+            {
+              stage: 'scraping',
+              message: `Scraping ${triageResult.prioritizedPages.length} documentation pages...`,
+              pagesScraped: 0,
+              pagesSelected: triageResult.prioritizedPages.length,
+            },
+            20
+          );
+
+          // Always include landing page content
+          const contentParts: string[] = [
+            `\n\n--- SOURCE: ${triageResult.landingPageUrl} [landing] ---\n\n${triageResult.landingPageContent}`,
+          ];
+
+          // Filter out landing page from pages to scrape (already have it)
+          const pagesToScrape = triageResult.prioritizedPages.filter(
+            (p) => p.url !== triageResult.landingPageUrl
+          );
+
+          if (pagesToScrape.length > 0) {
+            const scrapeResult = await scrapeInParallel(pagesToScrape, {
+              concurrency: 5,
+              pageTimeout: 30000,
+              continueOnError: true,
+              onProgress: (scraped, total, currentUrl) => {
+                const message =
+                  currentUrl === 'complete'
+                    ? `Scraped ${scraped} pages`
+                    : `Scraping page ${scraped + 1}/${total}...`;
+                onProgress?.('CRAWLING', message);
+
+                // Update progress details (don't await to avoid blocking)
+                updateProgressDetails(jobId, {
+                  stage: 'scraping',
+                  message,
+                  pagesScraped: scraped,
+                  pagesSelected: total + 1, // +1 for landing page
+                }).catch(() => {});
+              },
+            });
+
+            // Add scraped content
+            for (const page of scrapeResult.pages) {
+              if (page.success && page.content) {
+                contentParts.push(
+                  `\n\n--- SOURCE: ${page.url} [${page.category}] ---\n\n${page.content}`
+                );
+              }
+            }
+
+            sourceUrls = [
+              triageResult.landingPageUrl,
+              ...scrapeResult.pages.filter((p) => p.success).map((p) => p.url),
+            ];
+
+            console.log(
+              `[Parallel Scrape] Scraped ${scrapeResult.successCount}/${pagesToScrape.length} pages ` +
+                `in ${scrapeResult.durationMs}ms`
+            );
+          } else {
+            sourceUrls = [triageResult.landingPageUrl];
+          }
+
+          scrapedContent = contentParts.join('\n');
+
+          await updateProgressDetails(
+            jobId,
+            {
+              stage: 'scraping',
+              message: `Scraped ${sourceUrls.length} pages (${scrapedContent.length} chars)`,
+              pagesScraped: sourceUrls.length,
+            },
+            25
+          );
+
+          console.log(
+            `[Scrape Job] Triage-first approach: scraped ${sourceUrls.length} pages, ` +
+              `${scrapedContent.length} total chars`
+          );
+        } // End of triageResult check
       } else {
         // Fallback: Basic breadth-first crawling
         onProgress?.('CRAWLING', 'Crawling documentation pages (breadth-first)...');
@@ -685,6 +834,14 @@ export async function processJob(
     // Stage 2: PARSING - Extract API information
     // ==========================================================================
     onProgress?.('PARSING', 'Analyzing documentation content...');
+    await updateProgressDetails(
+      jobId,
+      {
+        stage: 'parsing',
+        message: 'Analyzing documentation content...',
+      },
+      30
+    );
     await updateJobStatus(jobId, 'PARSING', 30);
 
     let parsedDoc: ParsedApiDoc;
@@ -696,20 +853,55 @@ export async function processJob(
         sourceUrl: documentationUrl,
       });
       parsedDoc = openApiResult.doc;
-      await updateJobProgress(jobId, 70);
+      await updateProgressDetails(
+        jobId,
+        {
+          stage: 'parsing',
+          message: `Parsed OpenAPI ${openApiResult.openApiVersion} specification`,
+          endpointsFound: parsedDoc.endpoints?.length ?? 0,
+          authMethodsFound: parsedDoc.authMethods?.length ?? 0,
+        },
+        70
+      );
       onProgress?.('PARSING', `Parsed OpenAPI ${openApiResult.openApiVersion} specification`);
     } else {
-      // Use AI to parse unstructured documentation
+      // Use AI to parse unstructured documentation (single-shot, no chunking)
       onProgress?.('PARSING', 'Using AI to extract API information...');
+
+      await updateProgressDetails(
+        jobId,
+        {
+          stage: 'parsing',
+          message: 'Analyzing documentation with AI...',
+        },
+        35
+      );
+
       const parseResult = await parseApiDocumentation(scrapedContent, {
         sourceUrls,
-        onProgress: (msg) => onProgress?.('PARSING', msg),
+        onProgress: (msg) => {
+          onProgress?.('PARSING', msg);
+        },
       });
+
       parsedDoc = parseResult.doc;
-      await updateJobProgress(jobId, 70);
+      const endpointCount = parsedDoc.endpoints?.length ?? 0;
+      const authCount = parsedDoc.authMethods?.length ?? 0;
+
+      await updateProgressDetails(
+        jobId,
+        {
+          stage: 'parsing',
+          message: `AI parsing complete (confidence: ${Math.round(parseResult.confidence * 100)}%)`,
+          endpointsFound: endpointCount,
+          authMethodsFound: authCount,
+        },
+        70
+      );
+
       onProgress?.(
         'PARSING',
-        `AI parsing complete (confidence: ${Math.round(parseResult.confidence * 100)}%)`
+        `AI parsing complete: found ${endpointCount} endpoints (confidence: ${Math.round(parseResult.confidence * 100)}%)`
       );
     }
 
@@ -717,6 +909,16 @@ export async function processJob(
     // Stage 3: GENERATING - Finalize the parsed structure
     // ==========================================================================
     onProgress?.('GENERATING', 'Finalizing API structure...');
+    await updateProgressDetails(
+      jobId,
+      {
+        stage: 'generating',
+        message: 'Finalizing API structure...',
+        endpointsFound: parsedDoc.endpoints?.length ?? 0,
+        authMethodsFound: parsedDoc.authMethods?.length ?? 0,
+      },
+      80
+    );
     await updateJobStatus(jobId, 'GENERATING', 80);
 
     // Apply wishlist filtering/prioritization if provided
@@ -740,6 +942,17 @@ export async function processJob(
     // ==========================================================================
     // Stage 4: COMPLETED - Mark job as done
     // ==========================================================================
+    await updateProgressDetails(
+      jobId,
+      {
+        stage: 'complete',
+        message: `Complete! Found ${parsedDoc.endpoints?.length ?? 0} endpoints`,
+        endpointsFound: parsedDoc.endpoints?.length ?? 0,
+        authMethodsFound: parsedDoc.authMethods?.length ?? 0,
+      },
+      100
+    );
+
     onProgress?.('COMPLETED', 'Scraping job completed successfully');
     const completedJob = await completeJob(jobId, parsedDoc, cachedContentKey);
 

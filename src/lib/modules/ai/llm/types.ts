@@ -50,6 +50,10 @@ export interface LLMSchemaProperty {
   required?: string[];
   enum?: string[];
   nullable?: boolean;
+  /** Maximum length for strings - prevents LLM hallucination of long garbage strings */
+  maxLength?: number;
+  /** Minimum length for strings */
+  minLength?: number;
 }
 
 /**

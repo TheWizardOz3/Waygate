@@ -349,8 +349,9 @@ function generateActionDefinition(
   // Check for pagination indicators
   const paginationConfig = detectPaginationConfig(endpoint);
 
-  // Get endpoint-specific rate limit
-  const endpointRateLimit = rateLimits?.perEndpoint?.[endpoint.path] || rateLimits?.default;
+  // Get endpoint-specific rate limit (perEndpoint is an array format)
+  const endpointRateLimit =
+    rateLimits?.perEndpoint?.find((r) => r.endpoint === endpoint.path) || rateLimits?.default;
 
   // Generate validation configuration with sensible defaults
   // Use 'warn' mode by default to be non-breaking

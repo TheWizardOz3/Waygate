@@ -135,11 +135,7 @@ export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabPro
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Describe what this action does..."
-                  rows={3}
-                  {...field}
-                />
+                <Textarea placeholder="Describe what this action does..." rows={3} {...field} />
               </FormControl>
               <FormDescription>Optional description for documentation</FormDescription>
               <FormMessage />
@@ -150,7 +146,9 @@ export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabPro
         {/* Preview */}
         {integrationSlug && (
           <div className="rounded-lg bg-muted/50 p-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Gateway Endpoint Preview</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              Gateway Endpoint Preview
+            </p>
             <code className="text-sm">
               POST /api/v1/gateway/{integrationSlug}/{form.watch('slug') || 'action-slug'}
             </code>
@@ -160,4 +158,3 @@ export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabPro
     </Card>
   );
 }
-

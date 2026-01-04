@@ -108,11 +108,20 @@ export const RateLimitSchema = z.object({
 export type RateLimit = z.infer<typeof RateLimitSchema>;
 
 /**
+ * Per-endpoint rate limit (array format for Gemini compatibility)
+ */
+export const PerEndpointRateLimitSchema = z.object({
+  endpoint: z.string(),
+  requests: z.number().positive(),
+  window: z.number().positive(),
+});
+
+/**
  * Rate limits configuration
  */
 export const RateLimitsConfigSchema = z.object({
   default: RateLimitSchema.optional(),
-  perEndpoint: z.record(z.string(), RateLimitSchema).optional(),
+  perEndpoint: z.array(PerEndpointRateLimitSchema).optional(),
 });
 
 export type RateLimitsConfig = z.infer<typeof RateLimitsConfigSchema>;
@@ -183,6 +192,39 @@ export const ScrapeJobErrorDetailsSchema = z.object({
 export type ScrapeJobErrorDetails = z.infer<typeof ScrapeJobErrorDetailsSchema>;
 
 // =============================================================================
+// Progress Details Schema (for detailed progress tracking)
+// =============================================================================
+
+/**
+ * Detailed progress information for scrape jobs
+ */
+export const ProgressDetailsSchema = z.object({
+  /** Current stage: triage, scraping, parsing, generating */
+  stage: z.enum(['triage', 'scraping', 'parsing', 'generating', 'complete', 'error']),
+  /** Human-readable message about current activity */
+  message: z.string(),
+  /** API name (once detected from triage) */
+  apiName: z.string().optional(),
+  /** Total pages found during site mapping */
+  pagesFound: z.number().optional(),
+  /** Number of pages selected for scraping */
+  pagesSelected: z.number().optional(),
+  /** Number of pages scraped so far */
+  pagesScraped: z.number().optional(),
+  /** Whether this is a large API (many pages found) */
+  isLargeApi: z.boolean().optional(),
+  /** Total chunks for parsing (if using chunked parsing) */
+  /** Endpoints found so far */
+  endpointsFound: z.number().optional(),
+  /** Auth methods detected */
+  authMethodsFound: z.number().optional(),
+  /** Last updated timestamp */
+  updatedAt: z.string().datetime(),
+});
+
+export type ProgressDetails = z.infer<typeof ProgressDetailsSchema>;
+
+// =============================================================================
 // API Input Schemas
 // =============================================================================
 
@@ -250,6 +292,8 @@ export const ScrapeJobStatusResponseSchema = z.object({
   progress: z.number().min(0).max(100),
   currentStep: z.string().optional(),
   documentationUrl: z.string().url(),
+  /** Detailed progress information (new in v0.2) */
+  progressDetails: ProgressDetailsSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

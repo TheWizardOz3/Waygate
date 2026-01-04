@@ -1,6 +1,6 @@
 {
   "name": "waygate",
-  "version": "0.5.5",
+  "version": "0.6.1",
   "private": true,
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

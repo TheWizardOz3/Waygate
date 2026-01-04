@@ -65,9 +65,14 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
       });
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       if (error instanceof Error && 'code' in error) {
-        const apiError = error as { code: string; message: string; status?: number; details?: unknown };
+        const apiError = error as {
+          code: string;
+          message: string;
+          status?: number;
+          details?: unknown;
+        };
         setResult({
           success: false,
           statusCode: apiError.status,
@@ -109,9 +114,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Test Action</CardTitle>
-        <CardDescription>
-          Send a test request to this action and view the response
-        </CardDescription>
+        <CardDescription>Send a test request to this action and view the response</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Input */}
@@ -121,7 +124,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder='{"key": "value"}'
-            className="font-mono text-sm h-32"
+            className="h-32 font-mono text-sm"
           />
         </div>
 
@@ -157,7 +160,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
               {/* Status */}
               <div className="flex items-center gap-3">
                 {result.success ? (
-                  <Badge className="gap-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                  <Badge className="gap-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-600">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Success
                   </Badge>
@@ -167,9 +170,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
                     Error
                   </Badge>
                 )}
-                {result.statusCode && (
-                  <Badge variant="outline">{result.statusCode}</Badge>
-                )}
+                {result.statusCode && <Badge variant="outline">{result.statusCode}</Badge>}
                 {result.duration && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
@@ -189,7 +190,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
                   {result.success ? 'Response' : 'Error'}
                 </label>
                 <ScrollArea className="h-64 rounded-md border bg-muted/30">
-                  <pre className="p-4 text-xs font-mono whitespace-pre-wrap">
+                  <pre className="whitespace-pre-wrap p-4 font-mono text-xs">
                     {JSON.stringify(result.success ? result.data : result.error, null, 2)}
                   </pre>
                 </ScrollArea>
@@ -201,4 +202,3 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
     </Card>
   );
 }
-

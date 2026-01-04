@@ -468,19 +468,55 @@ export function AddActionWizard({ integrationId }: AddActionWizardProps) {
     );
   }
 
+  // Handle cancel discovery
+  const handleCancelDiscovery = () => {
+    setDiscoveryJobId(null);
+    setStep('discover-input');
+  };
+
   // Render discovering step (progress)
   if (step === 'discovering') {
     const progress = jobData?.progress ?? 0;
     const status = jobData?.status ?? 'PENDING';
-    const statusMessage =
-      {
-        PENDING: 'Starting discovery...',
-        CRAWLING: 'Crawling API documentation...',
-        PARSING: 'Parsing endpoints...',
-        GENERATING: 'Generating actions with AI...',
-        COMPLETED: 'Discovery complete!',
-        FAILED: 'Discovery failed',
-      }[status] || 'Processing...';
+    const progressDetails = jobData?.progressDetails as
+      | {
+          stage?: string;
+          message?: string;
+          apiName?: string;
+          pagesFound?: number;
+          pagesSelected?: number;
+          pagesScraped?: number;
+          endpointsFound?: number;
+          isLargeApi?: boolean;
+        }
+      | undefined;
+
+    // Determine step statuses
+    const getStepStatus = (stepName: string): 'pending' | 'active' | 'completed' => {
+      const stages: Record<string, number> = {
+        triage: 1,
+        scraping: 2,
+        parsing: 3,
+        generating: 4,
+      };
+      const currentStageNum = stages[progressDetails?.stage ?? ''] ?? 0;
+      const stepNum = stages[stepName] ?? 0;
+
+      if (status === 'COMPLETED') return 'completed';
+      if (status === 'FAILED') return currentStageNum >= stepNum ? 'completed' : 'pending';
+      if (currentStageNum > stepNum) return 'completed';
+      if (currentStageNum === stepNum) return 'active';
+      return 'pending';
+    };
+
+    const crawlStatus =
+      getStepStatus('triage') === 'completed' || getStepStatus('scraping') !== 'pending'
+        ? status === 'CRAWLING'
+          ? 'active'
+          : getStepStatus('scraping')
+        : 'pending';
+    const parseStatus = getStepStatus('parsing');
+    const generateStatus = getStepStatus('generating');
 
     return (
       <div className="space-y-6">
@@ -498,23 +534,165 @@ export function AddActionWizard({ integrationId }: AddActionWizardProps) {
         </div>
 
         <Card>
-          <CardContent className="py-8">
+          <CardContent className="py-6">
             <div className="space-y-6">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-12 w-12 animate-spin text-secondary" />
-              </div>
-
+              {/* Overall Progress */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>{statusMessage}</span>
+                  <span className="font-medium">
+                    {progressDetails?.message || 'Starting discovery...'}
+                  </span>
                   <span className="text-muted-foreground">{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
 
-              <p className="text-center text-sm text-muted-foreground">
-                This may take a minute. New actions will be added to your existing discoveries.
+              {/* API Info */}
+              {progressDetails?.apiName && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{progressDetails.apiName}</span>
+                  {progressDetails.isLargeApi && (
+                    <Badge variant="outline" className="text-xs">
+                      Large API
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Step-by-step progress */}
+              <div className="space-y-3 rounded-lg bg-muted/30 p-4">
+                {/* Step 1: Crawling */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium',
+                      crawlStatus === 'completed'
+                        ? 'bg-emerald-500/20 text-emerald-600'
+                        : crawlStatus === 'active'
+                          ? 'bg-secondary/20 text-secondary'
+                          : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {crawlStatus === 'completed' ? (
+                      <Check className="h-3 w-3" />
+                    ) : crawlStatus === 'active' ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      '1'
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={cn(
+                        'text-sm font-medium',
+                        crawlStatus === 'active' && 'text-secondary'
+                      )}
+                    >
+                      Crawling Documentation
+                    </p>
+                    {(crawlStatus === 'active' || crawlStatus === 'completed') && (
+                      <p className="text-xs text-muted-foreground">
+                        {progressDetails?.pagesFound !== undefined &&
+                          `Found ${progressDetails.pagesFound} pages`}
+                        {progressDetails?.pagesSelected !== undefined &&
+                          ` • Selected ${progressDetails.pagesSelected}`}
+                        {progressDetails?.pagesScraped !== undefined &&
+                          ` • Scraped ${progressDetails.pagesScraped}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 2: Parsing */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium',
+                      parseStatus === 'completed'
+                        ? 'bg-emerald-500/20 text-emerald-600'
+                        : parseStatus === 'active'
+                          ? 'bg-secondary/20 text-secondary'
+                          : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {parseStatus === 'completed' ? (
+                      <Check className="h-3 w-3" />
+                    ) : parseStatus === 'active' ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      '2'
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={cn(
+                        'text-sm font-medium',
+                        parseStatus === 'active' && 'text-secondary'
+                      )}
+                    >
+                      Parsing API Specification
+                    </p>
+                    {parseStatus === 'active' && (
+                      <p className="text-xs text-muted-foreground">
+                        Extracting endpoints with AI...
+                        {progressDetails?.endpointsFound !== undefined &&
+                          ` Found ${progressDetails.endpointsFound} so far`}
+                      </p>
+                    )}
+                    {parseStatus === 'completed' &&
+                      progressDetails?.endpointsFound !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          Found {progressDetails.endpointsFound} endpoints
+                        </p>
+                      )}
+                  </div>
+                </div>
+
+                {/* Step 3: Generating */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium',
+                      generateStatus === 'completed'
+                        ? 'bg-emerald-500/20 text-emerald-600'
+                        : generateStatus === 'active'
+                          ? 'bg-secondary/20 text-secondary'
+                          : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {generateStatus === 'completed' ? (
+                      <Check className="h-3 w-3" />
+                    ) : generateStatus === 'active' ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      '3'
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={cn(
+                        'text-sm font-medium',
+                        generateStatus === 'active' && 'text-secondary'
+                      )}
+                    >
+                      Generating Actions
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-center text-xs text-muted-foreground">
+                This may take a few minutes for large APIs.
               </p>
+
+              {/* Cancel button */}
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={handleCancelDiscovery}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel Discovery
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

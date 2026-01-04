@@ -12,32 +12,34 @@
 
 ## Version Index
 
-| Version | Date       | Type       | Summary                                                         |
-| ------- | ---------- | ---------- | --------------------------------------------------------------- |
-| 0.5.5   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 finalized   |
-| 0.5.4   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 complete    |
-| 0.5.3   | 2026-01-03 | minor      | Basic Field Mapping - V0.5 Feature #3 complete                  |
-| 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                  |
-| 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                   |
-| 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                   |
-| 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors           |
-| 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.) |
-| 0.1.9   | 2026-01-03 | minor      | Per-credential baseUrl for user-specific APIs (Supabase, etc.)  |
-| 0.1.8   | 2026-01-03 | patch      | Credential saving, endpoint copy, parameter descriptions fixes  |
-| 0.1.7   | 2026-01-03 | minor      | Template-based integration creation for schema-driven APIs      |
-| 0.1.6   | 2026-01-03 | patch      | Smart cache invalidation with wishlist coverage check           |
-| 0.1.5   | 2026-01-03 | patch      | Action tester improvements, auth-less APIs, AI action discovery |
-| 0.1.4   | 2026-01-03 | patch      | UI polish, specific pages mode, action saves fix                |
-| 0.1.3   | 2026-01-03 | patch      | Intelligent crawling with LLM-guided page selection             |
-| 0.1.2   | 2026-01-03 | patch      | UX improvements: clickable logo, cards, copy buttons            |
-| 0.1.1   | 2026-01-02 | patch      | Upgrade to Gemini 3.0, improve scraping with default crawl mode |
-| 0.1.0   | 2026-01-02 | minor      | **MVP Complete!** Basic Configuration UI complete               |
-| 0.0.8   | 2026-01-02 | prerelease | Gateway API complete                                            |
-| 0.0.7   | 2026-01-02 | prerelease | Token Refresh Management complete                               |
-| 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                               |
-| 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                               |
-| 0.0.1   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)                     |
-| 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup        |
+| Version | Date       | Type       | Summary                                                            |
+| ------- | ---------- | ---------- | ------------------------------------------------------------------ |
+| 0.6.1   | 2026-01-04 | patch      | AI Scraper reliability fixes - simplified prompts, Gemini 3 tuning |
+| 0.6.0   | 2026-01-04 | minor      | Roadmap restructure - V0.5 complete, new milestone structure       |
+| 0.5.5   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 finalized      |
+| 0.5.4   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 complete       |
+| 0.5.3   | 2026-01-03 | minor      | Basic Field Mapping - V0.5 Feature #3 complete                     |
+| 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                     |
+| 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                      |
+| 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                      |
+| 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors              |
+| 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.)    |
+| 0.1.9   | 2026-01-03 | minor      | Per-credential baseUrl for user-specific APIs (Supabase, etc.)     |
+| 0.1.8   | 2026-01-03 | patch      | Credential saving, endpoint copy, parameter descriptions fixes     |
+| 0.1.7   | 2026-01-03 | minor      | Template-based integration creation for schema-driven APIs         |
+| 0.1.6   | 2026-01-03 | patch      | Smart cache invalidation with wishlist coverage check              |
+| 0.1.5   | 2026-01-03 | patch      | Action tester improvements, auth-less APIs, AI action discovery    |
+| 0.1.4   | 2026-01-03 | patch      | UI polish, specific pages mode, action saves fix                   |
+| 0.1.3   | 2026-01-03 | patch      | Intelligent crawling with LLM-guided page selection                |
+| 0.1.2   | 2026-01-03 | patch      | UX improvements: clickable logo, cards, copy buttons               |
+| 0.1.1   | 2026-01-02 | patch      | Upgrade to Gemini 3.0, improve scraping with default crawl mode    |
+| 0.1.0   | 2026-01-02 | minor      | **MVP Complete!** Basic Configuration UI complete                  |
+| 0.0.8   | 2026-01-02 | prerelease | Gateway API complete                                               |
+| 0.0.7   | 2026-01-02 | prerelease | Token Refresh Management complete                                  |
+| 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                                  |
+| 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                                  |
+| 0.0.1   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)                        |
+| 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup           |
 
 **Types:** `major` | `minor` | `patch` | `prerelease`
 
@@ -64,6 +66,50 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.6.1] - 2026-01-04
+
+### Fixed
+
+- **Endpoint extraction timeout**: LLM calls for endpoint extraction were timing out after 2+ minutes. Root cause was a mismatch between complex prompt instructions and simplified schema. Fixed by aligning prompt to only request flat endpoint fields (name, slug, method, path, description).
+- **Gemini 3 performance**: `gemini-3-pro-preview` uses "dynamic thinking" by default (`thinking_level: high`), causing slow responses. Added `thinkingConfig: { thinkingLevel: 'low' }` to optimize for extraction tasks.
+- **Null bytes in LLM response**: Gemini occasionally returns null bytes (`\u0000`) which PostgreSQL rejects. Added sanitization to strip null bytes before JSON parsing.
+- **Wishlist coverage logic**: `getUncoveredWishlistItems()` used `.some()` instead of `.every()`, incorrectly marking wishlist items as "covered" with partial matches.
+- **Action creation API**: POST `/api/v1/actions` route didn't exist. Actions must be created under `/api/v1/integrations/{id}/actions`. Fixed API client and added POST handler.
+
+### Changed
+
+- **Simplified endpoint extraction prompt**: Removed complex nested extraction instructions (parameters, requestBody, responses, pagination) that conflicted with flat schema. Prompt now matches schema exactly.
+- **LLM schema support**: Added `maxLength` and `minLength` properties to `LLMSchemaProperty` interface and Gemini provider's schema conversion.
+- **Triage page limit**: Increased from 8 to 20 pages for broader API coverage.
+- **Content limits**: `MAX_CONTENT_PER_PAGE` increased to 100K, `MAX_TOTAL_CONTENT` to 800K for single-shot parsing.
+
+### Added
+
+- **16 new unit tests** for simplified prompts and wishlist coverage logic in `tests/unit/ai/`
+
+---
+
+## [0.6.0] - 2026-01-04
+
+### Changed
+
+- **Roadmap Restructure**: Major milestone reorganization for better sequencing and clarity
+  - **V0.5 marked as COMPLETE**: Pagination, Response Validation, Field Mapping, and Tagging all done
+  - **V0.75 expanded**: Now includes Continuous Integration Testing (from V0.5) and Per-App Custom Mappings (from V1)
+  - **New V1 milestone**: UI & Stability Cleanup pass focusing on service integration and configuration screen reorganization
+  - **Old V1 → V1.1**: Scale & Reliability features (caching, async jobs, batch operations) moved to V1.1
+  - **V2 split into three milestones**:
+    - V2: Maintenance & Safety (auto-maintenance, versioning, environments, schema drift)
+    - V2.1: Self-Service & Access (no-code UI, RBAC, JIT auth)
+    - V2.2: Developer Experience & AI Integration (webhooks, SDK generation, LLM tool wrapping)
+
+### Documentation
+
+- Updated `project_status.md`: New current milestone (V0.75), V0.5 moved to completed milestones, detailed build orders for all future milestones
+- Updated `product_spec.md`: Feature Overview Matrix milestone assignments, all milestone sections (5.2-5.9), component milestones, version references throughout
 
 ---
 

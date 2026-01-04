@@ -1,12 +1,7 @@
 'use client';
 
 import { UseFormReturn, FieldValues } from 'react-hook-form';
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -21,11 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Info } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SettingsTabProps {
   form: UseFormReturn<FieldValues>;
@@ -73,9 +64,7 @@ export function SettingsTab({ form }: SettingsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">Response Validation</CardTitle>
-              <CardDescription>
-                Validate API responses against your output schema
-              </CardDescription>
+              <CardDescription>Validate API responses against your output schema</CardDescription>
             </div>
             <Switch
               checked={validationEnabled}
@@ -97,19 +86,25 @@ export function SettingsTab({ form }: SettingsTabProps) {
                 <SelectContent>
                   <SelectItem value="warn">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">Warn</Badge>
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">
+                        Warn
+                      </Badge>
                       <span className="text-xs text-muted-foreground">Log issues, pass data</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="strict">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-red-500/10 text-red-600">Strict</Badge>
+                      <Badge variant="outline" className="bg-red-500/10 text-red-600">
+                        Strict
+                      </Badge>
                       <span className="text-xs text-muted-foreground">Fail on mismatch</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="lenient">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600">Lenient</Badge>
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600">
+                        Lenient
+                      </Badge>
                       <span className="text-xs text-muted-foreground">Auto-coerce types</span>
                     </div>
                   </SelectItem>
@@ -129,7 +124,8 @@ export function SettingsTab({ form }: SettingsTabProps) {
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      Monitors validation failures over time to detect when the external API changes its response format
+                      Monitors validation failures over time to detect when the external API changes
+                      its response format
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -347,7 +343,9 @@ export function SettingsTab({ form }: SettingsTabProps) {
 
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-xs text-muted-foreground">
-                <strong>How it works:</strong> When the API returns one of these status codes, Waygate will automatically retry the request with exponential backoff. Common codes: 429 (rate limit), 500-504 (server errors).
+                <strong>How it works:</strong> When the API returns one of these status codes,
+                Waygate will automatically retry the request with exponential backoff. Common codes:
+                429 (rate limit), 500-504 (server errors).
               </p>
             </div>
           </CardContent>
@@ -356,4 +354,3 @@ export function SettingsTab({ form }: SettingsTabProps) {
     </div>
   );
 }
-

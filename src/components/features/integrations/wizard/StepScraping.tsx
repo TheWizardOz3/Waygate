@@ -11,10 +11,13 @@ import {
   Sparkles,
   RefreshCw,
   XCircle,
+  Layers,
+  Zap,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useWizardStore } from '@/stores/wizard.store';
 import {
   useScrapeJobStatus,
@@ -22,6 +25,7 @@ import {
   useCancelScrapeJob,
 } from '@/hooks/useScrapeJob';
 import { cn } from '@/lib/utils';
+import type { ProgressDetails } from '@/lib/modules/ai/scrape-job.schemas';
 
 interface StepItemProps {
   icon: React.ReactNode;
@@ -242,8 +246,84 @@ export function StepScraping() {
     );
   }
 
+  // Extract progress details if available
+  const progressDetails =
+    jobData && 'progressDetails' in jobData
+      ? (jobData.progressDetails as ProgressDetails | undefined)
+      : undefined;
+
+  // Build dynamic detail messages based on progressDetails
+  const getCrawlingDetail = (): string | undefined => {
+    const status = getStepStatus('crawling');
+    if (status === 'active') {
+      if (progressDetails?.stage === 'triage') {
+        if (progressDetails.pagesFound) {
+          return `Found ${progressDetails.pagesFound} pages${progressDetails.apiName ? ` for ${progressDetails.apiName}` : ''}`;
+        }
+        return progressDetails.message || `Analyzing ${data.documentationUrl}`;
+      }
+      if (progressDetails?.stage === 'scraping') {
+        const scraped = progressDetails.pagesScraped ?? 0;
+        const selected = progressDetails.pagesSelected ?? 0;
+        return `Scraping page ${scraped}/${selected}`;
+      }
+      return progressDetails?.message || `Scanning ${data.documentationUrl}`;
+    }
+    if (status === 'completed') {
+      if (progressDetails?.pagesScraped) {
+        return `Scraped ${progressDetails.pagesScraped} pages`;
+      }
+      return 'Documentation loaded';
+    }
+    return undefined;
+  };
+
+  const getParsingDetail = (): string | undefined => {
+    const status = getStepStatus('parsing');
+    if (status === 'active') {
+      if (progressDetails?.endpointsFound) {
+        return `Found ${progressDetails.endpointsFound} endpoints so far`;
+      }
+      return progressDetails?.message || 'Analyzing documentation with AI...';
+    }
+    if (status === 'completed') {
+      if (progressDetails?.endpointsFound) {
+        return `Found ${progressDetails.endpointsFound} endpoints`;
+      }
+      return 'Extraction complete';
+    }
+    return undefined;
+  };
+
+  const getGeneratingDetail = (): string | undefined => {
+    const status = getStepStatus('generating');
+    if (status === 'active') {
+      return progressDetails?.message || 'AI is creating action definitions';
+    }
+    if (status === 'completed') {
+      if (progressDetails?.endpointsFound) {
+        return `${progressDetails.endpointsFound} actions ready`;
+      }
+      return 'Actions generated';
+    }
+    return undefined;
+  };
+
   return (
     <div className="space-y-6">
+      {/* API Name header (if detected) */}
+      {progressDetails?.apiName && (
+        <div className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-secondary" />
+          <span className="font-medium">{progressDetails.apiName}</span>
+          {progressDetails.isLargeApi && (
+            <Badge variant="secondary" className="text-xs">
+              Large API
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Progress bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
@@ -251,8 +331,38 @@ export function StepScraping() {
           <span className="font-mono text-foreground">{data.scrapeProgress}%</span>
         </div>
         <Progress value={data.scrapeProgress} className="h-2" />
-        <p className="text-sm text-muted-foreground">{data.scrapeCurrentStep || 'Starting...'}</p>
+        <p className="text-sm text-muted-foreground">
+          {progressDetails?.message || data.scrapeCurrentStep || 'Starting...'}
+        </p>
       </div>
+
+      {/* Stats badges (show when we have data) */}
+      {(progressDetails?.pagesFound ||
+        progressDetails?.endpointsFound ||
+        progressDetails?.authMethodsFound) && (
+        <div className="flex flex-wrap gap-2">
+          {progressDetails.pagesFound !== undefined && (
+            <Badge variant="outline" className="font-normal">
+              <Globe className="mr-1 h-3 w-3" />
+              {progressDetails.pagesScraped ?? 0}/{progressDetails.pagesFound} pages
+            </Badge>
+          )}
+          {progressDetails.endpointsFound !== undefined && progressDetails.endpointsFound > 0 && (
+            <Badge variant="outline" className="font-normal text-accent">
+              <Layers className="mr-1 h-3 w-3" />
+              {progressDetails.endpointsFound} endpoints
+            </Badge>
+          )}
+          {progressDetails.authMethodsFound !== undefined &&
+            progressDetails.authMethodsFound > 0 && (
+              <Badge variant="outline" className="font-normal">
+                <Check className="mr-1 h-3 w-3" />
+                {progressDetails.authMethodsFound} auth method
+                {progressDetails.authMethodsFound !== 1 ? 's' : ''}
+              </Badge>
+            )}
+        </div>
+      )}
 
       {/* Step indicators */}
       <div className="space-y-3">
@@ -260,31 +370,19 @@ export function StepScraping() {
           icon={<Globe className="h-4 w-4" />}
           label="Crawling Documentation"
           status={getStepStatus('crawling')}
-          detail={
-            getStepStatus('crawling') === 'active'
-              ? `Scanning ${data.documentationUrl}`
-              : getStepStatus('crawling') === 'completed'
-                ? 'Pages discovered'
-                : undefined
-          }
+          detail={getCrawlingDetail()}
         />
         <StepItem
           icon={<FileSearch className="h-4 w-4" />}
           label="Parsing API Specification"
           status={getStepStatus('parsing')}
-          detail={
-            getStepStatus('parsing') === 'active' ? 'Extracting endpoints and schemas' : undefined
-          }
+          detail={getParsingDetail()}
         />
         <StepItem
           icon={<Sparkles className="h-4 w-4" />}
           label="Generating Actions"
           status={getStepStatus('generating')}
-          detail={
-            getStepStatus('generating') === 'active'
-              ? 'AI is creating action definitions'
-              : undefined
-          }
+          detail={getGeneratingDetail()}
         />
       </div>
 
@@ -295,8 +393,9 @@ export function StepScraping() {
           <div className="text-sm">
             <p className="font-medium text-foreground">AI-Powered Analysis</p>
             <p className="mt-1 text-muted-foreground">
-              Our AI is reading the documentation, identifying authentication methods, and
-              extracting API endpoints. This typically takes 30-60 seconds.
+              {progressDetails?.isLargeApi
+                ? "This is a large API. We're analyzing the most important pages first. You can add more actions later."
+                : 'Our AI is reading the documentation, identifying authentication methods, and extracting API endpoints. This typically takes 30-60 seconds.'}
             </p>
           </div>
         </div>
