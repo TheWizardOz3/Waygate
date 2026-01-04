@@ -18,18 +18,26 @@ interface LogEntryRowProps {
 export function LogEntryRow({ log, onClick }: LogEntryRowProps) {
   const statusConfig = getStatusConfig(log.status, log.statusCode);
 
+  // Safely parse timestamp
+  const timestamp = log.timestamp ? new Date(log.timestamp) : null;
+  const isValidDate = timestamp && !isNaN(timestamp.getTime());
+
   return (
     <TableRow className="cursor-pointer transition-colors hover:bg-muted/50" onClick={onClick}>
       {/* Timestamp */}
       <TableCell className="w-[140px]">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{new Date(log.timestamp).toLocaleString()}</TooltipContent>
-        </Tooltip>
+        {isValidDate ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-sm text-muted-foreground">
+                {formatDistanceToNow(timestamp, { addSuffix: true })}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{timestamp.toLocaleString()}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
       </TableCell>
 
       {/* Integration */}
