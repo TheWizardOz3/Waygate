@@ -50,6 +50,11 @@ import {
   type ExecutionResultWithMetrics,
 } from '../execution/execution.service';
 import type { HttpClientRequest, ExecutionErrorDetails } from '../execution/execution.schemas';
+import {
+  validationService,
+  type ValidateResponseResult,
+  type ValidationRequest,
+} from '../execution/validation/server';
 import { logRequestResponse } from '../logging/logging.service';
 import {
   GatewayErrorCodes,
@@ -57,6 +62,7 @@ import {
   type GatewayErrorResponse,
   type GatewayInvokeOptions,
   type ValidationErrorDetail,
+  type ValidationMetadata,
 } from './gateway.schemas';
 
 // =============================================================================
@@ -186,12 +192,28 @@ export async function invokeAction(
     // 5. Execute the request
     const executionResult = await executeRequest(request, integration.id, options);
 
-    // 6. Log the request/response
+    // 6. Validate response (if execution succeeded)
+    let validationResult: ValidateResponseResult | undefined;
+    if (executionResult.success) {
+      validationResult = await validateResponse(
+        executionResult.data,
+        action,
+        context.tenantId,
+        options.validation
+      );
+
+      // In strict mode, validation failure should return an error
+      if (!validationResult.valid && validationResult.metadata.mode === 'strict') {
+        return formatValidationErrorResponse(requestId, validationResult, executionResult);
+      }
+    }
+
+    // 7. Log the request/response
     await logInvocation(context, integration.id, action.id, request, url, executionResult);
 
-    // 7. Format and return response
+    // 8. Format and return response
     if (executionResult.success) {
-      return formatSuccessResponse(requestId, executionResult);
+      return formatSuccessResponse(requestId, executionResult, validationResult);
     } else {
       return formatExecutionErrorResponse(requestId, executionResult);
     }
@@ -520,6 +542,25 @@ function extractBodyParams(
 }
 
 /**
+ * Step 5b: Validate API response against action's output schema
+ */
+async function validateResponse(
+  data: unknown,
+  action: Action,
+  tenantId: string,
+  validationOptions?: ValidationRequest
+): Promise<ValidateResponseResult> {
+  return validationService.validateResponse({
+    data,
+    outputSchema: action.outputSchema,
+    validationConfig: action.validationConfig,
+    requestOptions: validationOptions,
+    actionId: action.id,
+    tenantId,
+  });
+}
+
+/**
  * Apply credentials to request headers/query/body
  */
 function applyCredentials(
@@ -602,7 +643,8 @@ async function executeRequest(
 }
 
 /**
- * Step 6: Log the invocation
+ * Step 7: Log the invocation
+ * TODO: Add validation info to logs (validationResult parameter)
  */
 async function logInvocation(
   context: InvocationContext,
@@ -648,11 +690,31 @@ async function logInvocation(
  */
 function formatSuccessResponse(
   requestId: string,
-  result: ExecutionResultWithMetrics<unknown>
+  result: ExecutionResultWithMetrics<unknown>,
+  validationResult?: ValidateResponseResult
 ): GatewaySuccessResponse {
+  // Use validated/transformed data if available
+  const responseData = validationResult?.data ?? result.data;
+
+  // Build validation metadata if validation was performed
+  const validationMeta: ValidationMetadata | undefined = validationResult
+    ? {
+        valid: validationResult.valid,
+        mode: validationResult.metadata.mode,
+        issueCount: validationResult.metadata.issueCount,
+        issues: validationResult.metadata.issues,
+        fieldsCoerced: validationResult.metadata.fieldsCoerced,
+        fieldsStripped: validationResult.metadata.fieldsStripped,
+        fieldsDefaulted: validationResult.metadata.fieldsDefaulted,
+        validationDurationMs: validationResult.metadata.validationDurationMs,
+        driftStatus: validationResult.metadata.driftStatus,
+        driftMessage: validationResult.metadata.driftMessage,
+      }
+    : undefined;
+
   return {
     success: true,
-    data: result.data,
+    data: responseData,
     meta: {
       requestId,
       timestamp: new Date().toISOString(),
@@ -661,6 +723,53 @@ function formatSuccessResponse(
         retryCount: result.attempts - 1,
         cached: false, // TODO: Implement caching
         externalLatencyMs: result.lastRequestDurationMs,
+      },
+      validation: validationMeta,
+    },
+  };
+}
+
+/**
+ * Format a response validation error (strict mode failure)
+ */
+function formatValidationErrorResponse(
+  requestId: string,
+  validationResult: ValidateResponseResult,
+  executionResult: ExecutionResultWithMetrics<unknown>
+): GatewayErrorResponse {
+  const issues = validationResult.metadata.issues ?? [];
+  const issuesSummary = issues
+    .slice(0, 3)
+    .map((i) => `${i.path}: ${i.message}`)
+    .join('; ');
+
+  return {
+    success: false,
+    error: {
+      code: GatewayErrorCodes.RESPONSE_VALIDATION_ERROR.code,
+      message: `Response validation failed: ${issuesSummary}${issues.length > 3 ? ` (+${issues.length - 3} more)` : ''}`,
+      details: {
+        errors: issues.map((issue) => ({
+          path: issue.path,
+          field: issue.path.split('.').pop(),
+          message: issue.message,
+          value: undefined, // Don't expose actual values
+        })),
+        context: {
+          mode: validationResult.metadata.mode,
+          issueCount: validationResult.metadata.issueCount,
+          driftStatus: validationResult.metadata.driftStatus,
+          executionLatencyMs: executionResult.totalDurationMs,
+        },
+      },
+      requestId,
+      suggestedResolution: {
+        action: GatewayErrorCodes.RESPONSE_VALIDATION_ERROR.suggestedAction,
+        description:
+          validationResult.metadata.driftStatus === 'alert'
+            ? "Schema drift detected. The external API response format may have changed. Consider updating the action's output schema or switching to lenient validation mode."
+            : 'The external API response does not match the expected schema. This may indicate an API change. Try using "warn" or "lenient" validation mode, or update the action\'s output schema.',
+        retryable: GatewayErrorCodes.RESPONSE_VALIDATION_ERROR.retryable,
       },
     },
   };

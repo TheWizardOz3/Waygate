@@ -5,6 +5,7 @@ export { SchemaFieldRow } from './SchemaFieldRow';
 export { JsonSchemaEditor } from './JsonSchemaEditor';
 export { AdvancedSettings } from './AdvancedSettings';
 export { PaginationSettings } from './PaginationSettings';
+export { ValidationSettings } from './ValidationSettings';
 
 // Types and utilities
 export type { SchemaField } from './types';

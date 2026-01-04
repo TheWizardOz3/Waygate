@@ -93,6 +93,7 @@ model Tenant {
   fieldMappings          FieldMapping[]
   requestLogs            RequestLog[]
   scrapeJobs             ScrapeJob[]
+  validationFailures     ValidationFailure[]
 
   @@map("tenants")
 }
@@ -138,6 +139,7 @@ model Action {
   inputSchema      Json       @default("{}") @map("input_schema")
   outputSchema     Json       @default("{}") @map("output_schema")
   paginationConfig Json?      @map("pagination_config")
+  validationConfig Json?      @map("validation_config")
   retryConfig      Json?      @map("retry_config")
   cacheable        Boolean    @default(false)
   cacheTtlSeconds  Int?       @map("cache_ttl_seconds")
@@ -146,9 +148,10 @@ model Action {
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  integration   Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  fieldMappings FieldMapping[]
-  requestLogs   RequestLog[]
+  integration        Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  fieldMappings      FieldMapping[]
+  requestLogs        RequestLog[]
+  validationFailures ValidationFailure[]
 
   // Indexes
   @@unique([integrationId, slug], name: "actions_integration_slug_idx")
@@ -251,4 +254,31 @@ model ScrapeJob {
   @@index([status], name: "scrape_jobs_status_idx")
   @@index([tenantId, createdAt(sort: Desc)], name: "scrape_jobs_tenant_created_idx")
   @@map("scrape_jobs")
+}
+
+/// Tracks validation failures for schema drift detection
+model ValidationFailure {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actionId        String    @map("action_id") @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  issueCode       String    @map("issue_code") @db.VarChar(50)
+  fieldPath       String    @map("field_path") @db.VarChar(255)
+  expectedType    String?   @map("expected_type") @db.VarChar(50)
+  receivedType    String?   @map("received_type") @db.VarChar(50)
+  failureCount    Int       @default(1) @map("failure_count")
+  firstSeenAt     DateTime  @default(now()) @map("first_seen_at")
+  lastSeenAt      DateTime  @default(now()) @map("last_seen_at")
+  driftAlertSent  Boolean   @default(false) @map("drift_alert_sent")
+  driftAlertSentAt DateTime? @map("drift_alert_sent_at")
+
+  // Relations
+  action Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@unique([actionId, issueCode, fieldPath], name: "validation_failures_unique_idx")
+  @@index([actionId], name: "validation_failures_action_idx")
+  @@index([tenantId], name: "validation_failures_tenant_idx")
+  @@index([lastSeenAt], name: "validation_failures_last_seen_idx")
+  @@map("validation_failures")
 }

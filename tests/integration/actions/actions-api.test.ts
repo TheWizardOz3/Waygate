@@ -109,6 +109,7 @@ const mockAction = {
   },
   paginationConfig: null,
   retryConfig: null,
+  validationConfig: null,
   cacheable: false,
   cacheTtlSeconds: null,
   metadata: {

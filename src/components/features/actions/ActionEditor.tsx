@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BasicInfoSection } from './editor/BasicInfoSection';
 import { SchemaBuilder } from './editor/SchemaBuilder';
 import { AdvancedSettings } from './editor/AdvancedSettings';
+import { ValidationSettings } from './editor/ValidationSettings';
 import { createEmptySchema } from './editor/types';
 import { ActionEditorSchema, generateSlugFromName } from '@/lib/modules/actions/action.validation';
 import { useCreateAction, useUpdateAction, useAction, useIntegration } from '@/hooks';
@@ -53,6 +54,26 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
       cacheable: false,
       cacheTtlSeconds: null as number | null,
       retryConfig: null as { maxRetries: number; retryableStatuses: number[] } | null,
+      validationConfig: {
+        enabled: true,
+        mode: 'warn' as const,
+        nullHandling: 'pass' as const,
+        extraFields: 'preserve' as const,
+        coercion: {
+          stringToNumber: true,
+          numberToString: true,
+          stringToBoolean: true,
+          emptyStringToNull: false,
+          nullToDefault: true,
+        },
+        driftDetection: {
+          enabled: true,
+          windowMinutes: 60,
+          failureThreshold: 5,
+          alertOnDrift: true,
+        },
+        bypassValidation: false,
+      },
     },
   });
 
@@ -70,6 +91,26 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
         cacheable: existingAction.cacheable,
         cacheTtlSeconds: existingAction.cacheTtlSeconds,
         retryConfig: existingAction.retryConfig,
+        validationConfig: existingAction.validationConfig ?? {
+          enabled: true,
+          mode: 'warn',
+          nullHandling: 'pass',
+          extraFields: 'preserve',
+          coercion: {
+            stringToNumber: true,
+            numberToString: true,
+            stringToBoolean: true,
+            emptyStringToNull: false,
+            nullToDefault: true,
+          },
+          driftDetection: {
+            enabled: true,
+            windowMinutes: 60,
+            failureThreshold: 5,
+            alertOnDrift: true,
+          },
+          bypassValidation: false,
+        },
       });
     }
   }, [existingAction, form]);
@@ -111,6 +152,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           cacheable: data.cacheable,
           cacheTtlSeconds: data.cacheTtlSeconds,
           retryConfig: data.retryConfig,
+          validationConfig: data.validationConfig,
         };
         await updateAction.mutateAsync(updatePayload);
         toast.success('Action updated successfully');
@@ -128,6 +170,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           cacheable: data.cacheable,
           cacheTtlSeconds: data.cacheTtlSeconds,
           retryConfig: data.retryConfig,
+          validationConfig: data.validationConfig,
         };
         await createAction.mutateAsync(createPayload);
         toast.success('Action created successfully');
@@ -223,6 +266,17 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
             schema={form.watch('outputSchema') as JsonSchema}
             onChange={handleOutputSchemaChange}
           />
+
+          {/* Validation Settings Card */}
+          <div className="rounded-lg border bg-card p-6">
+            <h3 className="mb-2 text-lg font-semibold">Validation & Monitoring</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Configure response validation and drift detection
+            </p>
+            <ValidationSettings
+              form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
+            />
+          </div>
 
           <AdvancedSettings
             form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}

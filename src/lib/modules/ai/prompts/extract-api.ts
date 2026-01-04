@@ -52,8 +52,78 @@ export const ENDPOINT_EXTRACTION_SYSTEM_PROMPT = `You are an API endpoint extrac
 - **deprecated**: Set to true ONLY if keeping for reference, otherwise omit deprecated endpoints entirely
 - **parameters**: Path, query, and header parameters with types
 - **requestBody**: Request body schema if applicable
-- **responses**: Expected response schemas by status code
+- **responses**: Expected response schemas by status code (BE SPECIFIC - see Schema Strictness below)
 - **pagination**: Pagination configuration if this is a list endpoint (see below)
+
+## Schema Strictness (IMPORTANT for Response Validation)
+
+When extracting response schemas, be as specific as possible. This enables strict validation at runtime.
+
+### Do NOT use generic "object" or "any" types when details are available:
+
+❌ BAD - Too generic:
+\`\`\`json
+{
+  "type": "object",
+  "properties": {
+    "data": { "type": "object" },
+    "user": { "type": "object" }
+  }
+}
+\`\`\`
+
+✅ GOOD - Specific types:
+\`\`\`json
+{
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name"]
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "user", "guest"] }
+      },
+      "required": ["id", "email"]
+    }
+  },
+  "required": ["data"]
+}
+\`\`\`
+
+### Guidelines for Strict Schemas:
+
+1. **Always extract "required" arrays** - List fields that are always present
+2. **Use specific formats** - "date-time", "email", "uri", "uuid" when documented
+3. **Use enums for known values** - If docs list specific allowed values, use enum
+4. **Mark nullable fields** - Use "nullable": true if docs say field can be null
+5. **Specify array item types** - Don't just use "array", specify "items" schema
+6. **Extract nested objects** - When example JSON is provided, infer full structure
+7. **Note optional fields** - Don't add to "required" array unless explicitly required
+
+### Schema Confidence Indicators:
+
+Include these in your response:
+- **schemaConfidence**: "high" | "medium" | "low"
+  - high: Full schema is documented with types and examples
+  - medium: Partial schema, some inference needed
+  - low: Mostly inferred from examples or conventions
+  
+### When to be Lenient:
+
+If documentation is vague or only shows partial examples:
+- Use \`{ "type": "object", "additionalProperties": true }\` for unknown structures
+- Use \`{ "type": "array" }\` without items if array contents vary
+- Add a note: "schemaNote": "Partial schema - response may have additional fields"
 
 ## Pagination Detection (IMPORTANT for list endpoints)
 For GET endpoints that return lists/arrays of items, detect pagination:
@@ -212,12 +282,22 @@ Returns a message object on success.
         schema: {
           type: 'object',
           properties: {
-            ok: { type: 'boolean' },
-            channel: { type: 'string' },
-            ts: { type: 'string' },
-            message: { type: 'object' },
+            ok: { type: 'boolean', description: 'Success indicator' },
+            channel: { type: 'string', description: 'Channel ID where message was posted' },
+            ts: { type: 'string', description: 'Message timestamp (unique ID)' },
+            message: {
+              type: 'object',
+              description: 'The posted message object',
+              properties: {
+                text: { type: 'string', description: 'Message text content' },
+                username: { type: 'string', description: 'Username of sender' },
+              },
+              required: ['text'],
+            },
           },
+          required: ['ok', 'channel', 'ts'],
         },
+        schemaConfidence: 'high',
       },
     },
     tags: ['messaging'],
@@ -283,12 +363,30 @@ Returns a list of messages with pagination.
         schema: {
           type: 'object',
           properties: {
-            ok: { type: 'boolean' },
-            messages: { type: 'array' },
-            has_more: { type: 'boolean' },
-            response_metadata: { type: 'object' },
+            ok: { type: 'boolean', description: 'Success indicator' },
+            messages: {
+              type: 'array',
+              description: 'List of message objects',
+              items: {
+                type: 'object',
+                properties: {
+                  ts: { type: 'string', description: 'Message timestamp (unique ID)' },
+                  text: { type: 'string', description: 'Message text content' },
+                },
+                required: ['ts', 'text'],
+              },
+            },
+            has_more: { type: 'boolean', description: 'Whether more messages exist' },
+            response_metadata: {
+              type: 'object',
+              properties: {
+                next_cursor: { type: 'string', description: 'Cursor for next page' },
+              },
+            },
           },
+          required: ['ok', 'messages'],
         },
+        schemaConfidence: 'high',
       },
     },
     pagination: {

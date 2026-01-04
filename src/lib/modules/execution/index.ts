@@ -181,6 +181,44 @@ export {
 export type { RequestOptions } from './helpers';
 
 // =============================================================================
+// Validation (client-safe schemas and types)
+// =============================================================================
+
+export {
+  // Schemas & Types
+  ValidationModeSchema,
+  ValidationConfigSchema,
+  ValidationRequestSchema,
+  ValidationResultSchema,
+  ValidationResponseMetadataSchema,
+  ValidationIssueSchema,
+  // Constants & Presets
+  DEFAULT_VALIDATION_CONFIG,
+  ValidationPresets,
+  // Helpers
+  mergeValidationConfig,
+  applyValidationPreset,
+  shouldSkipValidation,
+  createValidationResponseMetadata,
+} from './validation';
+
+export type {
+  ValidationMode,
+  ValidationConfig,
+  PartialValidationConfig,
+  ValidationRequest,
+  ValidationResult,
+  ValidationResponseMetadata,
+  ValidationIssue,
+  ValidationIssueCode,
+  DriftStatus,
+} from './validation';
+
+// Server-only validation exports (service, drift detection)
+// Import from './validation/server' in server-side code:
+// import { validationService, driftDetectionService } from '@/lib/modules/execution/validation/server';
+
+// =============================================================================
 // Pagination
 // =============================================================================
 

@@ -33,6 +33,7 @@
 | ADR-017 | 2026-01-03 | arch     | active  | Template auto-detection for schema-driven APIs          |
 | ADR-018 | 2026-01-03 | arch     | active  | Per-credential baseUrl for user-specific APIs           |
 | ADR-019 | 2026-01-03 | arch     | active  | LLM-friendly pagination with token-aware limits         |
+| ADR-020 | 2026-01-03 | arch     | active  | Response validation with Zod and three-mode strategy    |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -1230,5 +1231,85 @@ When working with pagination:
 - Use `continuationToken` to resume pagination in follow-up requests
 - For LLM use cases, prefer character limits over item limits
 - Run `estimateTokens(characterCount)` to budget context window usage
+
+---
+
+### ADR-020: Response Validation with Zod and Three-Mode Strategy
+
+**Date:** 2026-01-03 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+External APIs can return unexpected data at any time - missing fields, type changes, schema drift, unexpected nulls, or malformed responses. Consuming apps (especially LLM-powered ones) need reliable, typed data to function correctly. Without validation, bad data silently propagates and causes hard-to-debug issues downstream.
+
+#### Decision
+
+Implemented a Response Validation layer with:
+
+1. **Three Validation Modes:**
+   - `strict`: Fail immediately if response doesn't match schema exactly
+   - `warn`: Log issues but pass data through (default for most actions)
+   - `lenient`: Auto-fix issues via coercion, use defaults for nulls
+
+2. **Type Coercion in Lenient Mode:**
+   - String → Number (e.g., "123" becomes 123)
+   - String → Boolean (e.g., "true" becomes true)
+   - Number → String (when schema expects string)
+   - Null → Default value (when configured)
+
+3. **Extra Field Handling:**
+   - `strip`: Remove unknown fields from response (default for strict)
+   - `preserve`: Keep unknown fields (default for warn/lenient)
+
+4. **Schema Drift Detection:**
+   - Track validation failures per action over rolling time window
+   - Alert when failure rate exceeds configurable threshold (default: 5 failures in 60 minutes)
+   - Helps distinguish systematic API changes from one-off errors
+
+5. **Per-Action Configuration:**
+   - `validationConfig` JSON field on `Action` model
+   - UI controls in Action Editor for mode, coercion, null handling, drift detection
+   - AI-generated actions get sensible defaults (enabled, warn mode)
+
+6. **Request-Level Overrides:**
+   - Headers: `X-Waygate-Validation-Mode`, `X-Waygate-Bypass-Validation`, etc.
+   - Allows per-request control without changing action config
+
+7. **LLM-Friendly Error Reporting:**
+   - Structured `ValidationIssue` objects with JSONPath, expected/received types
+   - `suggestedResolution` field helps LLMs understand how to fix issues
+
+#### Rationale
+
+- **Trust But Verify**: External APIs are a trust boundary - never blindly pass through their data
+- **Progressive Strictness**: Default to `warn` for flexibility, opt into `strict` for critical data
+- **Lenient for Prototyping**: Auto-fix common issues during development, tighten for production
+- **Visibility**: Drift detection surfaces systematic API changes before they cause outages
+- **Zod over Ajv**: Zod provides better TypeScript integration and transformation capabilities
+
+#### Alternatives Considered
+
+1. **Ajv (JSON Schema)**: Rejected - already have Ajv for input validation, but Zod provides better TypeScript integration and transformations
+2. **No validation**: Rejected - too risky for production use, especially with LLM consumers
+3. **Client-side only**: Rejected - validation should happen at the gateway before data reaches consumers
+4. **Binary valid/invalid**: Rejected - three modes provide flexibility for different use cases
+
+#### Migration
+
+- **Affected files:** `src/lib/modules/execution/validation/`, `src/lib/modules/gateway/`, `src/components/features/actions/editor/`
+- **Database:** New `validationConfig` field on `Action` model, new `ValidationFailure` model for drift detection
+- **Breaking changes:** None - validation is opt-in with backwards-compatible defaults
+
+#### AI Instructions
+
+When working with validation:
+
+- ALWAYS check `validationConfig.enabled` before assuming validation is active
+- Default mode is `warn` - issues are logged but data passes through
+- For strict validation, ensure output schema accurately reflects API response
+- Use lenient mode during prototyping, strict mode for production-critical data
+- Check `response.validation.issues` for any validation problems
+- Drift detection alerts appear in logs when failure rate exceeds threshold
+- To bypass validation for debugging: `X-Waygate-Bypass-Validation: true` header
 
 ---

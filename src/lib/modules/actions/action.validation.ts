@@ -6,6 +6,7 @@
 
 import { z } from 'zod';
 import { HttpMethodSchema, JsonSchemaSchema } from './action.schemas';
+import { ValidationConfigSchema } from '../execution/validation';
 
 // =============================================================================
 // Validation Schemas
@@ -51,6 +52,7 @@ export const ActionEditorSchema = z.object({
     })
     .nullable()
     .optional(),
+  validationConfig: ValidationConfigSchema.nullable().optional(),
 });
 
 export type ActionEditorData = z.input<typeof ActionEditorSchema>;

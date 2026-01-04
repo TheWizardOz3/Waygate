@@ -181,11 +181,13 @@ function extractSlugsFromUrl(url: string): {
  * - X-Waygate-Timeout: Timeout in milliseconds (1000-300000)
  * - X-Idempotency-Key: Idempotency key for safe retries
  * - X-Waygate-Include-Raw: "true" to include raw response from external API
+ * - X-Waygate-Validation-Mode: "strict" | "warn" | "lenient" - override response validation mode
+ * - X-Waygate-Bypass-Response-Validation: "true" to skip response validation entirely
  */
 function parseInvocationOptions(request: NextRequest): GatewayInvokeOptions {
   const options: GatewayInvokeOptions = {};
 
-  // Skip validation
+  // Skip input validation
   const skipValidation = request.headers.get('X-Waygate-Skip-Validation');
   if (skipValidation?.toLowerCase() === 'true') {
     options.skipValidation = true;
@@ -210,6 +212,24 @@ function parseInvocationOptions(request: NextRequest): GatewayInvokeOptions {
   const includeRaw = request.headers.get('X-Waygate-Include-Raw');
   if (includeRaw?.toLowerCase() === 'true') {
     options.includeRawResponse = true;
+  }
+
+  // Response validation mode override
+  const validationMode = request.headers.get('X-Waygate-Validation-Mode');
+  if (validationMode && ['strict', 'warn', 'lenient'].includes(validationMode.toLowerCase())) {
+    options.validation = {
+      ...options.validation,
+      mode: validationMode.toLowerCase() as 'strict' | 'warn' | 'lenient',
+    };
+  }
+
+  // Bypass response validation
+  const bypassValidation = request.headers.get('X-Waygate-Bypass-Response-Validation');
+  if (bypassValidation?.toLowerCase() === 'true') {
+    options.validation = {
+      ...options.validation,
+      bypassValidation: true,
+    };
   }
 
   // Validate options

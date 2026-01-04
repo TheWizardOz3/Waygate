@@ -10,6 +10,11 @@
 
 import { z } from 'zod';
 import { ABSOLUTE_PAGINATION_LIMITS } from '../execution/pagination';
+import {
+  ValidationModeSchema,
+  DriftStatusSchema,
+  ValidationIssueSchema,
+} from '../execution/validation';
 
 // =============================================================================
 // Request Schemas
@@ -58,6 +63,19 @@ export const GatewayPaginationOptionsSchema = z.object({
 export type GatewayPaginationOptions = z.infer<typeof GatewayPaginationOptionsSchema>;
 
 /**
+ * Validation options for action invocation
+ * These override the action's default validation configuration
+ */
+export const GatewayValidationOptionsSchema = z.object({
+  /** Override validation mode for this request */
+  mode: ValidationModeSchema.optional(),
+  /** Bypass validation entirely for this request (debugging) */
+  bypassValidation: z.boolean().optional(),
+});
+
+export type GatewayValidationOptions = z.infer<typeof GatewayValidationOptionsSchema>;
+
+/**
  * Options that can be passed with the invocation
  */
 export const GatewayInvokeOptionsSchema = z.object({
@@ -71,6 +89,8 @@ export const GatewayInvokeOptionsSchema = z.object({
   includeRawResponse: z.boolean().optional(),
   /** Pagination options for fetching multiple pages */
   pagination: GatewayPaginationOptionsSchema.optional(),
+  /** Response validation options */
+  validation: GatewayValidationOptionsSchema.optional(),
 });
 
 export type GatewayInvokeOptions = z.infer<typeof GatewayInvokeOptionsSchema>;
@@ -143,6 +163,38 @@ export const PaginationMetadataSchema = z.object({
 export type PaginationMetadata = z.infer<typeof PaginationMetadataSchema>;
 
 // =============================================================================
+// Validation Metadata
+// =============================================================================
+
+/**
+ * Validation metadata included in responses when validation is enabled
+ */
+export const ValidationMetadataSchema = z.object({
+  /** Whether validation passed */
+  valid: z.boolean(),
+  /** Validation mode used */
+  mode: ValidationModeSchema,
+  /** Number of issues found */
+  issueCount: z.number().int().min(0),
+  /** Validation issues (if any) */
+  issues: z.array(ValidationIssueSchema).optional(),
+  /** Number of fields that were coerced */
+  fieldsCoerced: z.number().int().min(0),
+  /** Number of extra fields that were stripped */
+  fieldsStripped: z.number().int().min(0),
+  /** Number of fields that used defaults */
+  fieldsDefaulted: z.number().int().min(0),
+  /** Time spent validating */
+  validationDurationMs: z.number().int().min(0),
+  /** Current drift detection status */
+  driftStatus: DriftStatusSchema.optional(),
+  /** Drift status message (if not normal) */
+  driftMessage: z.string().optional(),
+});
+
+export type ValidationMetadata = z.infer<typeof ValidationMetadataSchema>;
+
+// =============================================================================
 // Response Meta
 // =============================================================================
 
@@ -158,6 +210,8 @@ export const ResponseMetaSchema = z.object({
   execution: ExecutionMetricsSchema,
   /** Pagination metadata (present when pagination was used) */
   pagination: PaginationMetadataSchema.optional(),
+  /** Validation metadata (present when response validation is enabled) */
+  validation: ValidationMetadataSchema.optional(),
 });
 
 export type ResponseMeta = z.infer<typeof ResponseMetaSchema>;
@@ -396,6 +450,14 @@ export const GatewayErrorCodes = {
     httpStatus: 401,
     suggestedAction: 'REFRESH_CREDENTIALS' as SuggestedAction,
     retryable: true,
+  },
+
+  // Response validation errors
+  RESPONSE_VALIDATION_ERROR: {
+    code: 'RESPONSE_VALIDATION_ERROR',
+    httpStatus: 502,
+    suggestedAction: 'CONTACT_EXTERNAL_PROVIDER' as SuggestedAction,
+    retryable: false,
   },
 
   // External API errors

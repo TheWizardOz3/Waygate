@@ -50,6 +50,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/copy-button';
 import { MethodBadge } from './MethodBadge';
@@ -196,6 +199,58 @@ export function ActionTable({ integrationId }: ActionTableProps) {
             {row.getValue('description') || '—'}
           </span>
         ),
+      },
+      {
+        id: 'validation',
+        header: 'Validation',
+        size: 120,
+        cell: ({ row }) => {
+          const validationConfig = row.original.validationConfig as
+            | {
+                enabled?: boolean;
+                mode?: 'strict' | 'warn' | 'lenient';
+              }
+            | null
+            | undefined;
+
+          if (!validationConfig || validationConfig.enabled === false) {
+            return (
+              <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3" />
+                Off
+              </Badge>
+            );
+          }
+
+          const mode = validationConfig.mode || 'warn';
+          const modeConfig = {
+            strict: {
+              icon: ShieldAlert,
+              label: 'Strict',
+              variant: 'destructive' as const,
+            },
+            warn: {
+              icon: ShieldCheck,
+              label: 'Warn',
+              variant: 'secondary' as const,
+            },
+            lenient: {
+              icon: Shield,
+              label: 'Lenient',
+              variant: 'outline' as const,
+            },
+          };
+
+          const config = modeConfig[mode];
+          const Icon = config.icon;
+
+          return (
+            <Badge variant={config.variant} className="gap-1 text-xs">
+              <Icon className="h-3 w-3" />
+              {config.label}
+            </Badge>
+          );
+        },
       },
       {
         id: 'actions',

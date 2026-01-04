@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { ValidationConfigSchema } from '../execution/validation';
 
 // =============================================================================
 // Enums
@@ -197,6 +198,7 @@ const ActionBaseSchema = z.object({
   inputSchema: JsonSchemaSchema,
   outputSchema: JsonSchemaSchema,
   paginationConfig: PaginationConfigSchema.nullable().optional(),
+  validationConfig: ValidationConfigSchema.nullable().optional(),
   retryConfig: ActionRetryConfigSchema.nullable().optional(),
   cacheable: z.boolean().default(false),
   cacheTtlSeconds: z.number().int().min(0).max(86400).nullable().optional(),
@@ -262,10 +264,12 @@ export const UpdateActionInputSchema = ActionBaseSchema.partial()
   .omit({
     inputSchema: true,
     outputSchema: true,
+    validationConfig: true,
   })
   .extend({
     inputSchema: JsonSchemaSchema.optional(),
     outputSchema: JsonSchemaSchema.optional(),
+    validationConfig: ValidationConfigSchema.nullable().optional(),
   });
 
 export type UpdateActionInput = z.infer<typeof UpdateActionInputSchema>;
@@ -472,6 +476,7 @@ export function toActionResponse(action: {
   inputSchema: unknown;
   outputSchema: unknown;
   paginationConfig: unknown;
+  validationConfig: unknown;
   retryConfig: unknown;
   cacheable: boolean;
   cacheTtlSeconds: number | null;
@@ -490,6 +495,7 @@ export function toActionResponse(action: {
     inputSchema: (action.inputSchema ?? createEmptyObjectSchema()) as JsonSchema,
     outputSchema: (action.outputSchema ?? createEmptyObjectSchema()) as JsonSchema,
     paginationConfig: action.paginationConfig as PaginationConfig | null,
+    validationConfig: action.validationConfig as z.infer<typeof ValidationConfigSchema> | null,
     retryConfig: action.retryConfig as ActionRetryConfig | null,
     cacheable: action.cacheable,
     cacheTtlSeconds: action.cacheTtlSeconds,

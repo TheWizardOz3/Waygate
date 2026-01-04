@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-03 (Pagination Handler Complete)
+**Last Updated**: 2026-01-03 (Response Validation Complete)
 
 ---
 
@@ -61,12 +61,13 @@
 | Gateway API                  | 2026-01-02      | Unified REST API, action invocation pipeline, health endpoint, request logs, 592 total tests - [Feature Doc](Features/gateway-api.md)             |
 | **Basic Configuration UI**   | 2026-01-02      | Full dashboard with wizard, action CRUD, testing, logs, design system, 592 tests - [Feature Doc](Features/basic-configuration-ui.md)              |
 | **Pagination Handler**       | 2026-01-03      | V0.5 Feature #1 - Auto pagination with cursor/offset/page/link strategies, LLM-friendly limits - [Feature Doc](Features/pagination-handler.md)    |
+| **Response Validation**      | 2026-01-03      | V0.5 Feature #2 - Zod-based schema validation with strict/warn/lenient modes, drift detection - [Feature Doc](Features/response-validation.md)    |
 
 ### In Progress
 
-| Feature/Task        | Started | Assignee | Notes                                                           |
-| ------------------- | ------- | -------- | --------------------------------------------------------------- |
-| Response Validation | —       | —        | V0.5 Feature #2 - Zod-based schema validation for API responses |
+| Feature/Task | Started | Assignee | Notes |
+| ------------ | ------- | -------- | ----- |
+| —            | —       | —        | —     |
 
 ### Recent Enhancements (Post-MVP)
 
@@ -116,14 +117,14 @@
 
 ## V0.5 Build Order
 
-| #   | Feature                        | Dependencies       | Complexity | Notes                                                          |
-| --- | ------------------------------ | ------------------ | ---------- | -------------------------------------------------------------- |
-| 1   | Pagination Handler             | Action Registry ✅ | MED        | 🚧 IN PROGRESS - [Feature Doc](Features/pagination-handler.md) |
-| 2   | Response Validation            | Action Registry ✅ | MED        | Makes integrations trustworthy                                 |
-| 3   | Basic Field Mapping            | Action Registry ✅ | MED        | Data transformation layer                                      |
-| 4   | Integration & Action Tagging   | None               | LOW        | Organization, can parallel with #3                             |
-| 5   | Dashboard & Logs Polish        | Existing UI        | LOW        | UX improvements, can parallel                                  |
-| 6   | Continuous Integration Testing | Gateway API ✅     | MED        | Scheduled health checks                                        |
+| #   | Feature                        | Dependencies       | Complexity | Notes                                                        |
+| --- | ------------------------------ | ------------------ | ---------- | ------------------------------------------------------------ |
+| 1   | Pagination Handler             | Action Registry ✅ | MED        | ✅ COMPLETE - [Feature Doc](Features/pagination-handler.md)  |
+| 2   | Response Validation            | Action Registry ✅ | MED        | ✅ COMPLETE - [Feature Doc](Features/response-validation.md) |
+| 3   | Basic Field Mapping            | Action Registry ✅ | MED        | Data transformation layer                                    |
+| 4   | Integration & Action Tagging   | None               | LOW        | Organization, can parallel with #3                           |
+| 5   | Dashboard & Logs Polish        | Existing UI        | LOW        | UX improvements, can parallel                                |
+| 6   | Continuous Integration Testing | Gateway API ✅     | MED        | Scheduled health checks                                      |
 
 ---
 

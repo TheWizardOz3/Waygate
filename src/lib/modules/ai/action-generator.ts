@@ -21,6 +21,7 @@ import type {
   ApiAuthMethod,
   RateLimitsConfig,
 } from './scrape-job.schemas';
+import type { ValidationConfig } from '../execution/validation';
 
 // =============================================================================
 // Types
@@ -81,6 +82,8 @@ export interface ActionDefinition {
   outputSchema: JsonSchema;
   /** Optional pagination configuration */
   paginationConfig?: PaginationConfig;
+  /** Optional validation configuration */
+  validationConfig?: ValidationConfig;
   /** Optional retry configuration */
   retryConfig?: RetryConfig;
   /** Whether response can be cached */
@@ -349,6 +352,33 @@ function generateActionDefinition(
   // Get endpoint-specific rate limit
   const endpointRateLimit = rateLimits?.perEndpoint?.[endpoint.path] || rateLimits?.default;
 
+  // Generate validation configuration with sensible defaults
+  // Use 'warn' mode by default to be non-breaking
+  // If output schema is well-defined (has explicit properties), we're more confident
+  const hasDetailedOutputSchema = !!(
+    outputSchema.properties && Object.keys(outputSchema.properties).length > 0
+  );
+  const validationConfig: ValidationConfig = {
+    enabled: true,
+    mode: 'warn', // Default to warn - non-breaking but informative
+    nullHandling: 'pass',
+    extraFields: 'preserve', // APIs often add new fields
+    coercion: {
+      stringToNumber: true,
+      numberToString: true,
+      stringToBoolean: true,
+      emptyStringToNull: false,
+      nullToDefault: true,
+    },
+    driftDetection: {
+      enabled: hasDetailedOutputSchema, // Only enable if we have a real schema
+      windowMinutes: 60,
+      failureThreshold: 5,
+      alertOnDrift: true,
+    },
+    bypassValidation: false,
+  };
+
   return {
     name: endpoint.name,
     slug,
@@ -358,6 +388,7 @@ function generateActionDefinition(
     inputSchema,
     outputSchema,
     paginationConfig,
+    validationConfig,
     cacheable,
     cacheTtlSeconds: cacheable ? defaultCacheTtl : undefined,
     metadata: {

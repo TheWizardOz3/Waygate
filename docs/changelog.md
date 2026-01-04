@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                         |
 | ------- | ---------- | ---------- | --------------------------------------------------------------- |
+| 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                  |
 | 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                   |
 | 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                   |
 | 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors           |
@@ -60,6 +61,60 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.5.2] - 2026-01-03
+
+### Added
+
+- **Response Validation** - V0.5 Feature #2: Validate API responses against Zod schemas with multiple modes
+  - Three validation modes: `strict` (fail on any issue), `warn` (log issues but pass), `lenient` (auto-fix issues)
+  - Type coercion in lenient mode: string-to-number, string-to-boolean, null-to-default
+  - Field stripping for unknown fields in responses
+  - Null handling options: reject, use default, passthrough
+  - Schema drift detection with configurable thresholds and rolling windows
+  - Drift alerting when validation failure rate exceeds threshold
+  - Per-action validation configuration saved to database
+  - AI-generated actions get sensible validation defaults
+- **Validation UI Components**
+  - `ValidationSettings` component for action editor with mode selection and toggles
+  - Coercion settings (string-to-number, null-to-default, etc.) for lenient mode
+  - Drift detection configuration with threshold and window settings
+  - `ValidationResultDisplay` component for action tester showing validation status, issues, and drift alerts
+  - `ValidationBadge` compact component for validation status in tables
+  - Validation mode indicator column added to action list table
+- **Gateway API Extensions**
+  - Request headers for per-request validation options: `X-Waygate-Validation-Mode`, `X-Waygate-Bypass-Validation`
+  - `validation` metadata in responses with `valid`, `mode`, `issueCount`, `driftStatus`
+- **Database Schema Updates**
+  - Added `validationConfig` JSON field to `Action` model
+  - New `ValidationFailure` model for tracking drift detection data
+- **AI Enhancement**
+  - Updated extraction prompts to infer stricter schemas with `required` arrays
+  - Added guidance for specific types (formats, enums) when documentation is clear
+  - Added `schemaConfidence` indicator for schema quality assessment
+
+### Technical Details
+
+- New module: `src/lib/modules/execution/validation/`
+  - `validation.schemas.ts` - Zod schemas for validation config and results
+  - `zod-validator.ts` - Core validation logic with mode-specific behavior
+  - `coercion.ts` - Type coercion utilities for lenient mode
+  - `reporter.ts` - Formats Zod errors into consistent validation issues
+  - `validation.service.ts` - Main validation service orchestrating the flow
+  - `drift/drift.repository.ts` - Database operations for validation failures
+  - `drift/drift.service.ts` - Drift detection logic with rolling window analysis
+  - `server.ts` - Server-only exports for Prisma-dependent code
+- Updated `gateway.schemas.ts` with `ValidationMetadataSchema` and validation options
+- Updated `gateway.service.ts` with validation integration in action invocation pipeline
+- Updated `action.schemas.ts` and `action.validation.ts` with `validationConfig` field
+- Updated `action-generator.ts` with default validation config for AI-generated actions
+- Created `ValidationResultDisplay.tsx` and `ValidationBadge` components for UI display
+- Updated `ActionTester.tsx` with Validation tab showing validation results
+- Updated `ActionTable.tsx` with validation mode column
+- Enhanced `extract-api.ts` prompts with schema strictness guidelines
+- Prisma migration: `20260103_add_validation_config` and `20260103_add_validation_failures`
 
 ---
 

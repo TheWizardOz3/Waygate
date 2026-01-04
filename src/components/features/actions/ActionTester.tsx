@@ -12,13 +12,34 @@ import { MethodBadge } from './MethodBadge';
 import { DynamicSchemaForm } from './DynamicSchemaForm';
 import { RequestResponseViewer } from './RequestResponseViewer';
 import { TestHistory, addToTestHistory } from './TestHistory';
+import { ValidationResultDisplay, ValidationBadge } from './ValidationResultDisplay';
 import { useAction, useIntegration } from '@/hooks';
-import { apiClient } from '@/lib/api/client';
 import type { JsonSchema } from '@/lib/modules/actions/action.schemas';
 
 interface ActionTesterProps {
   integrationId: string;
   actionId: string;
+}
+
+// Validation metadata from gateway response
+interface ValidationMetadata {
+  valid: boolean;
+  mode: 'strict' | 'warn' | 'lenient';
+  issueCount: number;
+  issues?: Array<{
+    path: string;
+    message: string;
+    code: string;
+    severity?: 'error' | 'warning';
+    expected?: unknown;
+    received?: unknown;
+  }>;
+  fieldsCoerced: number;
+  fieldsStripped: number;
+  fieldsDefaulted: number;
+  validationDurationMs: number;
+  driftStatus?: 'normal' | 'warning' | 'alert';
+  driftMessage?: string;
 }
 
 interface TestResult {
@@ -35,6 +56,7 @@ interface TestResult {
     body?: unknown;
     duration?: number;
   };
+  validation?: ValidationMetadata;
   error?: {
     message: string;
     code?: string;
@@ -78,21 +100,30 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
         // Execute the action through the gateway API
         // API endpoint: POST /api/v1/actions/{integration}/{action}
         // Note: apiClient already extracts the 'data' field from the API response
-        const responseData = await apiClient.post<unknown>(
-          `/actions/${integration.slug}/${action.slug}`,
-          input
-        );
+        // But we need the full response to get meta.validation
+        const fullResponse = await fetch(`/api/v1/actions/${integration.slug}/${action.slug}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(input),
+        });
 
+        const responseJson = await fullResponse.json();
         const duration = Date.now() - startTime;
+
+        // Extract validation metadata from the response
+        const validationMeta = responseJson?.meta?.validation as ValidationMetadata | undefined;
 
         const testResult: TestResult = {
           request: requestPreview,
           response: {
-            status: 200,
-            statusText: 'OK',
-            body: responseData,
-            duration: duration,
+            status: fullResponse.status,
+            statusText: fullResponse.statusText,
+            body: responseJson.success ? responseJson.data : responseJson,
+            duration: responseJson?.meta?.execution?.totalDurationMs || duration,
           },
+          validation: validationMeta,
         };
 
         setResult(testResult);
@@ -252,10 +283,16 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
             <Card className="h-full">
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Response</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-sm">Response</CardTitle>
+                    {result?.validation && <ValidationBadge validation={result.validation} />}
+                  </div>
                   <TabsList className="h-7">
                     <TabsTrigger value="result" className="px-2 py-1 text-xs">
                       Result
+                    </TabsTrigger>
+                    <TabsTrigger value="validation" className="px-2 py-1 text-xs">
+                      Validation
                     </TabsTrigger>
                     <TabsTrigger value="schema" className="px-2 py-1 text-xs">
                       Schema
@@ -274,6 +311,20 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
                   ) : (
                     <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed text-muted-foreground">
                       <p className="text-sm">Execute the action to see results</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="validation" className="mt-0">
+                  {result?.validation ? (
+                    <ValidationResultDisplay validation={result.validation} />
+                  ) : result ? (
+                    <div className="flex h-[200px] items-center justify-center rounded-lg border border-dashed text-muted-foreground">
+                      <p className="text-sm">No validation data available</p>
+                    </div>
+                  ) : (
+                    <div className="flex h-[200px] items-center justify-center rounded-lg border border-dashed text-muted-foreground">
+                      <p className="text-sm">Execute the action to see validation results</p>
                     </div>
                   )}
                 </TabsContent>

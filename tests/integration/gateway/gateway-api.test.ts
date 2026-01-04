@@ -85,6 +85,7 @@ const mockAction = {
   metadata: {},
   paginationConfig: null,
   retryConfig: null,
+  validationConfig: null,
   cacheable: false,
   cacheTtlSeconds: null,
   createdAt: new Date(),
