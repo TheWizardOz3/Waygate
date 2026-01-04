@@ -44,7 +44,11 @@ export function LogDetailDialog({ log, open, onOpenChange }: LogDetailDialogProp
             </Badge>
           </div>
           <DialogDescription className="flex items-center gap-4 pt-1">
-            <span>{format(new Date(log.timestamp), 'PPpp')}</span>
+            <span>
+              {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
+                ? format(new Date(log.timestamp), 'PPpp')
+                : 'Invalid Date'}
+            </span>
             <span className="text-muted-foreground">•</span>
             <span>{log.duration}ms</span>
             {log.cached && (

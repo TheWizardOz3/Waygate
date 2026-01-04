@@ -123,11 +123,19 @@ export function IntegrationOverview({ integration }: IntegrationOverviewProps) {
             <div className="grid grid-cols-2 gap-4 border-t pt-2">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Created</p>
-                <p className="text-sm">{new Date(integration.createdAt).toLocaleDateString()}</p>
+                <p className="text-sm">
+                  {integration.createdAt && !isNaN(new Date(integration.createdAt).getTime())
+                    ? new Date(integration.createdAt).toLocaleDateString()
+                    : 'Unknown'}
+                </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-                <p className="text-sm">{new Date(integration.updatedAt).toLocaleDateString()}</p>
+                <p className="text-sm">
+                  {integration.updatedAt && !isNaN(new Date(integration.updatedAt).getTime())
+                    ? new Date(integration.updatedAt).toLocaleDateString()
+                    : 'Unknown'}
+                </p>
               </div>
             </div>
           </CardContent>

@@ -19,7 +19,7 @@ const METHOD_STYLES: Record<string, string> = {
 };
 
 export function MethodBadge({ method, className, size = 'default' }: MethodBadgeProps) {
-  const normalizedMethod = method.toUpperCase();
+  const normalizedMethod = method?.toUpperCase() ?? 'GET';
   const styles = METHOD_STYLES[normalizedMethod] || 'bg-muted text-muted-foreground';
 
   return (

@@ -124,7 +124,11 @@ function HistoryItem({
             {JSON.stringify(item.input).length > 50 && '...'}
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{formatDistanceToNow(item.timestamp, { addSuffix: true })}</span>
+            <span>
+              {item.timestamp && !isNaN(item.timestamp)
+                ? formatDistanceToNow(item.timestamp, { addSuffix: true })
+                : 'Unknown time'}
+            </span>
             {item.response && (
               <>
                 <span>•</span>
