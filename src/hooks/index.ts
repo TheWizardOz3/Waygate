@@ -39,3 +39,15 @@ export {
   type LogsQueryParams,
   type LogsResponse,
 } from './useLogs';
+
+// Mapping hooks
+export {
+  useMappings,
+  useMappingConfig,
+  useCreateMapping,
+  useUpdateMapping,
+  useDeleteMapping,
+  usePreviewMapping,
+  useBulkMappings,
+  mappingKeys,
+} from './useMappings';

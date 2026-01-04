@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                         |
 | ------- | ---------- | ---------- | --------------------------------------------------------------- |
+| 0.5.3   | 2026-01-03 | minor      | Basic Field Mapping - V0.5 Feature #3 complete                  |
 | 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                  |
 | 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                   |
 | 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                   |
@@ -61,6 +62,57 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.5.3] - 2026-01-03
+
+### Added
+
+- **Basic Field Mapping** - V0.5 Feature #3: Transform fields between Waygate and consuming applications
+  - JSONPath-based field mapping with `$.field`, `$.nested.field`, `$[*]` wildcard support
+  - Bidirectional mapping: input (request params) and output (response data)
+  - Basic type coercion: string↔number, string↔boolean with safe fallbacks
+  - Default values for missing fields with configurable omit-if-null/empty behavior
+  - Fail-open passthrough mode: mapping errors return original data with error metadata
+  - Per-request bypass option for debugging (`mapping.bypass: true`)
+  - In-memory caching for compiled mappings with 5-minute TTL
+  - Array handling modes: all items, first only, last only
+- **Mapping API Endpoints**
+  - `GET /api/v1/integrations/:id/actions/:actionId/mappings` - List mappings
+  - `POST /api/v1/integrations/:id/actions/:actionId/mappings` - Create mapping
+  - `PATCH /api/v1/integrations/:id/actions/:actionId/mappings` - Update config
+  - `PATCH /api/v1/integrations/:id/actions/:actionId/mappings/:mappingId` - Update mapping
+  - `DELETE /api/v1/integrations/:id/actions/:actionId/mappings/:mappingId` - Delete mapping
+  - `POST /api/v1/integrations/:id/actions/:actionId/mappings/preview` - Preview with sample
+  - `POST /api/v1/integrations/:id/actions/:actionId/mappings/bulk` - Bulk create/update
+- **Mapping UI Components**
+  - `MappingSettings` accordion in action editor with enable/disable toggle
+  - Visual mapping builder showing source → target path transformations
+  - Mapping editor dialog with path inputs, coercion selector, default value config
+  - Preview dialog to test mappings with sample JSON data
+  - Mapping config controls: failure mode (passthrough/fail), preserve unmapped toggle
+- **Gateway Integration**
+  - Input mapping applied before request validation and execution
+  - Output mapping applied after response validation
+  - `mapping` metadata in responses with `applied`, `fieldsTransformed`, `errors`
+  - Per-request mapping options via `mapping: { bypass: true }`
+
+### Technical Details
+
+- New module: `src/lib/modules/execution/mapping/`
+  - `mapping.schemas.ts` - Zod schemas for config, mappings, results
+  - `path-utils.ts` - JSONPath parsing, getValue/setValue operations
+  - `coercion.ts` - Mapping-specific type coercion with error handling
+  - `mapper.ts` - Core mapping engine with compiled path caching
+  - `mapping.repository.ts` - CRUD operations with in-memory caching
+  - `mapping.service.ts` - High-level service for pipeline integration
+  - `index.ts` - Module exports
+- Updated `gateway.schemas.ts` with `MappingMetadataSchema` and mapping options
+- Updated `gateway.service.ts` with input/output mapping in pipeline
+- New hooks: `useMappings`, `useMappingConfig`, `useCreateMapping`, `useUpdateMapping`, `useDeleteMapping`, `usePreviewMapping`
+- New API routes under `src/app/api/v1/integrations/[id]/actions/[actionId]/mappings/`
+- Existing `FieldMapping` Prisma model used (already in schema)
 
 ---
 

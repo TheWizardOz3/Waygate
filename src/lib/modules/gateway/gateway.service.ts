@@ -63,7 +63,13 @@ import {
   type GatewayInvokeOptions,
   type ValidationErrorDetail,
   type ValidationMetadata,
+  type MappingMetadata,
 } from './gateway.schemas';
+import {
+  mappingService,
+  type MappingResult,
+  type FullMappingResult,
+} from '../execution/mapping/server';
 
 // =============================================================================
 // Types
@@ -171,28 +177,45 @@ export async function invokeAction(
     // 1. Resolve integration and action
     const { integration, action } = await resolveAction(tenantId, integrationSlug, actionSlug);
 
-    // 2. Validate input (unless skipped)
+    // 2. Apply INPUT mapping (transform request params before sending)
+    let inputMappingResult: FullMappingResult | undefined;
+    let mappedInput: Record<string, unknown> = input;
+
+    try {
+      inputMappingResult = await mappingService.applyInputMapping(input, {
+        actionId: action.id,
+        tenantId,
+        requestOptions: options.mapping,
+      });
+      mappedInput = inputMappingResult.mappedInput as Record<string, unknown>;
+    } catch (mappingError) {
+      // Log but don't fail - input mapping errors should be non-fatal
+      console.warn('[GATEWAY] Input mapping error:', mappingError);
+    }
+
+    // 3. Validate input (unless skipped) - validate MAPPED input
     if (!options.skipValidation) {
-      const validationResult = validateInput(action, input);
+      const validationResult = validateInput(action, mappedInput);
       if (!validationResult.valid) {
         throw createValidationError(validationResult);
       }
     }
 
-    // 3. Get and validate credentials (skip for 'none' auth type)
+    // 4. Get and validate credentials (skip for 'none' auth type)
     let credential: DecryptedCredential | null = null;
     if (integration.authType !== 'none') {
       credential = await getCredential(tenantId, integration.id);
       validateCredential(credential);
     }
 
-    // 4. Build the HTTP request
-    const { request, url } = buildRequest(integration, action, input, credential);
+    // 5. Build the HTTP request with MAPPED input
+    const { request, url } = buildRequest(integration, action, mappedInput, credential);
 
-    // 5. Execute the request
+    // 6. Execute the request
     const executionResult = await executeRequest(request, integration.id, options);
 
-    // 6. Validate response (if execution succeeded)
+    // 7. Validate RAW response (if execution succeeded)
+    // Validation runs BEFORE output mapping per feature spec
     let validationResult: ValidateResponseResult | undefined;
     if (executionResult.success) {
       validationResult = await validateResponse(
@@ -208,12 +231,39 @@ export async function invokeAction(
       }
     }
 
-    // 7. Log the request/response
+    // 8. Apply OUTPUT mapping (transform response data after validation)
+    let outputMappingResult: MappingResult | undefined;
+    let finalResponseData = executionResult.data;
+
+    if (executionResult.success) {
+      try {
+        // Use validated data if available (may have been transformed by coercion)
+        const dataToMap = validationResult?.data ?? executionResult.data;
+        outputMappingResult = await mappingService.applyOutputMapping(dataToMap, {
+          actionId: action.id,
+          tenantId,
+          requestOptions: options.mapping,
+        });
+        finalResponseData = outputMappingResult.data;
+      } catch (mappingError) {
+        // Log but don't fail - output mapping errors should be non-fatal
+        console.warn('[GATEWAY] Output mapping error:', mappingError);
+      }
+    }
+
+    // 9. Log the request/response
     await logInvocation(context, integration.id, action.id, request, url, executionResult);
 
-    // 8. Format and return response
+    // 10. Format and return response
     if (executionResult.success) {
-      return formatSuccessResponse(requestId, executionResult, validationResult);
+      return formatSuccessResponse(
+        requestId,
+        executionResult,
+        validationResult,
+        inputMappingResult,
+        outputMappingResult,
+        finalResponseData
+      );
     } else {
       return formatExecutionErrorResponse(requestId, executionResult);
     }
@@ -691,10 +741,13 @@ async function logInvocation(
 function formatSuccessResponse(
   requestId: string,
   result: ExecutionResultWithMetrics<unknown>,
-  validationResult?: ValidateResponseResult
+  validationResult?: ValidateResponseResult,
+  inputMappingResult?: FullMappingResult,
+  outputMappingResult?: MappingResult,
+  finalData?: unknown
 ): GatewaySuccessResponse {
-  // Use validated/transformed data if available
-  const responseData = validationResult?.data ?? result.data;
+  // Use final mapped data, or validated data, or raw data
+  const responseData = finalData ?? validationResult?.data ?? result.data;
 
   // Build validation metadata if validation was performed
   const validationMeta: ValidationMetadata | undefined = validationResult
@@ -712,6 +765,33 @@ function formatSuccessResponse(
       }
     : undefined;
 
+  // Build mapping metadata if any mapping was performed
+  let mappingMeta: MappingMetadata | undefined;
+  if (inputMappingResult || outputMappingResult) {
+    const inputResult = inputMappingResult?.inputResult;
+    const outputResult = outputMappingResult;
+
+    // Merge errors from both input and output mapping
+    const errors = [...(inputResult?.errors ?? []), ...(outputResult?.errors ?? [])];
+
+    mappingMeta = {
+      applied: (inputResult?.applied ?? false) || (outputResult?.applied ?? false),
+      bypassed: (inputResult?.bypassed ?? false) && (outputResult?.bypassed ?? true),
+      inputMappingsApplied: inputResult?.meta.inputMappingsApplied ?? 0,
+      outputMappingsApplied: outputResult?.meta.outputMappingsApplied ?? 0,
+      fieldsTransformed:
+        (inputResult?.meta.fieldsTransformed ?? 0) + (outputResult?.meta.fieldsTransformed ?? 0),
+      fieldsCoerced:
+        (inputResult?.meta.fieldsCoerced ?? 0) + (outputResult?.meta.fieldsCoerced ?? 0),
+      fieldsDefaulted:
+        (inputResult?.meta.fieldsDefaulted ?? 0) + (outputResult?.meta.fieldsDefaulted ?? 0),
+      mappingDurationMs:
+        (inputResult?.meta.mappingDurationMs ?? 0) + (outputResult?.meta.mappingDurationMs ?? 0),
+      errors: errors.length > 0 ? errors : undefined,
+      failureMode: outputResult?.failureMode ?? inputResult?.failureMode ?? 'passthrough',
+    };
+  }
+
   return {
     success: true,
     data: responseData,
@@ -725,6 +805,7 @@ function formatSuccessResponse(
         externalLatencyMs: result.lastRequestDurationMs,
       },
       validation: validationMeta,
+      mapping: mappingMeta,
     },
   };
 }

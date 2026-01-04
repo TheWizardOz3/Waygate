@@ -15,6 +15,7 @@ import {
   DriftStatusSchema,
   ValidationIssueSchema,
 } from '../execution/validation';
+import { MappingRequestSchema, FailureModeSchema, MappingErrorSchema } from '../execution/mapping';
 
 // =============================================================================
 // Request Schemas
@@ -76,6 +77,14 @@ export const GatewayValidationOptionsSchema = z.object({
 export type GatewayValidationOptions = z.infer<typeof GatewayValidationOptionsSchema>;
 
 /**
+ * Mapping options for action invocation
+ * These override the action's default mapping configuration
+ */
+export const GatewayMappingOptionsSchema = MappingRequestSchema;
+
+export type GatewayMappingOptions = z.infer<typeof GatewayMappingOptionsSchema>;
+
+/**
  * Options that can be passed with the invocation
  */
 export const GatewayInvokeOptionsSchema = z.object({
@@ -91,6 +100,8 @@ export const GatewayInvokeOptionsSchema = z.object({
   pagination: GatewayPaginationOptionsSchema.optional(),
   /** Response validation options */
   validation: GatewayValidationOptionsSchema.optional(),
+  /** Field mapping options */
+  mapping: GatewayMappingOptionsSchema.optional(),
 });
 
 export type GatewayInvokeOptions = z.infer<typeof GatewayInvokeOptionsSchema>;
@@ -195,6 +206,38 @@ export const ValidationMetadataSchema = z.object({
 export type ValidationMetadata = z.infer<typeof ValidationMetadataSchema>;
 
 // =============================================================================
+// Mapping Metadata
+// =============================================================================
+
+/**
+ * Mapping metadata included in responses when field mapping is configured
+ */
+export const MappingMetadataSchema = z.object({
+  /** Was mapping applied? */
+  applied: z.boolean(),
+  /** Was mapping bypassed? */
+  bypassed: z.boolean(),
+  /** Number of input mappings applied */
+  inputMappingsApplied: z.number().int().min(0),
+  /** Number of output mappings applied */
+  outputMappingsApplied: z.number().int().min(0),
+  /** Number of fields transformed */
+  fieldsTransformed: z.number().int().min(0),
+  /** Number of fields coerced */
+  fieldsCoerced: z.number().int().min(0),
+  /** Number of fields that used defaults */
+  fieldsDefaulted: z.number().int().min(0),
+  /** Time spent mapping */
+  mappingDurationMs: z.number().int().min(0),
+  /** Mapping errors (in passthrough mode) */
+  errors: z.array(MappingErrorSchema).optional(),
+  /** Failure mode used */
+  failureMode: FailureModeSchema,
+});
+
+export type MappingMetadata = z.infer<typeof MappingMetadataSchema>;
+
+// =============================================================================
 // Response Meta
 // =============================================================================
 
@@ -212,6 +255,8 @@ export const ResponseMetaSchema = z.object({
   pagination: PaginationMetadataSchema.optional(),
   /** Validation metadata (present when response validation is enabled) */
   validation: ValidationMetadataSchema.optional(),
+  /** Mapping metadata (present when field mapping is configured) */
+  mapping: MappingMetadataSchema.optional(),
 });
 
 export type ResponseMeta = z.infer<typeof ResponseMetaSchema>;

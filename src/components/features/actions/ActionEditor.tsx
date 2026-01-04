@@ -14,6 +14,7 @@ import { BasicInfoSection } from './editor/BasicInfoSection';
 import { SchemaBuilder } from './editor/SchemaBuilder';
 import { AdvancedSettings } from './editor/AdvancedSettings';
 import { ValidationSettings } from './editor/ValidationSettings';
+import { MappingSettings } from './editor/MappingSettings';
 import { createEmptySchema } from './editor/types';
 import { ActionEditorSchema, generateSlugFromName } from '@/lib/modules/actions/action.validation';
 import { useCreateAction, useUpdateAction, useAction, useIntegration } from '@/hooks';
@@ -277,6 +278,17 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
               form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
             />
           </div>
+
+          {/* Field Mapping Card - only show when editing */}
+          {isEditing && actionId && (
+            <div className="rounded-lg border bg-card p-6">
+              <h3 className="mb-2 text-lg font-semibold">Field Mapping</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Transform fields between your app and the external API
+              </p>
+              <MappingSettings actionId={actionId} integrationId={integrationId} />
+            </div>
+          )}
 
           <AdvancedSettings
             form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}

@@ -280,3 +280,76 @@ export type {
   DetectionResult,
   AggregationResult,
 } from './pagination';
+
+// =============================================================================
+// Field Mapping (client-safe exports)
+// =============================================================================
+
+export {
+  // Schemas & Types
+  MappingDirectionSchema,
+  FailureModeSchema,
+  CoercionTypeSchema,
+  ArrayModeSchema,
+  MappingErrorCodeSchema,
+  TransformConfigSchema,
+  FieldMappingSchema,
+  MappingConfigSchema,
+  MappingRequestSchema,
+  MappingResultSchema,
+  MappingResponseMetadataSchema,
+  // Constants
+  MAX_NESTING_DEPTH,
+  MAX_ARRAY_ITEMS,
+  DEFAULT_MAPPING_CONFIG,
+  DEFAULT_TRANSFORM_CONFIG,
+  // Helpers
+  mergeMappingConfig,
+  createEmptyMappingMeta,
+  createMappingResponseMetadata,
+  shouldSkipMapping,
+  // Path utilities
+  validatePath,
+  parsePath,
+  getValue,
+  setValue,
+  deepClone,
+  // Mapper engine (no DB access)
+  applyMappings,
+  validateMappings,
+  previewMapping,
+  describeMappings,
+  createBypassedResult,
+  // Coercion
+  coerceValueForMapping,
+  canCoerce,
+  describeCoercion,
+} from './mapping';
+
+export type {
+  MappingDirection,
+  FailureMode,
+  CoercionType,
+  ArrayMode,
+  MappingErrorCode,
+  CoercionConfig,
+  TransformConfig,
+  FieldMapping,
+  CreateFieldMapping,
+  UpdateFieldMapping,
+  MappingConfig,
+  PartialMappingConfig,
+  MappingRequest,
+  MappingError,
+  MappingMeta,
+  MappingResult,
+  MappingResponseMetadata,
+  MappingPreviewRequest,
+  MappingPreviewResponse,
+  BulkMappingRequest,
+  MapOptions,
+  MappingCoercionResult,
+} from './mapping';
+
+// Server-only mapping exports (service, repository) are in './mapping/server'
+// Import from '@/lib/modules/execution/mapping/server' in server-side code
