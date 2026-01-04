@@ -101,10 +101,12 @@ export function ActionTester({ integrationId, actionId }: ActionTesterProps) {
         // API endpoint: POST /api/v1/actions/{integration}/{action}
         // Note: apiClient already extracts the 'data' field from the API response
         // But we need the full response to get meta.validation
+        const devApiKey = process.env.NEXT_PUBLIC_DEV_API_KEY;
         const fullResponse = await fetch(`/api/v1/actions/${integration.slug}/${action.slug}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(devApiKey ? { Authorization: `Bearer ${devApiKey}` } : {}),
           },
           body: JSON.stringify(input),
         });
