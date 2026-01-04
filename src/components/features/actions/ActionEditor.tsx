@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Globe, FileJson, Settings, GitBranch, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BasicInfoSection } from './editor/BasicInfoSection';
-import { SchemaBuilder } from './editor/SchemaBuilder';
-import { AdvancedSettings } from './editor/AdvancedSettings';
-import { ValidationSettings } from './editor/ValidationSettings';
-import { MappingSettings } from './editor/MappingSettings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EndpointTab } from './editor/EndpointTab';
+import { SchemaTab } from './editor/SchemaTab';
+import { SettingsTab } from './editor/SettingsTab';
+import { MappingsTab } from './editor/MappingsTab';
+import { TestingTab } from './editor/TestingTab';
 import { createEmptySchema } from './editor/types';
 import { ActionEditorSchema, generateSlugFromName } from '@/lib/modules/actions/action.validation';
 import { useCreateAction, useUpdateAction, useAction, useIntegration } from '@/hooks';
@@ -26,12 +27,13 @@ import type {
 
 interface ActionEditorProps {
   integrationId: string;
-  actionId?: string; // If provided, we're editing
+  actionId?: string;
 }
 
 export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
   const router = useRouter();
   const isEditing = !!actionId;
+  const [activeTab, setActiveTab] = useState('endpoint');
 
   const { data: integration, isLoading: integrationLoading } = useIntegration(integrationId);
   const { data: existingAction, isLoading: actionLoading } = useAction(actionId, integrationId);
@@ -78,7 +80,6 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
     },
   });
 
-  // Update form when existing action is loaded
   useEffect(() => {
     if (existingAction) {
       form.reset({
@@ -116,7 +117,6 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
     }
   }, [existingAction, form]);
 
-  // Auto-generate slug from name
   const name = form.watch('name');
 
   useEffect(() => {
@@ -208,7 +208,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           Actions
         </Link>
         <span>/</span>
-        <span className="text-foreground">{isEditing ? 'Edit' : 'New'}</span>
+        <span className="text-foreground">{isEditing ? existingAction?.name : 'New'}</span>
       </div>
 
       {/* Header */}
@@ -221,12 +221,12 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           </Button>
           <div>
             <h1 className="font-heading text-2xl font-bold">
-              {isEditing ? 'Edit Action' : 'Create Action'}
+              {isEditing ? existingAction?.name : 'Create Action'}
             </h1>
             <p className="text-sm text-muted-foreground">
               {isEditing
-                ? `Editing ${existingAction?.name}`
-                : `Create a new action for ${integration?.name}`}
+                ? `${existingAction?.httpMethod} ${existingAction?.endpointTemplate}`
+                : `New action for ${integration?.name}`}
             </p>
           </div>
         </div>
@@ -245,54 +245,76 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
         </Button>
       </div>
 
-      {/* Form */}
+      {/* Tabbed Content */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <BasicInfoSection
-            form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
-            isEditing={isEditing}
-            integrationSlug={integration?.slug}
-          />
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-none lg:flex">
+              <TabsTrigger value="endpoint" className="gap-2">
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Endpoint</span>
+              </TabsTrigger>
+              <TabsTrigger value="schema" className="gap-2">
+                <FileJson className="h-4 w-4" />
+                <span className="hidden sm:inline">Schema</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </TabsTrigger>
+              {isEditing && actionId && (
+                <TabsTrigger value="mappings" className="gap-2">
+                  <GitBranch className="h-4 w-4" />
+                  <span className="hidden sm:inline">Mappings</span>
+                </TabsTrigger>
+              )}
+              {isEditing && actionId && (
+                <TabsTrigger value="testing" className="gap-2">
+                  <Play className="h-4 w-4" />
+                  <span className="hidden sm:inline">Test</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          <SchemaBuilder
-            title="Input Schema"
-            description="Define the parameters this action accepts"
-            schema={form.watch('inputSchema') as JsonSchema}
-            onChange={handleInputSchemaChange}
-          />
+            <TabsContent value="endpoint" className="space-y-0">
+              <EndpointTab
+                form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
+                isEditing={isEditing}
+                integrationSlug={integration?.slug}
+              />
+            </TabsContent>
 
-          <SchemaBuilder
-            title="Output Schema"
-            description="Define the response structure for this action"
-            schema={form.watch('outputSchema') as JsonSchema}
-            onChange={handleOutputSchemaChange}
-          />
+            <TabsContent value="schema" className="space-y-0">
+              <SchemaTab
+                inputSchema={form.watch('inputSchema') as JsonSchema}
+                outputSchema={form.watch('outputSchema') as JsonSchema}
+                onInputChange={handleInputSchemaChange}
+                onOutputChange={handleOutputSchemaChange}
+              />
+            </TabsContent>
 
-          {/* Validation Settings Card */}
-          <div className="rounded-lg border bg-card p-6">
-            <h3 className="mb-2 text-lg font-semibold">Validation & Monitoring</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Configure response validation and drift detection
-            </p>
-            <ValidationSettings
-              form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
-            />
-          </div>
+            <TabsContent value="settings" className="space-y-0">
+              <SettingsTab
+                form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
+              />
+            </TabsContent>
 
-          {/* Field Mapping Card - only show when editing */}
-          {isEditing && actionId && (
-            <div className="rounded-lg border bg-card p-6">
-              <h3 className="mb-2 text-lg font-semibold">Field Mapping</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Transform fields between your app and the external API
-              </p>
-              <MappingSettings actionId={actionId} integrationId={integrationId} />
-            </div>
-          )}
+            {isEditing && actionId && (
+              <TabsContent value="mappings" className="space-y-0">
+                <MappingsTab actionId={actionId} integrationId={integrationId} />
+              </TabsContent>
+            )}
 
-          <AdvancedSettings
-            form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
-          />
+            {isEditing && actionId && (
+              <TabsContent value="testing" className="space-y-0">
+                <TestingTab
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  actionSlug={existingAction?.slug ?? ''}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
         </form>
       </Form>
     </div>
@@ -310,9 +332,8 @@ function ActionEditorSkeleton() {
           <Skeleton className="mt-2 h-4 w-32" />
         </div>
       </div>
+      <Skeleton className="h-10 w-full max-w-md" />
       <Skeleton className="h-64 w-full" />
-      <Skeleton className="h-48 w-full" />
-      <Skeleton className="h-48 w-full" />
     </div>
   );
 }

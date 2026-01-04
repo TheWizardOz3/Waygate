@@ -1,4 +1,11 @@
-// Editor components
+// Tab components (new layout)
+export { EndpointTab } from './EndpointTab';
+export { SchemaTab } from './SchemaTab';
+export { SettingsTab } from './SettingsTab';
+export { MappingsTab } from './MappingsTab';
+export { TestingTab } from './TestingTab';
+
+// Legacy components (still used)
 export { BasicInfoSection } from './BasicInfoSection';
 export { SchemaBuilder } from './SchemaBuilder';
 export { SchemaFieldRow } from './SchemaFieldRow';
