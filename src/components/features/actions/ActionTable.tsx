@@ -125,6 +125,27 @@ export function ActionTable({ integrationId }: ActionTableProps) {
         size: 40,
       },
       {
+        id: 'test',
+        header: '',
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-accent"
+            asChild
+            title="Test action"
+          >
+            <Link href={`/integrations/${integrationId}/actions/${row.original.id}/test`}>
+              <Play className="h-4 w-4" />
+              <span className="sr-only">Test</span>
+            </Link>
+          </Button>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 40,
+      },
+      {
         accessorKey: 'name',
         header: ({ column }) => (
           <Button
@@ -256,19 +277,6 @@ export function ActionTable({ integrationId }: ActionTableProps) {
         id: 'actions',
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            {/* Quick Test Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-accent"
-              asChild
-              title="Test action"
-            >
-              <Link href={`/integrations/${integrationId}/actions/${row.original.id}/test`}>
-                <Play className="h-4 w-4" />
-                <span className="sr-only">Test</span>
-              </Link>
-            </Button>
             {/* More Actions Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
