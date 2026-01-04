@@ -301,10 +301,14 @@ export function validate(options: ValidateOptions): ValidationResult {
     meta.fieldsCoerced = coercionTracker.getCoercedCount();
     meta.validationDurationMs = Date.now() - startTime;
 
+    // When preserving extra fields, return the original data (not Zod's stripped data)
+    // Zod's .parse() strips unknown fields by default, so we use the original data
+    const outputData = config.extraFields === 'preserve' ? data : parseResult.data;
+
     return {
       valid: true,
       mode: config.mode,
-      data: parseResult.data,
+      data: outputData,
       issues: issues.length > 0 ? issues : undefined,
       meta,
     };
@@ -315,10 +319,10 @@ export function validate(options: ValidateOptions): ValidationResult {
   issues.push(...zodIssues);
 
   // In lenient mode, try to extract as much data as possible
-  let outputData = processedData;
+  // When preserving extra fields, use original data to keep all fields
+  const outputData = config.extraFields === 'preserve' ? data : processedData;
   if (config.mode === 'lenient') {
     // Use the original data but note the issues
-    outputData = processedData;
     meta.fieldsDefaulted = countDefaultedFields();
   }
 
