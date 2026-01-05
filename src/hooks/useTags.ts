@@ -30,16 +30,7 @@ export const tagKeys = {
 // =============================================================================
 
 async function fetchTags(type?: 'integrations' | 'actions' | 'all'): Promise<TagsResponse> {
-  const params = type && type !== 'all' ? `?type=${type}` : '';
-  const response = await apiClient.get<{ success: boolean; data: TagsResponse }>(
-    `/api/v1/tags${params}`
-  );
-
-  if (!response.success) {
-    throw new Error('Failed to fetch tags');
-  }
-
-  return response.data;
+  return apiClient.get<TagsResponse>('/tags', type && type !== 'all' ? { type } : undefined);
 }
 
 // =============================================================================

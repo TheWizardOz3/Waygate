@@ -42,30 +42,39 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
 
       {/* Tabbed content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="actions" className="gap-2">
+        <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
+          <TabsTrigger
+            value="actions"
+            className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+          >
             <Zap className="h-4 w-4" />
             Actions
           </TabsTrigger>
-          <TabsTrigger value="overview" className="gap-2">
+          <TabsTrigger
+            value="overview"
+            className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+          >
             <LayoutDashboard className="h-4 w-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="logs" className="gap-2">
+          <TabsTrigger
+            value="logs"
+            className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+          >
             <ScrollText className="h-4 w-4" />
             Logs
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="actions" className="space-y-4">
+        <TabsContent value="actions" className="mt-6 space-y-4">
           <IntegrationActionsTab integrationId={integrationId} />
         </TabsContent>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview" className="mt-6 space-y-4">
           <IntegrationOverview integration={integration} />
         </TabsContent>
 
-        <TabsContent value="logs" className="space-y-4">
+        <TabsContent value="logs" className="mt-6 space-y-4">
           <IntegrationLogsTab integrationId={integrationId} />
         </TabsContent>
       </Tabs>

@@ -1,6 +1,7 @@
 'use client';
 
 import { UseFormReturn, FieldValues } from 'react-hook-form';
+import { Globe } from 'lucide-react';
 import {
   FormControl,
   FormDescription,
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface EndpointTabProps {
   form: UseFormReturn<FieldValues>;
@@ -30,12 +30,16 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Endpoint Configuration</CardTitle>
-        <CardDescription>Define the API endpoint this action will call</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-8">
+      {/* Section header */}
+      <div>
+        <h2 className="text-lg font-semibold">Endpoint Configuration</h2>
+        <p className="text-sm text-muted-foreground">
+          Define the API endpoint this action will call
+        </p>
+      </div>
+
+      <div className="max-w-2xl space-y-6">
         {/* Name & Slug */}
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
@@ -145,16 +149,17 @@ export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabPro
 
         {/* Preview */}
         {integrationSlug && (
-          <div className="rounded-lg bg-muted/50 p-4">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Gateway Endpoint Preview
-            </p>
-            <code className="text-sm">
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <p className="text-xs font-medium text-muted-foreground">Gateway Endpoint Preview</p>
+            </div>
+            <code className="font-mono text-sm">
               POST /api/v1/gateway/{integrationSlug}/{form.watch('slug') || 'action-slug'}
             </code>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

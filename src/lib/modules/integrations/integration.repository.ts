@@ -81,8 +81,15 @@ export interface IntegrationWithCounts extends Integration {
 
 /**
  * Creates a new integration
+ *
+ * Note: Integrations with authType='none' are set to 'active' status immediately
+ * since they don't require credentials. Other integrations start as 'draft'.
  */
 export async function createIntegration(input: CreateIntegrationDbInput): Promise<Integration> {
+  // Auth-less APIs are immediately active since no credentials are needed
+  const defaultStatus =
+    input.authType === AuthType.none ? IntegrationStatus.active : IntegrationStatus.draft;
+
   return prisma.integration.create({
     data: {
       tenantId: input.tenantId,
@@ -92,7 +99,7 @@ export async function createIntegration(input: CreateIntegrationDbInput): Promis
       documentationUrl: input.documentationUrl,
       authType: input.authType,
       authConfig: input.authConfig ?? {},
-      status: input.status ?? IntegrationStatus.draft,
+      status: input.status ?? defaultStatus,
       tags: input.tags ?? [],
       metadata: input.metadata ?? {},
     },

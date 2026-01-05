@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-04 (AI Scraper Reliability Fixes)
+**Last Updated**: 2026-01-05 (UI Polish - Linear-style design updates)
 
 ---
 
@@ -78,6 +78,7 @@ _No features currently in progress_
 
 | Enhancement               | Completion Date | Notes                                                                                               |
 | ------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| Linear-style UI Polish    | 2026-01-05      | Integration/Action detail headers, Overview live data fix, Settings redesign                        |
 | AI Scraper Reliability    | 2026-01-04      | Simplified prompts, Gemini 3 low-thinking mode, null byte sanitization, wishlist coverage fix       |
 | Credential Saving & UI    | 2026-01-03      | Credentials POST endpoint, wizard saves creds, API key guidance, param descriptions, copy URL fixes |
 | Template Auto-Detection   | 2026-01-03      | AI auto-detects PostgREST/Supabase patterns, offers to add template actions in Review step          |

@@ -5,10 +5,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Loader2, Save, Globe, FileJson, Settings, GitBranch, Play } from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  Save,
+  Globe,
+  FileJson,
+  Settings,
+  GitBranch,
+  Play,
+  Zap,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EndpointTab } from './editor/EndpointTab';
@@ -193,7 +204,11 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/integrations" className="transition-colors hover:text-foreground">
+        <Link
+          href="/integrations"
+          className="flex items-center gap-1 transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
           Integrations
         </Link>
         <span>/</span>
@@ -204,36 +219,38 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           {integration?.name ?? 'Integration'}
         </Link>
         <span>/</span>
-        <Link
-          href={`/integrations/${integrationId}/actions`}
-          className="transition-colors hover:text-foreground"
-        >
-          Actions
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">{isEditing ? existingAction?.name : 'New'}</span>
+        <span className="text-foreground">{isEditing ? existingAction?.name : 'New Action'}</span>
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/integrations/${integrationId}/actions`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="font-heading text-2xl font-bold">
-              {isEditing ? existingAction?.name : 'Create Action'}
-            </h1>
+      {/* Header - Linear style */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Zap className="h-6 w-6 text-primary" />
+          </div>
+
+          <div className="space-y-1.5">
+            {/* Title row */}
+            <div className="flex items-center gap-3">
+              <h1 className="font-heading text-2xl font-bold">
+                {isEditing ? existingAction?.name : 'Create Action'}
+              </h1>
+              {isEditing && existingAction?.httpMethod && (
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {existingAction.httpMethod}
+                </Badge>
+              )}
+            </div>
+
+            {/* Meta info */}
             <p className="text-sm text-muted-foreground">
-              {isEditing
-                ? `${existingAction?.httpMethod} ${existingAction?.endpointTemplate}`
-                : `New action for ${integration?.name}`}
+              {isEditing ? existingAction?.endpointTemplate : `New action for ${integration?.name}`}
             </p>
           </div>
         </div>
-        <Button onClick={form.handleSubmit(onSubmit)} disabled={isSaving}>
+
+        <Button onClick={form.handleSubmit(onSubmit)} disabled={isSaving} className="shrink-0">
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -251,35 +268,50 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
       {/* Tabbed Content */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:flex lg:w-auto lg:grid-cols-none">
-              <TabsTrigger value="endpoint" className="gap-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
+              <TabsTrigger
+                value="endpoint"
+                className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
                 <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">Endpoint</span>
+                Endpoint
               </TabsTrigger>
-              <TabsTrigger value="schema" className="gap-2">
+              <TabsTrigger
+                value="schema"
+                className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
                 <FileJson className="h-4 w-4" />
-                <span className="hidden sm:inline">Schema</span>
+                Schema
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-2">
+              <TabsTrigger
+                value="settings"
+                className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
                 <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Settings</span>
+                Settings
               </TabsTrigger>
               {isEditing && actionId && (
-                <TabsTrigger value="mappings" className="gap-2">
+                <TabsTrigger
+                  value="mappings"
+                  className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                >
                   <GitBranch className="h-4 w-4" />
-                  <span className="hidden sm:inline">Mappings</span>
+                  Mappings
                 </TabsTrigger>
               )}
               {isEditing && actionId && (
-                <TabsTrigger value="testing" className="gap-2">
+                <TabsTrigger
+                  value="testing"
+                  className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                >
                   <Play className="h-4 w-4" />
-                  <span className="hidden sm:inline">Test</span>
+                  Test
                 </TabsTrigger>
               )}
             </TabsList>
 
-            <TabsContent value="endpoint" className="space-y-0">
+            <TabsContent value="endpoint" className="mt-6 space-y-0">
               <EndpointTab
                 form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
                 isEditing={isEditing}
@@ -287,7 +319,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
               />
             </TabsContent>
 
-            <TabsContent value="schema" className="space-y-0">
+            <TabsContent value="schema" className="mt-6 space-y-0">
               <SchemaTab
                 inputSchema={form.watch('inputSchema') as JsonSchema}
                 outputSchema={form.watch('outputSchema') as JsonSchema}
@@ -296,20 +328,20 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
               />
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-0">
+            <TabsContent value="settings" className="mt-6 space-y-0">
               <SettingsTab
                 form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
               />
             </TabsContent>
 
             {isEditing && actionId && (
-              <TabsContent value="mappings" className="space-y-0">
+              <TabsContent value="mappings" className="mt-6 space-y-0">
                 <MappingsTab actionId={actionId} integrationId={integrationId} />
               </TabsContent>
             )}
 
             {isEditing && actionId && (
-              <TabsContent value="testing" className="space-y-0">
+              <TabsContent value="testing" className="mt-6 space-y-0">
                 <TestingTab
                   actionId={actionId}
                   integrationId={integrationId}

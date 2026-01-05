@@ -46,7 +46,6 @@ import {
   Pencil,
   Trash2,
   Play,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
@@ -79,7 +78,6 @@ export function ActionTable({ integrationId }: ActionTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [methodFilter, setMethodFilter] = useState<string>('all');
-  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [actionToDelete, setActionToDelete] = useState<ActionResponse | null>(null);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
@@ -93,19 +91,17 @@ export function ActionTable({ integrationId }: ActionTableProps) {
 
   const availableTags = tagsData?.tags ?? [];
 
-  // Filter by method, source, and tags
+  // Filter by method and tags
   const filteredActions = useMemo(() => {
     const actions = data?.actions ?? [];
     return actions.filter((action) => {
       if (methodFilter !== 'all' && action.httpMethod !== methodFilter) return false;
-      if (sourceFilter === 'ai' && !action.metadata?.aiConfidence) return false;
-      if (sourceFilter === 'manual' && action.metadata?.aiConfidence) return false;
       if (tagFilter.length > 0 && !tagFilter.some((tag) => action.tags?.includes(tag))) {
         return false;
       }
       return true;
     });
-  }, [data?.actions, methodFilter, sourceFilter, tagFilter]);
+  }, [data?.actions, methodFilter, tagFilter]);
 
   // Define columns
   const columns: ColumnDef<ActionResponse>[] = useMemo(
@@ -167,20 +163,12 @@ export function ActionTable({ integrationId }: ActionTableProps) {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/integrations/${integrationId}/actions/${row.original.id}`}
-              className="font-medium text-foreground hover:text-secondary hover:underline"
-            >
-              {row.getValue('name')}
-            </Link>
-            {row.original.metadata?.aiConfidence && (
-              <Badge variant="secondary" className="gap-1 text-xs">
-                <Sparkles className="h-3 w-3" />
-                AI
-              </Badge>
-            )}
-          </div>
+          <Link
+            href={`/integrations/${integrationId}/actions/${row.original.id}`}
+            className="font-medium text-foreground hover:text-secondary hover:underline"
+          >
+            {row.getValue('name')}
+          </Link>
         ),
       },
       {
@@ -400,17 +388,6 @@ export function ActionTable({ integrationId }: ActionTableProps) {
             <SelectItem value="PUT">PUT</SelectItem>
             <SelectItem value="PATCH">PATCH</SelectItem>
             <SelectItem value="DELETE">DELETE</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Source" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            <SelectItem value="ai">AI Generated</SelectItem>
-            <SelectItem value="manual">Manual</SelectItem>
           </SelectContent>
         </Select>
 

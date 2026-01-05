@@ -5,12 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Puzzle,
+  Sparkles,
   ScrollText,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -34,7 +33,7 @@ const navItems: NavItem[] = [
   {
     title: 'Integrations',
     href: '/integrations',
-    icon: Puzzle,
+    icon: Sparkles,
     description: 'Manage your integrations',
   },
   {
@@ -54,6 +53,38 @@ const navItems: NavItem[] = [
 interface DashboardSidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+}
+
+/**
+ * Portal Logo SVG component
+ * Represents a portal/gateway with energy flowing through
+ */
+function PortalLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      {/* Outer ring */}
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="4 2"
+      />
+      {/* Inner portal */}
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+      {/* Center energy dot */}
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      {/* Energy lines */}
+      <path
+        d="M12 3v2M12 19v2M3 12h2M19 12h2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 export function DashboardSidebar({ collapsed = false, onToggleCollapse }: DashboardSidebarProps) {
@@ -83,8 +114,8 @@ export function DashboardSidebar({ collapsed = false, onToggleCollapse }: Dashbo
             collapsed ? 'justify-center' : 'gap-3'
           )}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
+            <PortalLogo className="h-5 w-5 text-white" />
           </div>
           {!collapsed && (
             <span className="font-heading text-xl font-bold text-sidebar-foreground">Waygate</span>

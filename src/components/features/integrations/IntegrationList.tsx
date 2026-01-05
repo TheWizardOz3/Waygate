@@ -10,7 +10,7 @@ import {
   MoreHorizontal,
   Trash2,
   ExternalLink,
-  Puzzle,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -297,8 +297,8 @@ function IntegrationTable({ integrations, onDelete }: IntegrationTableProps) {
                   href={`/integrations/${integration.id}`}
                   className="flex items-center gap-3 hover:text-primary"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                    <Puzzle className="h-4 w-4 text-primary" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500/10 to-indigo-500/10">
+                    <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                   </div>
                   <div className="min-w-0">
                     <span className="block truncate font-medium">{integration.name}</span>

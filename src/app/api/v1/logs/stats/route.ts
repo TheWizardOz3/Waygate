@@ -4,13 +4,14 @@
  * GET /api/v1/logs/stats
  *
  * Returns aggregated log statistics for the authenticated tenant.
+ * Supports filtering by integration.
  *
  * @route GET /api/v1/logs/stats
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiAuth } from '@/lib/api/middleware/auth';
-import { getLogStatsForTenant } from '@/lib/modules/logging';
+import { getLogStatsForTenant, getLogStatsForIntegration } from '@/lib/modules/logging';
 
 /**
  * GET /api/v1/logs/stats
@@ -42,10 +43,32 @@ export const GET = withApiAuth(async (request: NextRequest, { tenant }) => {
   try {
     const url = new URL(request.url);
     const startDate = url.searchParams.get('startDate');
+    const integrationId = url.searchParams.get('integrationId');
 
     // Default to last 7 days if no start date provided
     const since = startDate ? new Date(startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+    // If filtering by integration, use integration-specific stats
+    if (integrationId) {
+      const stats = await getLogStatsForIntegration(integrationId, tenant.id, since);
+      const successRate = stats.total > 0 ? (stats.successful / stats.total) * 100 : 0;
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          totalRequests: stats.total,
+          successRate,
+          averageLatency: stats.avgLatencyMs,
+          errorCount: stats.failed,
+          // Simplified response for integration-specific stats
+          requestsByIntegration: [],
+          requestsByStatus: [],
+          latencyPercentiles: { p50: 0, p90: 0, p99: 0 },
+        },
+      });
+    }
+
+    // Otherwise, get tenant-wide stats
     const stats = await getLogStatsForTenant(tenant.id, since);
 
     return NextResponse.json({

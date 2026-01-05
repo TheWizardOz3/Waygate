@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@/lib/db/client';
-import { CredentialStatus, CredentialType } from '@prisma/client';
+import { CredentialStatus, CredentialType, IntegrationStatus } from '@prisma/client';
 
 import type { IntegrationCredential, Prisma } from '@prisma/client';
 
@@ -50,23 +50,42 @@ export interface CredentialFilters {
 
 /**
  * Creates a new integration credential
+ *
+ * Note: When credentials are successfully stored, the integration status
+ * is automatically promoted to 'active' if it was in 'draft' status.
  */
 export async function createCredential(
   input: CreateCredentialInput
 ): Promise<IntegrationCredential> {
-  return prisma.integrationCredential.create({
-    data: {
-      integrationId: input.integrationId,
-      tenantId: input.tenantId,
-      credentialType: input.credentialType,
-      encryptedData: new Uint8Array(input.encryptedData),
-      encryptedRefreshToken: input.encryptedRefreshToken
-        ? new Uint8Array(input.encryptedRefreshToken)
-        : null,
-      expiresAt: input.expiresAt,
-      scopes: input.scopes ?? [],
-      status: CredentialStatus.active,
-    },
+  // Use a transaction to atomically create credential and update integration status
+  return prisma.$transaction(async (tx) => {
+    const credential = await tx.integrationCredential.create({
+      data: {
+        integrationId: input.integrationId,
+        tenantId: input.tenantId,
+        credentialType: input.credentialType,
+        encryptedData: new Uint8Array(input.encryptedData),
+        encryptedRefreshToken: input.encryptedRefreshToken
+          ? new Uint8Array(input.encryptedRefreshToken)
+          : null,
+        expiresAt: input.expiresAt,
+        scopes: input.scopes ?? [],
+        status: CredentialStatus.active,
+      },
+    });
+
+    // Promote integration to 'active' if it was in 'draft' status
+    await tx.integration.updateMany({
+      where: {
+        id: input.integrationId,
+        status: IntegrationStatus.draft,
+      },
+      data: {
+        status: IntegrationStatus.active,
+      },
+    });
+
+    return credential;
   });
 }
 

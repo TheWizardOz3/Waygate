@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, ExternalLink, Settings, Trash2, Puzzle, ArrowRight } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, Trash2, Sparkles, ArrowRight } from 'lucide-react';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,8 +55,8 @@ export function IntegrationCard({ integration, onDelete, className }: Integratio
         <div className="flex items-start justify-between gap-4">
           {/* Icon and Title */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-              <Puzzle className="h-5 w-5 text-primary" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/10 to-indigo-500/10 transition-colors group-hover:from-violet-500/20 group-hover:to-indigo-500/20">
+              <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div className="min-w-0 flex-1">
               <span className="block truncate font-semibold transition-colors group-hover:text-primary">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, User, Bell, Shield, Palette, Loader2 } from 'lucide-react';
+import { Settings, User, Bell, Key, Palette, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,13 +17,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiKeyDisplay } from './ApiKeyDisplay';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -48,7 +47,17 @@ interface SettingsPageProps {
   isLoading?: boolean;
 }
 
+type SettingsSection = 'general' | 'api' | 'notifications' | 'appearance';
+
+const SECTIONS: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
+  { id: 'general', label: 'General', icon: User },
+  { id: 'api', label: 'API Keys', icon: Key },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+];
+
 export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) {
+  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [isSaving, setIsSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     initialSettings?.notificationsEnabled ?? false
@@ -112,37 +121,40 @@ export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) 
         </div>
       </div>
 
-      {/* Settings Tabs */}
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="general" className="gap-2">
-            <User className="h-4 w-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="api" className="gap-2">
-            <Shield className="h-4 w-4" />
-            API Keys
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-2">
-            <Palette className="h-4 w-4" />
-            Appearance
-          </TabsTrigger>
-        </TabsList>
+      {/* Linear-style settings layout */}
+      <div className="flex flex-col gap-8 lg:flex-row">
+        {/* Sidebar navigation */}
+        <nav className="lg:w-48 lg:shrink-0">
+          <ul className="flex flex-row gap-1 overflow-x-auto pb-2 lg:flex-col lg:gap-0.5 lg:overflow-x-visible lg:pb-0">
+            {SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <li key={section.id}>
+                  <button
+                    onClick={() => setActiveSection(section.id)}
+                    className={cn(
+                      'flex w-full items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {section.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-        {/* General Settings */}
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>Manage your account information</CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Content area */}
+        <div className="min-w-0 flex-1">
+          {activeSection === 'general' && (
+            <SettingsSection title="Profile" description="Your account information">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSaveProfile)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(handleSaveProfile)} className="space-y-6">
                   <FormField
                     control={form.control}
                     name="name"
@@ -150,7 +162,7 @@ export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) 
                       <FormItem>
                         <FormLabel>Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your name" {...field} />
+                          <Input placeholder="Your name" className="max-w-md" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -164,7 +176,12 @@ export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) 
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
+                          <Input
+                            type="email"
+                            placeholder="you@example.com"
+                            className="max-w-md"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -178,7 +195,11 @@ export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) 
                       <FormItem>
                         <FormLabel>Organization</FormLabel>
                         <FormControl>
-                          <Input placeholder="Your company (optional)" {...field} />
+                          <Input
+                            placeholder="Your company (optional)"
+                            className="max-w-md"
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
                           This will be displayed in your integration credentials
@@ -188,126 +209,148 @@ export function SettingsPage({ initialSettings, isLoading }: SettingsPageProps) 
                     )}
                   />
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        'Save Changes'
-                      )}
-                    </Button>
-                  </div>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
                 </form>
               </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </SettingsSection>
+          )}
 
-        {/* API Keys */}
-        <TabsContent value="api">
-          <div className="space-y-6">
-            <ApiKeyDisplay
-              apiKey={initialSettings?.waygateApiKey ?? 'wg_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
-              label="Waygate API Key"
-              description="Use this key to authenticate requests from your applications to the Waygate Gateway API"
-              onRegenerate={handleRegenerateApiKey}
-            />
-
-            <Card>
-              <CardHeader>
-                <CardTitle>API Usage</CardTitle>
-                <CardDescription>How to use your API key</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">Request Header</h4>
-                  <pre className="overflow-x-auto rounded-md bg-muted p-4 text-sm">
-                    <code>Authorization: Bearer YOUR_API_KEY</code>
-                  </pre>
-                </div>
+          {activeSection === 'api' && (
+            <SettingsSection title="API Keys" description="Manage your API authentication">
+              <div className="space-y-8">
+                <ApiKeyDisplay
+                  apiKey={initialSettings?.waygateApiKey ?? 'wg_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
+                  label="Waygate API Key"
+                  description="Use this key to authenticate requests from your applications to the Waygate Gateway API"
+                  onRegenerate={handleRegenerateApiKey}
+                />
 
                 <Separator />
 
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">Example Request</h4>
-                  <pre className="overflow-x-auto rounded-md bg-muted p-4 text-sm">
-                    <code>{`curl -X POST https://api.waygate.dev/v1/gateway/invoke \\
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Usage</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="mb-2 text-sm text-muted-foreground">Request Header</p>
+                      <pre className="overflow-x-auto rounded-lg border bg-muted/30 p-3 text-sm">
+                        <code className="text-muted-foreground">
+                          Authorization: Bearer{' '}
+                          <span className="text-foreground">YOUR_API_KEY</span>
+                        </code>
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="mb-2 text-sm text-muted-foreground">Example Request</p>
+                      <pre className="overflow-x-auto rounded-lg border bg-muted/30 p-3 text-sm">
+                        <code className="text-muted-foreground">{`curl -X POST https://api.waygate.dev/v1/gateway/invoke \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"integrationSlug": "slack", "actionSlug": "send-message", "input": {...}}'`}</code>
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Notifications */}
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Configure how you receive alerts and updates</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label className="text-sm font-medium">Email Notifications</label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive email alerts for integration errors and important updates
-                  </p>
-                </div>
-                <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={handleToggleNotifications}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="space-y-0.5">
-                  <label className="text-sm font-medium">Webhook URL</label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive real-time alerts via webhook
-                  </p>
-                </div>
-                <Input
-                  type="url"
-                  placeholder="https://your-app.com/webhooks/waygate"
-                  defaultValue={initialSettings?.webhookUrl}
-                />
-                <Button variant="outline" size="sm">
-                  Test Webhook
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Appearance */}
-        <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize the look and feel of your dashboard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label className="text-sm font-medium">Theme</label>
-                  <p className="text-sm text-muted-foreground">
-                    Theme preferences are managed via the toggle in the sidebar
-                  </p>
+                      </pre>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </SettingsSection>
+          )}
+
+          {activeSection === 'notifications' && (
+            <SettingsSection title="Notifications" description="Configure how you receive alerts">
+              <div className="space-y-6">
+                <SettingsRow
+                  title="Email Notifications"
+                  description="Receive email alerts for integration errors and important updates"
+                >
+                  <Switch
+                    checked={notificationsEnabled}
+                    onCheckedChange={handleToggleNotifications}
+                  />
+                </SettingsRow>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Webhook URL</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Receive real-time alerts via webhook
+                    </p>
+                  </div>
+                  <Input
+                    type="url"
+                    placeholder="https://your-app.com/webhooks/waygate"
+                    defaultValue={initialSettings?.webhookUrl}
+                    className="max-w-lg"
+                  />
+                  <Button variant="outline" size="sm">
+                    Test Webhook
+                  </Button>
+                </div>
+              </div>
+            </SettingsSection>
+          )}
+
+          {activeSection === 'appearance' && (
+            <SettingsSection title="Appearance" description="Customize the look and feel">
+              <SettingsRow
+                title="Theme"
+                description="Theme preferences are managed via the toggle in the sidebar"
+              >
+                <span className="text-sm text-muted-foreground">System default</span>
+              </SettingsRow>
+            </SettingsSection>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function SettingsRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {children}
     </div>
   );
 }
@@ -322,8 +365,21 @@ function SettingsPageSkeleton() {
           <Skeleton className="mt-1 h-4 w-48" />
         </div>
       </div>
-      <Skeleton className="h-10 w-96" />
-      <Skeleton className="h-96 w-full" />
+      <div className="flex gap-8">
+        <div className="w-48 space-y-2">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
+        <div className="flex-1 space-y-6">
+          <div>
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="mt-1 h-4 w-48" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
     </div>
   );
 }

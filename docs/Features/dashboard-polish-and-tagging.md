@@ -163,6 +163,7 @@ export function getTagColor(tagName: string) {
 - [x] Recent activity shows actual recent requests
 - [x] Logs page displays real request log data
 - [x] No mock/sample data in production views
+- [x] Integration Overview tab shows integration-specific stats (via integrationId filter)
 
 ---
 

@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                            |
 | ------- | ---------- | ---------- | ------------------------------------------------------------------ |
+| 0.6.2   | 2026-01-05 | patch      | UI Polish - Linear-style design, live data in Overview tab         |
 | 0.6.1   | 2026-01-04 | patch      | AI Scraper reliability fixes - simplified prompts, Gemini 3 tuning |
 | 0.6.0   | 2026-01-04 | minor      | Roadmap restructure - V0.5 complete, new milestone structure       |
 | 0.5.5   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 finalized      |
@@ -66,6 +67,24 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.6.2] - 2026-01-05
+
+### Fixed
+
+- **Integration Overview live data**: Log stats API now properly filters by `integrationId` when provided, showing real stats specific to each integration instead of tenant-wide data.
+- **Overview tab data**: Requests (7d), Success Rate, and Avg Latency now display integration-specific metrics from the API.
+
+### Changed
+
+- **Integration Detail header**: Applied Linear-style design with icon in colored background, cleaner meta info layout, and compact badges.
+- **Integration Overview**: Redesigned stats cards with Linear-style minimal borders and improved Recent Activity section.
+- **Action Editor header**: Applied Linear-style design with Zap icon, HTTP method badge, and cleaner breadcrumb.
+- **Action Endpoint tab**: Cleaner section header with max-width form fields and improved preview box.
+- **Action Settings tab**: Redesigned with Linear-style card sections featuring colored icon backgrounds for Response Validation, Response Caching, and Automatic Retries.
+- **Action Schema tab**: Updated inner tabs with pill-style design and badge counts.
 
 ---
 
