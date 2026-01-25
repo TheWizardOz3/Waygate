@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CredentialType, CredentialStatus, IntegrationCredential } from '@prisma/client';
+import {
+  CredentialType,
+  CredentialStatus,
+  CredentialSource,
+  IntegrationCredential,
+} from '@prisma/client';
 import type { GenericOAuthProvider } from '@/lib/modules/auth/oauth-providers';
 
 // Mock Prisma before importing modules that use it
@@ -88,6 +93,7 @@ describe('Token Refresh Service', () => {
     integrationId: mockIntegrationId,
     connectionId: null, // Added for multi-app connections support
     credentialType: CredentialType.oauth2_tokens,
+    credentialSource: CredentialSource.user_owned, // Added for hybrid auth model
     encryptedData: new Uint8Array(Buffer.from(JSON.stringify({ accessToken: 'old-token' }))),
     encryptedRefreshToken: new Uint8Array(
       Buffer.from(JSON.stringify({ refreshToken: 'refresh-token' }))

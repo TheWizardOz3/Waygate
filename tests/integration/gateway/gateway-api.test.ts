@@ -12,6 +12,7 @@ import {
   HttpMethod,
   CredentialType,
   CredentialStatus,
+  CredentialSource,
 } from '@prisma/client';
 
 // Mock external dependencies
@@ -101,6 +102,7 @@ const mockCredential = {
   tenantId: TEST_TENANT_ID,
   connectionId: null,
   credentialType: CredentialType.oauth2_tokens,
+  credentialSource: CredentialSource.user_owned,
   encryptedData: new Uint8Array([1, 2, 3]),
   encryptedRefreshToken: null,
   status: CredentialStatus.active,

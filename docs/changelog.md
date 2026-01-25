@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                            |
 | ------- | ---------- | ---------- | ------------------------------------------------------------------ |
+| 0.8.0   | 2026-01-25 | minor      | **Hybrid Auth Model - V0.75 Feature #2 complete**                  |
 | 0.7.0   | 2026-01-25 | minor      | Multi-App Connections - V0.75 Feature #1 complete                  |
 | 0.6.2   | 2026-01-05 | patch      | UI Polish - Linear-style design, live data in Overview tab         |
 | 0.6.1   | 2026-01-04 | patch      | AI Scraper reliability fixes - simplified prompts, Gemini 3 tuning |
@@ -68,6 +69,117 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.8.0] - 2026-01-25
+
+### Added
+
+- **Hybrid Auth Model** (V0.75 Feature #2): Platform connectors enabling "one-click connect" experiences 🎉
+
+#### Database Schema
+
+- `PlatformConnector` model for Waygate's registered OAuth apps
+- `ConnectorType` enum (`platform`, `custom`) on Connection model
+- `CredentialSource` enum (`platform`, `user_owned`) on IntegrationCredential model
+- `PlatformConnectorStatus` enum (`active`, `suspended`, `deprecated`)
+
+#### Backend Module (`src/lib/modules/platform-connectors/`)
+
+- `platform-connector.schemas.ts`: Zod validation with certification and rate limit schemas
+- `platform-connector.repository.ts`: CRUD operations with encrypted credential handling
+- `platform-connector.service.ts`: Business logic with AES-256-GCM credential encryption/decryption
+- `index.ts`: Module exports
+
+#### API Routes
+
+- `GET /api/v1/platform-connectors`: List active platform connectors (no secrets exposed)
+- `GET /api/v1/platform-connectors/:slug`: Get single platform connector details
+
+#### Connection Platform Mode
+
+- `connection.schemas.ts`: Added `connectorType`, `platformConnectorSlug` fields
+- `connection.service.ts`: Validates and links platform connectors
+- `auth.service.ts`: OAuth flow dynamically uses platform or custom credentials
+- `credential.service.ts`: Stores `credentialSource` with tokens
+
+#### UI Components
+
+- `PlatformConnectorSelect`: Selectable cards with certification badges
+- `ConnectorTypeBadge`: "Waygate App" vs "Custom App" badge
+- `CredentialSourceBadge`: Shows credential origin after connection
+- `CreateConnectionDialog`: Multi-step flow with connector type selection
+- `ConnectionCard`: Shows connector type badge
+- `ConnectionDetail`: Connector type section in configuration
+- `ConnectionCredentialPanel`: Streamlined "Connect with Waygate" button
+
+#### Hooks
+
+- `usePlatformConnectors()`: React Query hook for platform connector data
+- `usePlatformConnector(slug)`: Single connector lookup
+- `useActivePlatformConnectors()`: Filtered active connectors
+
+#### Seed Data
+
+- Slack platform connector (active) with verified app review status
+- Google Workspace platform connector (suspended, pending CASA)
+- Environment variables for platform credentials
+
+#### Test Coverage
+
+- 43 new unit tests for schemas and connector type validation
+- All existing 879 tests continue to pass
+
+#### Database Schema (Task 1)
+
+- Added `PlatformConnector` model for storing Waygate's registered OAuth apps
+- Added `ConnectorType` enum (`platform`, `custom`) to `Connection` model
+- Added `platformConnectorId` foreign key to `Connection` model
+- Added `CredentialSource` enum (`platform`, `user_owned`) to `IntegrationCredential` model
+- Added `PlatformConnectorStatus` enum (`active`, `suspended`, `deprecated`)
+
+#### PlatformConnector Module (Task 2)
+
+- Created `src/lib/modules/platform-connectors/` module with:
+  - `platform-connector.schemas.ts`: Zod validation schemas for certifications, rate limits, CRUD operations, and API responses
+  - `platform-connector.repository.ts`: Data access layer with CRUD operations, filtering, and usage statistics
+  - `platform-connector.service.ts`: Business logic with credential encryption/decryption, status management, and validation
+  - `index.ts`: Module exports
+- Credential encryption uses existing AES-256-GCM encryption (same as user credentials)
+- API responses never expose encrypted client secrets (security by design)
+- Supports certification tracking (CASA, app review) and rate limit configuration
+
+#### API Routes (Task 3)
+
+- `GET /api/v1/platform-connectors` - List available platform connectors (active by default)
+- `GET /api/v1/platform-connectors/:slug` - Get platform connector details by provider slug
+- Proper error responses for suspended (503) and deprecated (410) connectors
+- Secrets never exposed in API responses
+
+#### Connection Platform Mode Integration (Task 4)
+
+- Added `ConnectorTypeSchema` ('platform' | 'custom') to connection schemas
+- Added `platformConnectorSlug` field to `CreateConnectionInput` for specifying platform connector
+- Updated `ConnectionResponse` to include `connectorType` and `platformConnectorId`
+- Connection service validates platform connector availability when creating platform connections
+- Repository updated to handle `connectorType` and `platformConnectorId` fields
+- Error codes added: `PLATFORM_CONNECTOR_NOT_FOUND`, `PLATFORM_CONNECTOR_NOT_ACTIVE`, `INVALID_CONNECTOR_TYPE`
+
+#### OAuth Flow Updates for Platform Mode (Task 5)
+
+- Updated `OAuthState` interface to include `credentialSource` and `platformConnectorId`
+- `initiateOAuthConnection()` now detects platform vs custom connections:
+  - For platform connections: retrieves and decrypts platform connector credentials
+  - Uses platform credentials for OAuth authorization URL
+  - Stores credential source in OAuth state for callback
+- `handleOAuthCallback()` updated:
+  - Uses platform connector credentials for token exchange when `credentialSource='platform'`
+  - Passes `credentialSource` when storing OAuth tokens
+- Added `credentialSource` field to credential repository and service:
+  - `CreateCredentialInput` now accepts optional `credentialSource`
+  - `storeOAuth2Credential()` accepts `credentialSource` parameter
+  - Defaults to `user_owned` for backwards compatibility
 
 ---
 

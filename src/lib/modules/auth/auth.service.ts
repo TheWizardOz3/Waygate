@@ -3,10 +3,15 @@
  *
  * Orchestrates authentication flows including OAuth.
  * Manages OAuth state and coordinates between providers and credential storage.
+ *
+ * Supports two credential sources:
+ * - platform: Uses Waygate's registered OAuth apps (one-click connect)
+ * - user_owned: User provides their own OAuth app credentials (custom)
  */
 
 import { prisma } from '@/lib/db/client';
-import { AuthType } from '@prisma/client';
+import { AuthType, CredentialSource, ConnectorType } from '@prisma/client';
+import { getPlatformConnectorWithSecretsById } from '../platform-connectors';
 import {
   createGenericProvider,
   type OAuthState,
@@ -114,7 +119,38 @@ export async function initiateOAuthConnection(
     );
   }
 
-  // Parse the auth config
+  // Check if this is a platform connection
+  let isPlatformConnection = false;
+  let platformConnectorId: string | undefined;
+  let platformCredentials: { clientId: string; clientSecret: string } | undefined;
+
+  if (connectionId) {
+    const connection = await prisma.connection.findFirst({
+      where: { id: connectionId, tenantId },
+    });
+
+    if (connection?.connectorType === ConnectorType.platform && connection.platformConnectorId) {
+      isPlatformConnection = true;
+      platformConnectorId = connection.platformConnectorId;
+
+      // Retrieve and decrypt platform connector credentials
+      const platformConnector = await getPlatformConnectorWithSecretsById(platformConnectorId);
+      if (!platformConnector) {
+        throw new AuthServiceError(
+          'PLATFORM_CONNECTOR_NOT_FOUND',
+          'Platform connector not found or no longer available',
+          404
+        );
+      }
+
+      platformCredentials = {
+        clientId: platformConnector.clientId,
+        clientSecret: platformConnector.clientSecret,
+      };
+    }
+  }
+
+  // Parse the auth config from integration (used for URLs and scopes)
   const authConfig = integration.authConfig as unknown as OAuthIntegrationConfig;
 
   if (!authConfig.authorizationUrl || !authConfig.tokenUrl) {
@@ -124,11 +160,24 @@ export async function initiateOAuthConnection(
     );
   }
 
-  if (!authConfig.clientId || !authConfig.clientSecret) {
-    throw new AuthServiceError(
-      'MISSING_CREDENTIALS',
-      'OAuth client credentials are not configured'
-    );
+  // Determine which credentials to use
+  let clientId: string;
+  let clientSecret: string;
+
+  if (isPlatformConnection && platformCredentials) {
+    // Use platform connector credentials
+    clientId = platformCredentials.clientId;
+    clientSecret = platformCredentials.clientSecret;
+  } else {
+    // Use integration's custom credentials
+    if (!authConfig.clientId || !authConfig.clientSecret) {
+      throw new AuthServiceError(
+        'MISSING_CREDENTIALS',
+        'OAuth client credentials are not configured'
+      );
+    }
+    clientId = authConfig.clientId;
+    clientSecret = authConfig.clientSecret;
   }
 
   // Build the redirect URI
@@ -136,12 +185,7 @@ export async function initiateOAuthConnection(
   const redirectUri = `${appUrl}/api/v1/auth/callback/oauth2`;
 
   // Create the provider
-  const provider = createGenericProvider(
-    authConfig,
-    authConfig.clientId,
-    authConfig.clientSecret,
-    redirectUri
-  );
+  const provider = createGenericProvider(authConfig, clientId, clientSecret, redirectUri);
 
   // Generate authorization URL (with optional connectionId for multi-app support)
   const { url, state } = provider.getAuthorizationUrl(
@@ -150,6 +194,12 @@ export async function initiateOAuthConnection(
     redirectAfterAuth,
     connectionId
   );
+
+  // Add platform connector info to state
+  state.credentialSource = isPlatformConnection ? 'platform' : 'user_owned';
+  if (platformConnectorId) {
+    state.platformConnectorId = platformConnectorId;
+  }
 
   // Store the state for callback validation
   oauthStateStore.set(state.state, state);
@@ -210,13 +260,32 @@ export async function handleOAuthCallback(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const redirectUri = `${appUrl}/api/v1/auth/callback/oauth2`;
 
+  // Determine which credentials to use for token exchange
+  let clientId: string;
+  let clientSecret: string;
+
+  if (storedState.credentialSource === 'platform' && storedState.platformConnectorId) {
+    // Use platform connector credentials for token exchange
+    const platformConnector = await getPlatformConnectorWithSecretsById(
+      storedState.platformConnectorId
+    );
+    if (!platformConnector) {
+      throw new AuthServiceError(
+        'PLATFORM_CONNECTOR_NOT_FOUND',
+        'Platform connector not found or no longer available',
+        404
+      );
+    }
+    clientId = platformConnector.clientId;
+    clientSecret = platformConnector.clientSecret;
+  } else {
+    // Use integration's custom credentials
+    clientId = authConfig.clientId;
+    clientSecret = authConfig.clientSecret;
+  }
+
   // Create the provider
-  const provider = createGenericProvider(
-    authConfig,
-    authConfig.clientId,
-    authConfig.clientSecret,
-    redirectUri
-  );
+  const provider = createGenericProvider(authConfig, clientId, clientSecret, redirectUri);
 
   // Exchange the code for tokens
   let tokens: OAuthTokenResponse;
@@ -233,6 +302,12 @@ export async function handleOAuthCallback(
     throw error;
   }
 
+  // Determine credential source for storage
+  const credentialSource =
+    storedState.credentialSource === 'platform'
+      ? CredentialSource.platform
+      : CredentialSource.user_owned;
+
   // Store the credentials (with optional connectionId for multi-app support)
   await storeOAuth2Credential(
     storedState.tenantId,
@@ -244,7 +319,8 @@ export async function handleOAuthCallback(
       expiresIn: tokens.expiresIn,
       scopes: tokens.scope?.split(' '),
     },
-    storedState.connectionId
+    storedState.connectionId,
+    credentialSource
   );
 
   // Update integration status to active

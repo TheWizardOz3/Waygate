@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@/lib/db/client';
-import { ConnectionStatus, Prisma } from '@prisma/client';
+import { ConnectionStatus, ConnectorType, Prisma } from '@prisma/client';
 
 import type { Connection } from '@prisma/client';
 import type { ConnectionFilters } from './connection.schemas';
@@ -28,6 +28,8 @@ export interface CreateConnectionDbInput {
   slug: string;
   baseUrl?: string | null;
   isPrimary?: boolean;
+  connectorType?: ConnectorType;
+  platformConnectorId?: string | null;
   status?: ConnectionStatus;
   metadata?: Prisma.InputJsonValue;
 }
@@ -40,6 +42,8 @@ export interface UpdateConnectionDbInput {
   slug?: string;
   baseUrl?: string | null;
   isPrimary?: boolean;
+  connectorType?: ConnectorType;
+  platformConnectorId?: string | null;
   status?: ConnectionStatus;
   metadata?: Prisma.InputJsonValue;
 }
@@ -86,6 +90,8 @@ export async function createConnection(input: CreateConnectionDbInput): Promise<
       slug: input.slug,
       baseUrl: input.baseUrl ?? null,
       isPrimary: input.isPrimary ?? false,
+      connectorType: input.connectorType ?? ConnectorType.custom,
+      platformConnectorId: input.platformConnectorId ?? null,
       status: input.status ?? ConnectionStatus.active,
       metadata: input.metadata ?? {},
     },
@@ -384,6 +390,16 @@ export async function updateConnection(
   if (input.slug !== undefined) data.slug = input.slug;
   if (input.baseUrl !== undefined) data.baseUrl = input.baseUrl;
   if (input.isPrimary !== undefined) data.isPrimary = input.isPrimary;
+  if (input.connectorType !== undefined) data.connectorType = input.connectorType;
+  if (input.platformConnectorId !== undefined) {
+    if (input.platformConnectorId === null) {
+      // Disconnect the relation
+      data.platformConnector = { disconnect: true };
+    } else {
+      // Connect to the platform connector
+      data.platformConnector = { connect: { id: input.platformConnectorId } };
+    }
+  }
   if (input.status !== undefined) data.status = input.status;
   if (input.metadata !== undefined) data.metadata = input.metadata;
 

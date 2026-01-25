@@ -34,6 +34,8 @@ export interface OAuthState {
   integrationId: string;
   tenantId: string;
   connectionId?: string; // For multi-app connections
+  credentialSource?: 'platform' | 'user_owned'; // Source of OAuth credentials
+  platformConnectorId?: string; // For platform connector OAuth flows
   redirectAfterAuth?: string;
   createdAt: Date;
 }

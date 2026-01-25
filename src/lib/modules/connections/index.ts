@@ -13,6 +13,7 @@
 export {
   // Enums
   ConnectionStatusSchema,
+  ConnectorTypeSchema,
   // CRUD schemas
   CreateConnectionInputSchema,
   UpdateConnectionInputSchema,
@@ -31,6 +32,7 @@ export {
 
 export type {
   ConnectionStatus,
+  ConnectorType,
   CreateConnectionInput,
   UpdateConnectionInput,
   ConnectionFilters,

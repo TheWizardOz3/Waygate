@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CredentialType, CredentialStatus } from '@prisma/client';
+import { CredentialType, CredentialStatus, CredentialSource } from '@prisma/client';
 
 // Mock Prisma before importing modules that use it
 vi.mock('@/lib/db/client', () => ({
@@ -60,6 +60,7 @@ describe('Credential Service', () => {
     integrationId: mockIntegrationId,
     connectionId: null, // Added for multi-app connections support
     credentialType: CredentialType.oauth2_tokens,
+    credentialSource: CredentialSource.user_owned, // Added for hybrid auth model
     encryptedData: Buffer.from('encrypted'),
     encryptedRefreshToken: null,
     status: CredentialStatus.active,

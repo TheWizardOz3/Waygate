@@ -6,9 +6,13 @@
  *
  * Connections enable multiple consuming apps to connect to the same integration
  * with separate credentials and configurations.
+ *
+ * Supports two connector types:
+ * - platform: Uses Waygate's registered OAuth app (one-click connect)
+ * - custom: User provides their own OAuth app credentials
  */
 
-import { ConnectionStatus, Prisma } from '@prisma/client';
+import { ConnectionStatus, ConnectorType, Prisma } from '@prisma/client';
 import {
   createConnection as repoCreateConnection,
   createDefaultConnectionIfNeeded,
@@ -32,6 +36,7 @@ import {
   type ConnectionPaginationOptions,
 } from './connection.repository';
 import { findIntegrationByIdAndTenant } from '../integrations/integration.repository';
+import { getActivePlatformConnectorBySlug, PlatformConnectorError } from '../platform-connectors';
 import {
   CreateConnectionInputSchema,
   UpdateConnectionInputSchema,
@@ -113,6 +118,32 @@ export async function createConnection(
     );
   }
 
+  // Validate and resolve platform connector if using platform type
+  let platformConnectorId: string | null = null;
+
+  if (data.connectorType === 'platform') {
+    if (!data.platformConnectorSlug) {
+      throw new ConnectionError(
+        ConnectionErrorCodes.INVALID_CONNECTOR_TYPE,
+        "platformConnectorSlug is required when connectorType is 'platform'"
+      );
+    }
+
+    try {
+      const platformConnector = await getActivePlatformConnectorBySlug(data.platformConnectorSlug);
+      platformConnectorId = platformConnector.id;
+    } catch (error) {
+      if (error instanceof PlatformConnectorError) {
+        throw new ConnectionError(
+          ConnectionErrorCodes.PLATFORM_CONNECTOR_NOT_FOUND,
+          `Platform connector '${data.platformConnectorSlug}' is not available: ${error.message}`,
+          error.statusCode
+        );
+      }
+      throw error;
+    }
+  }
+
   // Create the connection
   const dbInput: CreateConnectionDbInput = {
     tenantId,
@@ -121,6 +152,8 @@ export async function createConnection(
     slug: data.slug,
     baseUrl: data.baseUrl,
     isPrimary: data.isPrimary,
+    connectorType: (data.connectorType as ConnectorType) ?? ConnectorType.custom,
+    platformConnectorId,
     metadata: data.metadata as Prisma.InputJsonValue,
   };
 

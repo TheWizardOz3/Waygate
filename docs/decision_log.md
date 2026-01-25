@@ -12,32 +12,32 @@
 
 ## Quick Reference Index
 
-| ID      | Date       | Category | Status  | Summary                                                       |
-| ------- | ---------- | -------- | ------- | ------------------------------------------------------------- |
-| ADR-001 | 2026-01-01 | infra    | active  | Prisma 7 requires pg adapter instead of URL in schema         |
-| ADR-002 | 2026-01-02 | infra    | active  | Prisma 7 config file requires explicit env loading            |
-| ADR-003 | 2026-01-02 | infra    | active  | Environment variable file strategy for secrets                |
-| ADR-004 | 2026-01-01 | arch     | active  | Dual encryption strategy for credentials                      |
-| ADR-005 | 2026-01-02 | arch     | active  | In-memory circuit breaker with per-circuit tracking           |
-| ADR-006 | 2026-01-02 | arch     | active  | Result pattern for execution service                          |
-| ADR-007 | 2026-01-02 | arch     | active  | LLM abstraction layer for future multi-model support          |
-| ADR-008 | 2026-01-02 | arch     | active  | JSON Schema validation with Ajv and caching                   |
-| ADR-009 | 2026-01-02 | arch     | active  | PostgreSQL advisory locks for token refresh                   |
-| ADR-010 | 2026-01-02 | api      | active  | Unified dynamic gateway endpoint over per-action routes       |
-| ADR-011 | 2026-01-02 | ui       | active  | CSS variable-based design system for global theming           |
-| ADR-012 | 2026-01-02 | ui       | active  | Zustand for wizard state, React Query for server state        |
-| ADR-013 | 2026-01-02 | arch     | active  | Gemini 3.0 as default LLM, crawl-first scraping               |
-| ADR-014 | 2026-01-03 | arch     | active  | Dual scraping modes: auto-discover vs specific pages          |
-| ADR-015 | 2026-01-03 | arch     | planned | Hybrid auth model: platform-owned + user-owned creds          |
-| ADR-016 | 2026-01-03 | arch     | active  | Wishlist-aware cache validation for scrape jobs               |
-| ADR-017 | 2026-01-03 | arch     | active  | Template auto-detection for schema-driven APIs                |
-| ADR-018 | 2026-01-03 | arch     | active  | Per-credential baseUrl for user-specific APIs                 |
-| ADR-019 | 2026-01-03 | arch     | active  | LLM-friendly pagination with token-aware limits               |
-| ADR-020 | 2026-01-03 | arch     | active  | Response validation with Zod and three-mode strategy          |
-| ADR-021 | 2026-01-04 | ui       | active  | Hash-based tag colors for consistent categorization           |
-| ADR-022 | 2026-01-04 | api      | active  | Enriched log responses with integration/action names          |
-| ADR-023 | 2026-01-04 | arch     | active  | Simplified flat-schema prompts for Gemini endpoint extraction |
-| ADR-024 | 2026-01-25 | arch     | active  | Multi-App Connections with Connection entity                  |
+| ID      | Date       | Category | Status | Summary                                                       |
+| ------- | ---------- | -------- | ------ | ------------------------------------------------------------- |
+| ADR-001 | 2026-01-01 | infra    | active | Prisma 7 requires pg adapter instead of URL in schema         |
+| ADR-002 | 2026-01-02 | infra    | active | Prisma 7 config file requires explicit env loading            |
+| ADR-003 | 2026-01-02 | infra    | active | Environment variable file strategy for secrets                |
+| ADR-004 | 2026-01-01 | arch     | active | Dual encryption strategy for credentials                      |
+| ADR-005 | 2026-01-02 | arch     | active | In-memory circuit breaker with per-circuit tracking           |
+| ADR-006 | 2026-01-02 | arch     | active | Result pattern for execution service                          |
+| ADR-007 | 2026-01-02 | arch     | active | LLM abstraction layer for future multi-model support          |
+| ADR-008 | 2026-01-02 | arch     | active | JSON Schema validation with Ajv and caching                   |
+| ADR-009 | 2026-01-02 | arch     | active | PostgreSQL advisory locks for token refresh                   |
+| ADR-010 | 2026-01-02 | api      | active | Unified dynamic gateway endpoint over per-action routes       |
+| ADR-011 | 2026-01-02 | ui       | active | CSS variable-based design system for global theming           |
+| ADR-012 | 2026-01-02 | ui       | active | Zustand for wizard state, React Query for server state        |
+| ADR-013 | 2026-01-02 | arch     | active | Gemini 3.0 as default LLM, crawl-first scraping               |
+| ADR-014 | 2026-01-03 | arch     | active | Dual scraping modes: auto-discover vs specific pages          |
+| ADR-015 | 2026-01-25 | arch     | active | Hybrid auth model: platform-owned + user-owned creds          |
+| ADR-016 | 2026-01-03 | arch     | active | Wishlist-aware cache validation for scrape jobs               |
+| ADR-017 | 2026-01-03 | arch     | active | Template auto-detection for schema-driven APIs                |
+| ADR-018 | 2026-01-03 | arch     | active | Per-credential baseUrl for user-specific APIs                 |
+| ADR-019 | 2026-01-03 | arch     | active | LLM-friendly pagination with token-aware limits               |
+| ADR-020 | 2026-01-03 | arch     | active | Response validation with Zod and three-mode strategy          |
+| ADR-021 | 2026-01-04 | ui       | active | Hash-based tag colors for consistent categorization           |
+| ADR-022 | 2026-01-04 | api      | active | Enriched log responses with integration/action names          |
+| ADR-023 | 2026-01-04 | arch     | active | Simplified flat-schema prompts for Gemini endpoint extraction |
+| ADR-024 | 2026-01-25 | arch     | active | Multi-App Connections with Connection entity                  |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -398,7 +398,7 @@ When working with scrape job caching:
 
 ### ADR-015: Hybrid Authentication Model (Platform-Owned + User-Owned Credentials)
 
-**Date:** 2026-01-03 | **Category:** arch | **Status:** planned
+**Date:** 2026-01-25 | **Category:** arch | **Status:** active
 
 #### Trigger
 
@@ -413,27 +413,29 @@ Current MVP requires users to bring their own OAuth app credentials for each int
 
 #### Decision
 
-Planned for V2: Implement a **hybrid authentication model** that offers both:
+**Implemented in V0.75** (moved up from planned V2): A **hybrid authentication model** that offers both:
 
-1. **Platform-owned credentials** (new, default for supported providers)
+1. **Platform-owned credentials** (new, for supported providers)
    - Waygate registers as OAuth app with major providers (Slack, Google, Microsoft, etc.)
    - Waygate completes CASA, publisher verification, app directory reviews once
    - Users authenticate via Waygate's pre-registered OAuth apps ("one-click connect")
    - Tokens stored with `credentialSource: 'platform'`
-   - Rate limits shared across all Waygate users (requires quota management)
+   - Rate limits shared across all Waygate users (future: quota management)
 
 2. **User-owned credentials** (existing, preserved for enterprise)
    - Enterprise customers bring their own OAuth app registrations
    - Required for: dedicated rate limits, custom scopes, compliance policies
    - Tokens stored with `credentialSource: 'user_owned'`
-   - No changes to current MVP flow
+   - Remains the default for backward compatibility
 
-Key architectural additions:
+**Implemented architecture:**
 
-- `PlatformConnector` table for Waygate's OAuth registrations
-- `connectorType` field on `Integration` (platform vs custom)
-- Compliance certification tracking with expiration alerts
-- Shared rate limit management (Redis-backed in V1+)
+- `PlatformConnector` model in Prisma schema with encrypted credentials
+- `connectorType` field on `Connection` (platform vs custom)
+- `credentialSource` field on `IntegrationCredential`
+- Compliance certification tracking in JSONB (`certifications` field)
+- Multi-step UI for connector type selection
+- API routes for listing platform connectors (secrets never exposed)
 
 #### Rationale
 
@@ -464,52 +466,57 @@ N/A - extends existing user-owned credential model without replacing it
 
 #### Migration
 
-**V2 Implementation Plan:**
+**Implemented in V0.75:**
 
-Phase 1 - Database schema:
+Phase 1 - Database schema: ✅ Complete
 
-- Add `PlatformConnector` table
-- Add `connectorType` to `Integration`
-- Add `credentialSource` to `IntegrationCredential`
-- Migrations backward-compatible (existing = 'custom'/'user_owned')
+- Added `PlatformConnector` model with encrypted credentials
+- Added `connectorType` enum to `Connection` (not Integration)
+- Added `credentialSource` enum to `IntegrationCredential`
+- Backward-compatible: existing data defaults to 'custom'/'user_owned'
 
-Phase 2 - Platform registration:
+Phase 2 - Platform registration: ✅ Seed data prepared
 
-- Register Waygate OAuth apps with top providers
-- Complete CASA for Google
-- Complete publisher verification for Microsoft
-- Complete Slack app directory review
+- Slack platform connector seeded (active status)
+- Google Workspace seeded (suspended, pending CASA)
+- Environment variables for credentials documented in architecture.md
 
-Phase 3 - UI/UX:
+Phase 3 - UI/UX: ✅ Complete
 
-- "One-click connect" buttons for platform connectors
-- "Bring your own app" advanced option
-- Compliance status indicators in dashboard
+- Multi-step "Add Connection" dialog with connector type selection
+- `PlatformConnectorSelect` component with certification badges
+- `ConnectorTypeBadge` and `CredentialSourceBadge` components
+- Platform vs Custom indicators on cards and details
 
-Phase 4 - Operations:
+Phase 4 - Operations: 🔜 Future
 
-- Certification tracking and renewal alerts
-- Shared rate limit monitoring dashboard
-- Automatic fallback to user-owned if rate limited
+- Certification tracking data model ready (JSONB)
+- Expiration alerts TBD
+- Shared rate limit monitoring TBD
 
-**Affected files (future):**
+**Affected files (implemented):**
 
-- `prisma/schema.prisma` - new tables
-- `src/lib/modules/credentials/` - dual credential sources
-- `src/lib/modules/auth/oauth-providers/` - platform connector support
-- `src/components/features/integrations/` - connection type selection UI
+- `prisma/schema.prisma` - PlatformConnector model, ConnectorType/CredentialSource enums
+- `src/lib/modules/platform-connectors/` - new module (schemas, repository, service)
+- `src/lib/modules/connections/` - connectorType, platformConnectorId fields
+- `src/lib/modules/credentials/` - credentialSource field
+- `src/lib/modules/auth/auth.service.ts` - platform credential retrieval in OAuth
+- `src/components/features/connections/` - UI components for connector type
+- `src/app/api/v1/platform-connectors/` - API routes
 
 #### AI Instructions
 
 When working on authentication-related features:
 
-- MVP uses user-owned credentials only - do NOT add platform connector logic yet
-- The hybrid model is planned for V2; keep current architecture clean
-- When V2 work begins, ensure backward compatibility with existing user-owned credentials
-- Platform connectors will need their own migration path and admin UI
-- Rate limit management for platform connectors requires Redis (V1 dependency)
-- Never hardcode Waygate's OAuth client secrets - use environment variables
-- Compliance certifications should be tracked as structured data, not free-form
+- The hybrid model is NOW ACTIVE - both platform and user-owned credentials are supported
+- Default connector type is 'custom' for backward compatibility
+- When creating connections, validate platformConnectorSlug if connectorType='platform'
+- Platform connector secrets are encrypted with AES-256-GCM - NEVER log decrypted values
+- Use `getPlatformConnectorWithSecretsBySlug()` only in OAuth flow code paths
+- API responses for platform connectors must NEVER include encrypted fields
+- Compliance certifications stored in JSONB - extend schema as needed
+- Environment variables: PLATFORM_SLACK_CLIENT_ID, PLATFORM_SLACK_CLIENT_SECRET, etc.
+- Rate limit management for platform connectors will require Redis (V1+ dependency)
 
 ---
 

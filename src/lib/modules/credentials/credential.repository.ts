@@ -9,7 +9,12 @@
  */
 
 import { prisma } from '@/lib/db/client';
-import { CredentialStatus, CredentialType, IntegrationStatus } from '@prisma/client';
+import {
+  CredentialSource,
+  CredentialStatus,
+  CredentialType,
+  IntegrationStatus,
+} from '@prisma/client';
 
 import type { IntegrationCredential, Prisma } from '@prisma/client';
 
@@ -21,6 +26,7 @@ export interface CreateCredentialInput {
   tenantId: string;
   connectionId?: string; // Optional for multi-app connections
   credentialType: CredentialType;
+  credentialSource?: CredentialSource; // 'platform' or 'user_owned'
   encryptedData: Buffer | Uint8Array;
   encryptedRefreshToken?: Buffer | Uint8Array;
   expiresAt?: Date;
@@ -66,6 +72,7 @@ export async function createCredential(
         tenantId: input.tenantId,
         connectionId: input.connectionId ?? null,
         credentialType: input.credentialType,
+        credentialSource: input.credentialSource ?? CredentialSource.user_owned,
         encryptedData: new Uint8Array(input.encryptedData),
         encryptedRefreshToken: input.encryptedRefreshToken
           ? new Uint8Array(input.encryptedRefreshToken)

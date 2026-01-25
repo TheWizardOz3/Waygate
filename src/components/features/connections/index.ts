@@ -10,3 +10,5 @@ export { ConnectionInfoBanner } from './ConnectionInfoBanner';
 export { CreateConnectionDialog } from './CreateConnectionDialog';
 export { EditConnectionDialog } from './EditConnectionDialog';
 export { DeleteConnectionDialog } from './DeleteConnectionDialog';
+export { PlatformConnectorSelect, CertificationBadge } from './PlatformConnectorSelect';
+export { ConnectorTypeBadge, CredentialSourceBadge } from './ConnectorTypeBadge';

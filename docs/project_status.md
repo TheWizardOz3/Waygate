@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-25 (Multi-App Connections feature COMPLETE - all 9 tasks done)
+**Last Updated**: 2026-01-25 (Hybrid Auth Model feature complete)
 
 ---
 
@@ -60,32 +60,20 @@
 | **Response Validation**        | 2026-01-03      | V0.5 Feature #2 - Zod-based schema validation with strict/warn/lenient modes, drift detection - [Feature Doc](Features/response-validation.md)        |
 | **Basic Field Mapping**        | 2026-01-03      | V0.5 Feature #3 - JSONPath mapping, type coercion, fail-open mode, UI configuration - [Feature Doc](Features/basic-field-mapping.md)                  |
 | **Dashboard Polish & Tagging** | 2026-01-04      | V0.5 Feature #4 - Integration/action tags, tag filters, real dashboard stats, enriched logs - [Feature Doc](Features/dashboard-polish-and-tagging.md) |
+| **Multi-App Connections**      | 2026-01-25      | V0.75 Feature #1 - Connection entity, per-app credential isolation, 9 tasks - [Feature Doc](Features/multi-app-connections.md)                        |
+| **Hybrid Auth Model**          | 2026-01-25      | V0.75 Feature #2 - Platform connectors, one-click OAuth, credential source tracking, 8 tasks - [Feature Doc](Features/hybrid-auth-model.md)           |
 
 ### In Progress
 
-| Feature/Task          | Started    | Notes                                                               |
-| --------------------- | ---------- | ------------------------------------------------------------------- |
-| Multi-App Connections | 2026-01-25 | V0.75 Feature #1 - [Feature Doc](Features/multi-app-connections.md) |
-
-**Multi-App Connections Progress:**
-
-- [x] Task 1: Database Schema & Migration - Connection model, status enum, data migration
-- [x] Task 2: Connection Repository & Service - CRUD operations, business logic, validation
-- [x] Task 3: Connection API Routes - GET/POST /integrations/:id/connections, GET/PATCH/DELETE /connections/:id
-- [x] Task 4: OAuth Flow Updates - Connection-aware OAuth, connect/disconnect endpoints
-- [x] Task 5: Gateway Integration - connectionId in action invocation, credential resolution, logging
-- [x] Task 6: Credential Service Updates - Token refresh with connectionId tracking
-- [x] Task 7: Connection UI - List & Create - ConnectionList, ConnectionCard, CreateConnectionDialog, Connections tab
-- [x] Task 8: Connection UI - Detail & Manage - ConnectionDetail, ConnectionCredentialPanel, EditConnectionDialog
-- [x] Task 9: Backward Compatibility & Migration UI - Auto-create default, ConnectionInfoBanner
+| Feature/Task                   | Started    | Notes                                                                                                  |
+| ------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------ |
+| Continuous Integration Testing | 2026-01-25 | V0.75 Feature #3 - Scheduled health checks - [Feature Doc](Features/continuous-integration-testing.md) |
 
 ### Next Up
 
-| Feature                        | Priority | Notes                                              |
-| ------------------------------ | -------- | -------------------------------------------------- |
-| Hybrid Auth Model              | P1       | V0.75 Feature #2 - Platform connectors             |
-| Continuous Integration Testing | P1       | V0.75 Feature #3 - Scheduled health checks         |
-| Per-App Custom Mappings        | P2       | V0.75 Feature #4 - Per-app field mapping overrides |
+| Feature                 | Priority | Notes                                              |
+| ----------------------- | -------- | -------------------------------------------------- |
+| Per-App Custom Mappings | P2       | V0.75 Feature #4 - Per-app field mapping overrides |
 
 ### Recent Enhancements (Post-MVP)
 
@@ -104,11 +92,9 @@
 
 ### Not Started (V0.75)
 
-| Feature/Task                   | Priority | Notes                                              |
-| ------------------------------ | -------- | -------------------------------------------------- |
-| Hybrid Auth Model              | P1       | Platform connectors, compliance tracking           |
-| Continuous Integration Testing | P1       | Scheduled health checks on all integrations        |
-| Per-App Custom Mappings        | P2       | Consuming apps can define their own field mappings |
+| Feature/Task            | Priority | Notes                                              |
+| ----------------------- | -------- | -------------------------------------------------- |
+| Per-App Custom Mappings | P2       | Consuming apps can define their own field mappings |
 
 ---
 
@@ -149,12 +135,12 @@
 
 ## V0.75 Build Order
 
-| #   | Feature                        | Dependencies     | Complexity | Status  | Notes                                              |
-| --- | ------------------------------ | ---------------- | ---------- | ------- | -------------------------------------------------- |
-| 1   | Multi-App Connections          | V0.5 complete    | HIGH       | ✅ DONE | Connection entity, per-app credential isolation    |
-| 2   | Hybrid Auth Model              | #1               | HIGH       | NEXT    | Platform connectors, compliance tracking           |
-| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | —       | Scheduled health checks on all integrations        |
-| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | —       | Consuming apps can define their own field mappings |
+| #   | Feature                        | Dependencies     | Complexity | Status      | Notes                                              |
+| --- | ------------------------------ | ---------------- | ---------- | ----------- | -------------------------------------------------- |
+| 1   | Multi-App Connections          | V0.5 complete    | HIGH       | ✅ DONE     | Connection entity, per-app credential isolation    |
+| 2   | Hybrid Auth Model              | #1               | HIGH       | ✅ DONE     | Platform connectors, compliance tracking           |
+| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | 🚧 PLANNING | Scheduled health checks on all integrations        |
+| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | —           | Consuming apps can define their own field mappings |
 
 **Rationale:**
 

@@ -8,7 +8,11 @@
  * Never log decrypted credentials.
  */
 
-import { CredentialStatus as CredentialStatusEnum, CredentialType } from '@prisma/client';
+import {
+  CredentialSource,
+  CredentialStatus as CredentialStatusEnum,
+  CredentialType,
+} from '@prisma/client';
 import { encryptJson, decryptJson, EncryptionError } from './encryption';
 import {
   createCredential,
@@ -76,6 +80,7 @@ export interface DecryptedCredential<T extends CredentialData = CredentialData> 
  * @param integrationId - The integration ID
  * @param data - OAuth2 credential data
  * @param connectionId - Optional connection ID for multi-app connections
+ * @param credentialSource - Source of credentials: 'platform' (Waygate's OAuth app) or 'user_owned' (custom)
  */
 export async function storeOAuth2Credential(
   tenantId: string,
@@ -87,7 +92,8 @@ export async function storeOAuth2Credential(
     expiresIn?: number; // seconds
     scopes?: string[];
   },
-  connectionId?: string
+  connectionId?: string,
+  credentialSource: CredentialSource = CredentialSource.user_owned
 ): Promise<IntegrationCredential> {
   // Validate the credential data
   const credentialData: OAuth2CredentialData = {
@@ -124,6 +130,7 @@ export async function storeOAuth2Credential(
     tenantId,
     connectionId,
     credentialType: CredentialType.oauth2_tokens,
+    credentialSource,
     encryptedData,
     encryptedRefreshToken,
     expiresAt,

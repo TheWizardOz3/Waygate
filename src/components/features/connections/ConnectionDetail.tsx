@@ -23,10 +23,12 @@ import {
   Settings2,
   Plug,
   Activity,
+  Zap,
 } from 'lucide-react';
 import { useConnection, useDeleteConnection, useLogs } from '@/hooks';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ConnectionCredentialPanel } from './ConnectionCredentialPanel';
+import { ConnectorTypeBadge } from './ConnectorTypeBadge';
 import { EditConnectionDialog } from './EditConnectionDialog';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
 import { toast } from 'sonner';
@@ -130,6 +132,7 @@ export function ConnectionDetail({
                       Primary
                     </Badge>
                   )}
+                  <ConnectorTypeBadge type={connection.connectorType} size="sm" />
                 </div>
                 <SheetDescription className="font-mono text-xs">{connection.slug}</SheetDescription>
               </div>
@@ -188,6 +191,30 @@ export function ConnectionDetail({
                     </p>
                   </div>
                 )}
+
+                {/* Connector Type */}
+                <div className="space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {connection.connectorType === 'platform' ? (
+                      <Zap className="h-3 w-3" />
+                    ) : (
+                      <Settings2 className="h-3 w-3" />
+                    )}
+                    Connector Type
+                  </p>
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                    <ConnectorTypeBadge
+                      type={connection.connectorType}
+                      size="sm"
+                      showIcon={false}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {connection.connectorType === 'platform'
+                        ? "Using Waygate's verified OAuth app"
+                        : 'Using your own OAuth credentials'}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Connection ID */}
                 <div className="space-y-1.5">

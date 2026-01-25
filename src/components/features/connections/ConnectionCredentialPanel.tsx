@@ -14,10 +14,12 @@ import {
   Unplug,
   Loader2,
   Plug,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
 import { useConnectConnection, useDisconnectConnection } from '@/hooks';
+import { CredentialSourceBadge } from './ConnectorTypeBadge';
 import type { ConnectionResponse } from '@/lib/modules/connections/connection.schemas';
 import type { IntegrationResponse } from '@/lib/modules/integrations/integration.schemas';
 
@@ -38,6 +40,7 @@ interface CredentialApiResponse {
     hasCredentials: boolean;
     status?: string;
     credentialType?: string;
+    credentialSource?: 'platform' | 'user_owned';
     expiresAt?: string | null;
     scopes?: string[];
   };
@@ -48,6 +51,7 @@ interface CredentialStatusData {
   expiresAt?: string;
   scopes?: string[];
   credentialType?: string;
+  credentialSource?: 'platform' | 'user_owned';
 }
 
 export function ConnectionCredentialPanel({
@@ -90,6 +94,7 @@ export function ConnectionCredentialPanel({
             expiresAt: creds.expiresAt || undefined,
             scopes: creds.scopes,
             credentialType: creds.credentialType,
+            credentialSource: creds.credentialSource,
           });
         }
       } catch {
@@ -105,6 +110,8 @@ export function ConnectionCredentialPanel({
   const credentialStatus = credentialData.status;
   const expiresAt = credentialData.expiresAt ? new Date(credentialData.expiresAt) : null;
   const scopes = credentialData.scopes || [];
+  const credentialSource = credentialData.credentialSource;
+  const isPlatformConnection = connection.connectorType === 'platform';
 
   const handleConnect = async () => {
     try {
@@ -235,15 +242,26 @@ export function ConnectionCredentialPanel({
           </span>
         </div>
 
-        {/* Expiration (for OAuth) */}
-        {integration.authType === 'oauth2' && credentialStatus === 'connected' && expiresAt && (
+        {/* Credential Details (for connected OAuth) */}
+        {integration.authType === 'oauth2' && credentialStatus === 'connected' && (
           <div className="space-y-2 rounded-lg bg-muted/50 p-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Expires</span>
-              <span className="font-medium">
-                {expiresAt.toLocaleDateString()} at {expiresAt.toLocaleTimeString()}
-              </span>
-            </div>
+            {/* Credential Source */}
+            {credentialSource && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Source</span>
+                <CredentialSourceBadge source={credentialSource} size="sm" />
+              </div>
+            )}
+            {/* Expiration */}
+            {expiresAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Expires</span>
+                <span className="font-medium">
+                  {expiresAt.toLocaleDateString()} at {expiresAt.toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+            {/* Scopes */}
             {scopes.length > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Scopes</span>
@@ -294,15 +312,25 @@ export function ConnectionCredentialPanel({
               </Button>
             </>
           ) : (
-            <Button onClick={handleConnect} disabled={connectMutation.isPending}>
+            <Button
+              onClick={handleConnect}
+              disabled={connectMutation.isPending}
+              className={isPlatformConnection ? 'bg-violet-600 hover:bg-violet-700' : undefined}
+            >
               {connectMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : isPlatformConnection ? (
+                <Zap className="mr-2 h-4 w-4" />
               ) : integration.authType === 'oauth2' ? (
                 <Shield className="mr-2 h-4 w-4" />
               ) : (
                 <Plug className="mr-2 h-4 w-4" />
               )}
-              {integration.authType === 'oauth2' ? 'Connect with OAuth' : 'Add Credentials'}
+              {isPlatformConnection
+                ? 'Connect with Waygate'
+                : integration.authType === 'oauth2'
+                  ? 'Connect with OAuth'
+                  : 'Add Credentials'}
             </Button>
           )}
         </div>

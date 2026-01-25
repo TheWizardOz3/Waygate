@@ -17,6 +17,14 @@ import { z } from 'zod';
 export const ConnectionStatusSchema = z.enum(['active', 'error', 'disabled']);
 export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
 
+/**
+ * Connector type - determines whether connection uses Waygate's OAuth app or custom credentials
+ * - platform: Uses Waygate's registered OAuth app (one-click connect)
+ * - custom: User provides their own OAuth app credentials
+ */
+export const ConnectorTypeSchema = z.enum(['platform', 'custom']);
+export type ConnectorType = z.infer<typeof ConnectorTypeSchema>;
+
 // =============================================================================
 // Connection CRUD Schemas
 // =============================================================================
@@ -24,17 +32,46 @@ export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
 /**
  * Input for creating a new connection
  */
-export const CreateConnectionInputSchema = z.object({
-  name: z.string().min(1).max(255),
-  slug: z
-    .string()
-    .min(1)
-    .max(100)
-    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
-  baseUrl: z.string().url().optional().nullable(),
-  isPrimary: z.boolean().optional().default(false),
-  metadata: z.record(z.string(), z.unknown()).optional().default({}),
-});
+export const CreateConnectionInputSchema = z
+  .object({
+    name: z.string().min(1).max(255),
+    slug: z
+      .string()
+      .min(1)
+      .max(100)
+      .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
+    baseUrl: z.string().url().optional().nullable(),
+    isPrimary: z.boolean().optional().default(false),
+    connectorType: ConnectorTypeSchema.optional().default('custom'),
+    platformConnectorSlug: z.string().min(1).max(100).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional().default({}),
+  })
+  .refine(
+    (data) => {
+      // If connectorType is 'platform', platformConnectorSlug is required
+      if (data.connectorType === 'platform' && !data.platformConnectorSlug) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "platformConnectorSlug is required when connectorType is 'platform'",
+      path: ['platformConnectorSlug'],
+    }
+  )
+  .refine(
+    (data) => {
+      // If connectorType is 'custom', platformConnectorSlug should not be provided
+      if (data.connectorType === 'custom' && data.platformConnectorSlug) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "platformConnectorSlug should not be provided when connectorType is 'custom'",
+      path: ['platformConnectorSlug'],
+    }
+  );
 
 export type CreateConnectionInput = z.infer<typeof CreateConnectionInputSchema>;
 
@@ -103,6 +140,8 @@ export const ConnectionResponseSchema = z.object({
   slug: z.string(),
   baseUrl: z.string().nullable(),
   isPrimary: z.boolean(),
+  connectorType: ConnectorTypeSchema,
+  platformConnectorId: z.string().uuid().nullable(),
   status: ConnectionStatusSchema,
   metadata: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
@@ -150,6 +189,8 @@ export function toConnectionResponse(connection: {
   slug: string;
   baseUrl: string | null;
   isPrimary: boolean;
+  connectorType: string | null;
+  platformConnectorId: string | null;
   status: string;
   metadata: unknown;
   createdAt: Date;
@@ -163,6 +204,8 @@ export function toConnectionResponse(connection: {
     slug: connection.slug,
     baseUrl: connection.baseUrl,
     isPrimary: connection.isPrimary,
+    connectorType: (connection.connectorType as ConnectorType) ?? 'custom',
+    platformConnectorId: connection.platformConnectorId,
     status: connection.status as ConnectionStatus,
     metadata: (connection.metadata as Record<string, unknown>) ?? {},
     createdAt: connection.createdAt.toISOString(),
@@ -182,4 +225,7 @@ export const ConnectionErrorCodes = {
   NO_CONNECTIONS: 'NO_CONNECTIONS',
   CANNOT_DELETE_PRIMARY: 'CANNOT_DELETE_PRIMARY',
   INTEGRATION_NOT_FOUND: 'INTEGRATION_NOT_FOUND',
+  PLATFORM_CONNECTOR_NOT_FOUND: 'PLATFORM_CONNECTOR_NOT_FOUND',
+  PLATFORM_CONNECTOR_NOT_ACTIVE: 'PLATFORM_CONNECTOR_NOT_ACTIVE',
+  INVALID_CONNECTOR_TYPE: 'INVALID_CONNECTOR_TYPE',
 } as const;

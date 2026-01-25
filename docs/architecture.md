@@ -1067,6 +1067,20 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NODE_ENV=development
 
 # ─────────────────────────────────────────
+# PLATFORM CONNECTORS (Hybrid Auth Model)
+# ─────────────────────────────────────────
+# Waygate's registered OAuth apps for "one-click connect"
+# Leave empty or use placeholders for development
+
+# Slack Platform Connector
+PLATFORM_SLACK_CLIENT_ID=your-slack-client-id
+PLATFORM_SLACK_CLIENT_SECRET=your-slack-client-secret
+
+# Google Platform Connector (requires CASA certification)
+PLATFORM_GOOGLE_CLIENT_ID=your-google-client-id
+PLATFORM_GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# ─────────────────────────────────────────
 # OPTIONAL (V1+)
 # ─────────────────────────────────────────
 # UPSTASH_REDIS_REST_URL=https://xxx.upstash.io

@@ -80,6 +80,25 @@ enum ScrapeJobStatus {
   FAILED
 }
 
+/// Type of connector for a connection (platform-owned vs user-owned)
+enum ConnectorType {
+  platform
+  custom
+}
+
+/// Source of stored credentials (platform connector vs user-owned)
+enum CredentialSource {
+  platform
+  user_owned
+}
+
+/// Status of a platform connector
+enum PlatformConnectorStatus {
+  active
+  suspended
+  deprecated
+}
+
 // =============================================================================
 // MODELS
 // =============================================================================
@@ -136,30 +155,63 @@ model Integration {
   @@map("integrations")
 }
 
-/// Connection - links a consuming app to an integration with its own credentials
-model Connection {
-  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId      String           @map("tenant_id") @db.Uuid
-  integrationId String           @map("integration_id") @db.Uuid
-  name          String           @db.VarChar(255)
-  slug          String           @db.VarChar(100)
-  baseUrl       String?          @map("base_url") @db.Text
-  isPrimary     Boolean          @default(false) @map("is_primary")
-  status        ConnectionStatus @default(active)
-  metadata      Json             @default("{}")
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
+/// Platform-owned OAuth connectors - Waygate's registered OAuth apps with major providers
+model PlatformConnector {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerSlug          String                   @unique @map("provider_slug") @db.VarChar(100)
+  displayName           String                   @map("display_name") @db.VarChar(255)
+  description           String?                  @db.Text
+  logoUrl               String?                  @map("logo_url") @db.Text
+  authType              AuthType                 @map("auth_type")
+  encryptedClientId     Bytes                    @map("encrypted_client_id")
+  encryptedClientSecret Bytes                    @map("encrypted_client_secret")
+  authorizationUrl      String                   @map("authorization_url") @db.Text
+  tokenUrl              String                   @map("token_url") @db.Text
+  defaultScopes         String[]                 @default([]) @map("default_scopes")
+  callbackPath          String                   @map("callback_path") @db.VarChar(255)
+  certifications        Json                     @default("{}") // { casa: { status, tier, expiresAt }, appReview: { status, approvedAt } }
+  rateLimits            Json                     @default("{}") @map("rate_limits") // { requestsPerMinute, shared }
+  status                PlatformConnectorStatus  @default(active)
+  metadata              Json                     @default("{}")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
 
   // Relations
-  tenant      Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  credentials IntegrationCredential[]
-  requestLogs RequestLog[]
+  connections Connection[]
+
+  // Indexes
+  @@index([status], name: "platform_connectors_status_idx")
+  @@map("platform_connectors")
+}
+
+/// Connection - links a consuming app to an integration with its own credentials
+model Connection {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String            @map("tenant_id") @db.Uuid
+  integrationId         String            @map("integration_id") @db.Uuid
+  name                  String            @db.VarChar(255)
+  slug                  String            @db.VarChar(100)
+  baseUrl               String?           @map("base_url") @db.Text
+  isPrimary             Boolean           @default(false) @map("is_primary")
+  connectorType         ConnectorType     @default(custom) @map("connector_type")
+  platformConnectorId   String?           @map("platform_connector_id") @db.Uuid
+  status                ConnectionStatus  @default(active)
+  metadata              Json              @default("{}")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration       Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  platformConnector PlatformConnector?      @relation(fields: [platformConnectorId], references: [id], onDelete: SetNull)
+  credentials       IntegrationCredential[]
+  requestLogs       RequestLog[]
 
   // Indexes
   @@unique([tenantId, integrationId, slug], name: "connections_tenant_integration_slug_idx")
   @@index([tenantId], name: "connections_tenant_id_idx")
   @@index([integrationId], name: "connections_integration_id_idx")
+  @@index([platformConnectorId], name: "connections_platform_connector_id_idx")
   @@index([status], name: "connections_status_idx")
   @@map("connections")
 }
@@ -204,6 +256,7 @@ model IntegrationCredential {
   tenantId              String           @map("tenant_id") @db.Uuid
   connectionId          String?          @map("connection_id") @db.Uuid
   credentialType        CredentialType   @map("credential_type")
+  credentialSource      CredentialSource @default(user_owned) @map("credential_source")
   encryptedData         Bytes            @map("encrypted_data")
   expiresAt             DateTime?        @map("expires_at")
   encryptedRefreshToken Bytes?           @map("encrypted_refresh_token")
@@ -221,6 +274,7 @@ model IntegrationCredential {
   @@index([integrationId], name: "credentials_integration_id_idx")
   @@index([tenantId], name: "credentials_tenant_id_idx")
   @@index([connectionId], name: "credentials_connection_id_idx")
+  @@index([credentialSource], name: "credentials_source_idx")
   @@index([expiresAt], name: "credentials_expires_at_idx")
   @@map("integration_credentials")
 }

@@ -66,3 +66,11 @@ export {
   useDisconnectConnection,
   connectionKeys,
 } from './useConnections';
+
+// Platform connector hooks
+export {
+  usePlatformConnectors,
+  usePlatformConnector,
+  useActivePlatformConnectors,
+  platformConnectorKeys,
+} from './usePlatformConnectors';

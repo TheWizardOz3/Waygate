@@ -29,7 +29,7 @@ vi.mock('@/lib/modules/credentials/encryption', () => ({
 }));
 
 import { prisma } from '@/lib/db/client';
-import { AuthType, CredentialType, CredentialStatus } from '@prisma/client';
+import { AuthType, CredentialType, CredentialStatus, CredentialSource } from '@prisma/client';
 import {
   initiateOAuthConnection,
   getOAuthConnectionStatus,
@@ -288,6 +288,7 @@ describe('OAuth Flow Integration', () => {
         integrationId: mockIntegrationId,
         connectionId: null,
         credentialType: CredentialType.oauth2_tokens,
+        credentialSource: CredentialSource.user_owned,
         encryptedData: new Uint8Array(Buffer.from('encrypted')),
         encryptedRefreshToken: null,
         status: CredentialStatus.active,
@@ -311,6 +312,7 @@ describe('OAuth Flow Integration', () => {
         integrationId: mockIntegrationId,
         connectionId: null,
         credentialType: CredentialType.oauth2_tokens,
+        credentialSource: CredentialSource.user_owned,
         encryptedData: new Uint8Array(Buffer.from('encrypted')),
         encryptedRefreshToken: null,
         status: CredentialStatus.expired,

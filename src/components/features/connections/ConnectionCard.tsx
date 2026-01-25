@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
+import { ConnectorTypeBadge } from './ConnectorTypeBadge';
 import { cn } from '@/lib/utils';
 import type { ConnectionResponse } from '@/lib/modules/connections/connection.schemas';
 
@@ -42,7 +43,7 @@ export function ConnectionCard({
   isSelected,
   className,
 }: ConnectionCardProps) {
-  const { id, name, slug, status, isPrimary, baseUrl, createdAt } = connection;
+  const { id, name, slug, status, isPrimary, connectorType, baseUrl, createdAt } = connection;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only select if we didn't click on an interactive element
@@ -108,6 +109,7 @@ export function ConnectionCard({
                     Primary
                   </Badge>
                 )}
+                <ConnectorTypeBadge type={connectorType} size="sm" />
               </div>
               <p className="font-mono text-xs text-muted-foreground">{slug}</p>
             </div>
