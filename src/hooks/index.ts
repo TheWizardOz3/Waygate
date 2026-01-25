@@ -52,6 +52,26 @@ export {
   mappingKeys,
 } from './useMappings';
 
+// Connection mapping hooks (per-app custom mappings)
+export {
+  useConnectionMappings,
+  useCreateConnectionOverride,
+  useUpdateConnectionOverride,
+  useDeleteConnectionOverride,
+  useResetConnectionMappings,
+  useCopyDefaultsToConnection,
+  usePreviewConnectionMapping,
+  useConnectionOverrideCount,
+  connectionMappingKeys,
+  type ConnectionMappingsResponse,
+  type CreateOverrideInput,
+  type UpdateOverrideInput,
+  type DeleteOverrideInput,
+  type ResetMappingsInput,
+  type CopyDefaultsInput,
+  type PreviewInput,
+} from './useConnectionMappings';
+
 // Tag hooks
 export { useTags, useIntegrationTags, useActionTags, tagKeys } from './useTags';
 

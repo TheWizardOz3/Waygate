@@ -12,38 +12,39 @@
 
 ## Version Index
 
-| Version | Date       | Type       | Summary                                                            |
-| ------- | ---------- | ---------- | ------------------------------------------------------------------ |
-| 0.8.1   | 2026-01-25 | patch      | Continuous Integration Testing - Complete Feature (10/10 Tasks)    |
-| 0.8.0   | 2026-01-25 | minor      | **Hybrid Auth Model - V0.75 Feature #2 complete**                  |
-| 0.7.0   | 2026-01-25 | minor      | Multi-App Connections - V0.75 Feature #1 complete                  |
-| 0.6.2   | 2026-01-05 | patch      | UI Polish - Linear-style design, live data in Overview tab         |
-| 0.6.1   | 2026-01-04 | patch      | AI Scraper reliability fixes - simplified prompts, Gemini 3 tuning |
-| 0.6.0   | 2026-01-04 | minor      | Roadmap restructure - V0.5 complete, new milestone structure       |
-| 0.5.5   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 finalized      |
-| 0.5.4   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 complete       |
-| 0.5.3   | 2026-01-03 | minor      | Basic Field Mapping - V0.5 Feature #3 complete                     |
-| 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                     |
-| 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                      |
-| 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                      |
-| 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors              |
-| 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.)    |
-| 0.1.9   | 2026-01-03 | minor      | Per-credential baseUrl for user-specific APIs (Supabase, etc.)     |
-| 0.1.8   | 2026-01-03 | patch      | Credential saving, endpoint copy, parameter descriptions fixes     |
-| 0.1.7   | 2026-01-03 | minor      | Template-based integration creation for schema-driven APIs         |
-| 0.1.6   | 2026-01-03 | patch      | Smart cache invalidation with wishlist coverage check              |
-| 0.1.5   | 2026-01-03 | patch      | Action tester improvements, auth-less APIs, AI action discovery    |
-| 0.1.4   | 2026-01-03 | patch      | UI polish, specific pages mode, action saves fix                   |
-| 0.1.3   | 2026-01-03 | patch      | Intelligent crawling with LLM-guided page selection                |
-| 0.1.2   | 2026-01-03 | patch      | UX improvements: clickable logo, cards, copy buttons               |
-| 0.1.1   | 2026-01-02 | patch      | Upgrade to Gemini 3.0, improve scraping with default crawl mode    |
-| 0.1.0   | 2026-01-02 | minor      | **MVP Complete!** Basic Configuration UI complete                  |
-| 0.0.8   | 2026-01-02 | prerelease | Gateway API complete                                               |
-| 0.0.7   | 2026-01-02 | prerelease | Token Refresh Management complete                                  |
-| 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                                  |
-| 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                                  |
-| 0.0.1   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)                        |
-| 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup           |
+| Version | Date       | Type       | Summary                                                               |
+| ------- | ---------- | ---------- | --------------------------------------------------------------------- |
+| 0.9.0   | 2026-01-25 | minor      | **Per-App Custom Mappings - V0.75 Feature #4 complete** (11/11 Tasks) |
+| 0.8.1   | 2026-01-25 | patch      | Continuous Integration Testing - Complete Feature (10/10 Tasks)       |
+| 0.8.0   | 2026-01-25 | minor      | **Hybrid Auth Model - V0.75 Feature #2 complete**                     |
+| 0.7.0   | 2026-01-25 | minor      | Multi-App Connections - V0.75 Feature #1 complete                     |
+| 0.6.2   | 2026-01-05 | patch      | UI Polish - Linear-style design, live data in Overview tab            |
+| 0.6.1   | 2026-01-04 | patch      | AI Scraper reliability fixes - simplified prompts, Gemini 3 tuning    |
+| 0.6.0   | 2026-01-04 | minor      | Roadmap restructure - V0.5 complete, new milestone structure          |
+| 0.5.5   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 finalized         |
+| 0.5.4   | 2026-01-04 | minor      | Dashboard Polish & Tagging System - V0.5 Feature #4 complete          |
+| 0.5.3   | 2026-01-03 | minor      | Basic Field Mapping - V0.5 Feature #3 complete                        |
+| 0.5.2   | 2026-01-03 | minor      | Response Validation - V0.5 Feature #2 complete                        |
+| 0.5.1   | 2026-01-03 | minor      | Pagination Handler - V0.5 Feature #1 complete                         |
+| 0.1.12  | 2026-01-03 | patch      | Fix endpoint URL copy and logging UUID issues                         |
+| 0.1.11  | 2026-01-03 | patch      | Fix empty query params causing PostgREST parse errors                 |
+| 0.1.10  | 2026-01-03 | patch      | Intelligent API key defaults for Supabase (apikey header, etc.)       |
+| 0.1.9   | 2026-01-03 | minor      | Per-credential baseUrl for user-specific APIs (Supabase, etc.)        |
+| 0.1.8   | 2026-01-03 | patch      | Credential saving, endpoint copy, parameter descriptions fixes        |
+| 0.1.7   | 2026-01-03 | minor      | Template-based integration creation for schema-driven APIs            |
+| 0.1.6   | 2026-01-03 | patch      | Smart cache invalidation with wishlist coverage check                 |
+| 0.1.5   | 2026-01-03 | patch      | Action tester improvements, auth-less APIs, AI action discovery       |
+| 0.1.4   | 2026-01-03 | patch      | UI polish, specific pages mode, action saves fix                      |
+| 0.1.3   | 2026-01-03 | patch      | Intelligent crawling with LLM-guided page selection                   |
+| 0.1.2   | 2026-01-03 | patch      | UX improvements: clickable logo, cards, copy buttons                  |
+| 0.1.1   | 2026-01-02 | patch      | Upgrade to Gemini 3.0, improve scraping with default crawl mode       |
+| 0.1.0   | 2026-01-02 | minor      | **MVP Complete!** Basic Configuration UI complete                     |
+| 0.0.8   | 2026-01-02 | prerelease | Gateway API complete                                                  |
+| 0.0.7   | 2026-01-02 | prerelease | Token Refresh Management complete                                     |
+| 0.0.6   | 2026-01-02 | prerelease | Action Registry & Schema complete                                     |
+| 0.2.0   | 2026-01-02 | prerelease | AI Documentation Scraper complete                                     |
+| 0.0.1   | 2026-01-02 | prerelease | Core infrastructure (Auth + DB + Execution)                           |
+| 0.0.0   | 2026-01-01 | prerelease | Pre-build baseline with documentation and workflow setup              |
 
 **Types:** `major` | `minor` | `patch` | `prerelease`
 
@@ -70,6 +71,32 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.9.0] - 2026-01-25
+
+### Added
+
+- **Per-App Custom Mappings - Complete** (V0.75 Feature #4): Full implementation of connection-level field mapping overrides and LLM Response Preamble functionality
+  - Database schema: Added `connectionId` to `FieldMapping` model with cascade delete, unique constraints for per-connection mappings
+  - Database schema: Added `preambleTemplate` to `Connection` model for LLM-friendly response formatting
+  - Repository layer: Connection-aware mapping queries, caching, and CRUD operations
+  - Service layer: Mapping resolution logic, connection state management, override operations
+  - API endpoints: CRUD for connection mappings, preview, copy defaults, reset operations
+  - Gateway integration: Connection-specific mapping resolution in action invocation pipeline
+  - Preamble module: Template interpolation with variables ({integration_name}, {action_name}, {result_count}, etc.)
+  - React hooks: useConnectionMappings, useCreateConnectionOverride, useDeleteConnectionOverride, useCopyDefaultsToConnection, useConnectionOverrideCount
+  - UI components: ConnectionMappingList, ConnectionMappingCard, MappingInheritanceBadge, OverrideMappingDialog, ResetMappingsDialog
+  - Preamble UI: PreambleTemplateInput with template editor, variable badges, live preview, and validation
+  - Integration: Connection detail panel with Field Mappings section and LLM Response Format section
+  - Action mapping panel: Badge indicator showing connections with overrides
+
+### Tests
+
+- Unit tests for preamble module (40 tests): interpolation, validation, result count calculation, apply logic
+- Unit tests for connection mapping resolution logic (11 tests): merge behavior, override precedence, direction handling
+- Build verification: Successful production build, no linting errors, TypeScript type checking passes
 
 ---
 

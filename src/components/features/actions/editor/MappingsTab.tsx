@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, ArrowRight, Loader2, Info } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Loader2, Info, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +39,13 @@ interface MappingsTabProps {
 }
 
 export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
-  const { data: mappingsData, isLoading, refetch } = useMappings(actionId, integrationId);
+  const {
+    data: mappingsData,
+    isLoading,
+    refetch,
+  } = useMappings(actionId, integrationId, {
+    includeStats: true,
+  });
   const {
     data: config,
     mutateAsync: updateConfig,
@@ -47,6 +53,8 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
   } = useMappingConfig(actionId, integrationId);
 
   const mappings = mappingsData?.mappings ?? [];
+  const stats = mappingsData?.stats;
+  const connectionsWithOverrides = stats?.connectionsWithOverrides ?? 0;
   const enabled = config?.enabled ?? false;
   const failureMode = config?.failureMode ?? 'passthrough';
 
@@ -90,11 +98,35 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
               Transform fields between your app and the external API using JSONPath
             </CardDescription>
           </div>
-          <Switch
-            checked={enabled}
-            onCheckedChange={handleToggleEnabled}
-            disabled={configPending}
-          />
+          <div className="flex items-center gap-3">
+            {/* Connection Overrides Indicator */}
+            {connectionsWithOverrides > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="gap-1.5 border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                  >
+                    <Users className="h-3 w-3" />
+                    {connectionsWithOverrides} connection{connectionsWithOverrides !== 1 ? 's' : ''}{' '}
+                    with overrides
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">
+                    {connectionsWithOverrides} connection
+                    {connectionsWithOverrides !== 1 ? 's have' : ' has'} custom mapping overrides.
+                    View connection details to manage per-app mappings.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <Switch
+              checked={enabled}
+              onCheckedChange={handleToggleEnabled}
+              disabled={configPending}
+            />
+          </div>
         </div>
       </CardHeader>
 

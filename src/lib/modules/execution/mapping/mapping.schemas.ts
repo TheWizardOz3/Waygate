@@ -448,3 +448,103 @@ export function shouldSkipMapping(
 
   return false;
 }
+
+// =============================================================================
+// Connection-Level Mapping Types (Per-App Custom Mappings)
+// =============================================================================
+
+/**
+ * Source of a mapping in resolution
+ * - default: Action-level default mapping (connectionId = null)
+ * - connection: Connection-specific override
+ */
+export const MappingSourceSchema = z.enum(['default', 'connection']);
+export type MappingSource = z.infer<typeof MappingSourceSchema>;
+
+/**
+ * Extended field mapping with connection context
+ */
+export const FieldMappingWithConnectionSchema = FieldMappingSchema.extend({
+  /** Connection ID (null for action-level defaults) */
+  connectionId: z.string().uuid().nullable().optional(),
+});
+export type FieldMappingWithConnection = z.infer<typeof FieldMappingWithConnectionSchema>;
+
+/**
+ * A resolved mapping with inheritance information
+ */
+export const ResolvedMappingSchema = z.object({
+  /** The mapping definition */
+  mapping: FieldMappingSchema,
+
+  /** Where the mapping came from */
+  source: MappingSourceSchema,
+
+  /** Connection ID if source is 'connection' */
+  connectionId: z.string().uuid().nullable().optional(),
+
+  /** Whether this overrides a default mapping */
+  overridden: z.boolean().default(false),
+
+  /** The default mapping this overrides (if overridden) */
+  defaultMapping: FieldMappingSchema.optional(),
+});
+export type ResolvedMapping = z.infer<typeof ResolvedMappingSchema>;
+
+/**
+ * Create connection mapping override request
+ */
+export const CreateConnectionMappingSchema = z.object({
+  /** Action to create override for */
+  actionId: z.string().uuid(),
+
+  /** JSONPath to source field */
+  sourcePath: z.string().min(1, 'Source path is required'),
+
+  /** JSONPath to target field */
+  targetPath: z.string().min(1, 'Target path is required'),
+
+  /** Direction of mapping (input or output) */
+  direction: MappingDirectionSchema,
+
+  /** Transform configuration */
+  transformConfig: TransformConfigSchema.optional(),
+});
+export type CreateConnectionMapping = z.infer<typeof CreateConnectionMappingSchema>;
+
+/**
+ * Update connection mapping override request
+ */
+export const UpdateConnectionMappingSchema = z.object({
+  /** New target path */
+  targetPath: z.string().min(1).optional(),
+
+  /** New transform configuration */
+  transformConfig: TransformConfigSchema.partial().optional(),
+});
+export type UpdateConnectionMapping = z.infer<typeof UpdateConnectionMappingSchema>;
+
+/**
+ * Connection mapping state for an action
+ * Shows all mappings with inheritance information
+ */
+export const ConnectionMappingStateSchema = z.object({
+  /** Action ID */
+  actionId: z.string().uuid(),
+
+  /** Connection ID */
+  connectionId: z.string().uuid(),
+
+  /** All resolved mappings (defaults + overrides merged) */
+  mappings: z.array(ResolvedMappingSchema),
+
+  /** Mapping configuration */
+  config: MappingConfigSchema,
+
+  /** Number of default mappings being used */
+  defaultsCount: z.number().int().min(0),
+
+  /** Number of connection-specific overrides */
+  overridesCount: z.number().int().min(0),
+});
+export type ConnectionMappingState = z.infer<typeof ConnectionMappingStateSchema>;

@@ -70,6 +70,7 @@ import {
   type MappingResult,
   type FullMappingResult,
 } from '../execution/mapping/server';
+import { applyPreamble, type PreambleResult } from '../execution/preamble';
 import { resolveConnection } from '../connections';
 
 // =============================================================================
@@ -186,6 +187,7 @@ export async function invokeAction(
     context.connectionId = connection.id;
 
     // 2. Apply INPUT mapping (transform request params before sending)
+    // Uses connection-specific mapping overrides if available
     let inputMappingResult: FullMappingResult | undefined;
     let mappedInput: Record<string, unknown> = input;
 
@@ -193,6 +195,7 @@ export async function invokeAction(
       inputMappingResult = await mappingService.applyInputMapping(input, {
         actionId: action.id,
         tenantId,
+        connectionId: connection.id, // Use resolved connection for per-app mappings
         requestOptions: options.mapping,
       });
       mappedInput = inputMappingResult.mappedInput as Record<string, unknown>;
@@ -241,6 +244,7 @@ export async function invokeAction(
     }
 
     // 8. Apply OUTPUT mapping (transform response data after validation)
+    // Uses connection-specific mapping overrides if available
     let outputMappingResult: MappingResult | undefined;
     let finalResponseData = executionResult.data;
 
@@ -251,6 +255,7 @@ export async function invokeAction(
         outputMappingResult = await mappingService.applyOutputMapping(dataToMap, {
           actionId: action.id,
           tenantId,
+          connectionId: connection.id, // Use resolved connection for per-app mappings
           requestOptions: options.mapping,
         });
         finalResponseData = outputMappingResult.data;
@@ -260,7 +265,24 @@ export async function invokeAction(
       }
     }
 
-    // 9. Log the request/response (with connection ID for multi-app tracking)
+    // 9. Apply LLM Response Preamble (if configured on connection)
+    // Preamble is applied AFTER field mappings so it describes the final data shape
+    let preambleResult: PreambleResult | undefined;
+    if (executionResult.success && connection.preambleTemplate) {
+      preambleResult = applyPreamble(
+        connection.preambleTemplate,
+        {
+          integrationName: integration.name,
+          integrationSlug: integration.slug,
+          actionName: action.name,
+          actionSlug: action.slug,
+          connectionName: connection.name,
+        },
+        finalResponseData
+      );
+    }
+
+    // 10. Log the request/response (with connection ID for multi-app tracking)
     await logInvocation(
       context,
       integration.id,
@@ -271,7 +293,7 @@ export async function invokeAction(
       executionResult
     );
 
-    // 10. Format and return response
+    // 11. Format and return response
     if (executionResult.success) {
       return formatSuccessResponse(
         requestId,
@@ -279,7 +301,8 @@ export async function invokeAction(
         validationResult,
         inputMappingResult,
         outputMappingResult,
-        finalResponseData
+        finalResponseData,
+        preambleResult
       );
     } else {
       return formatExecutionErrorResponse(requestId, executionResult);
@@ -764,7 +787,8 @@ function formatSuccessResponse(
   validationResult?: ValidateResponseResult,
   inputMappingResult?: FullMappingResult,
   outputMappingResult?: MappingResult,
-  finalData?: unknown
+  finalData?: unknown,
+  preambleResult?: PreambleResult
 ): GatewaySuccessResponse {
   // Use final mapped data, or validated data, or raw data
   const responseData = finalData ?? validationResult?.data ?? result.data;
@@ -812,7 +836,8 @@ function formatSuccessResponse(
     };
   }
 
-  return {
+  // Build the response object
+  const response: GatewaySuccessResponse = {
     success: true,
     data: responseData,
     meta: {
@@ -828,6 +853,13 @@ function formatSuccessResponse(
       mapping: mappingMeta,
     },
   };
+
+  // Add preamble context if applied (for LLM-friendly responses)
+  if (preambleResult?.applied && preambleResult.context) {
+    response.context = preambleResult.context;
+  }
+
+  return response;
 }
 
 /**

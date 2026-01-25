@@ -16,3 +16,13 @@ export { EditConnectionDialog } from './EditConnectionDialog';
 export { DeleteConnectionDialog } from './DeleteConnectionDialog';
 export { PlatformConnectorSelect, CertificationBadge } from './PlatformConnectorSelect';
 export { ConnectorTypeBadge, CredentialSourceBadge } from './ConnectorTypeBadge';
+
+// Connection Mappings
+export {
+  ConnectionMappingList,
+  ConnectionMappingCard,
+  MappingInheritanceBadge,
+  OverrideMappingDialog,
+  ResetMappingsDialog,
+  PreambleTemplateInput,
+} from './mappings';

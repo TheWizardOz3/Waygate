@@ -212,6 +212,18 @@ export type ValidationMetadata = z.infer<typeof ValidationMetadataSchema>;
 // =============================================================================
 
 /**
+ * Mapping source for connection-level mapping stats
+ */
+export const MappingSourceStatsSchema = z.object({
+  /** Number of mappings from action-level defaults */
+  fromDefaults: z.number().int().min(0),
+  /** Number of mappings from connection-specific overrides */
+  fromConnectionOverrides: z.number().int().min(0),
+});
+
+export type MappingSourceStats = z.infer<typeof MappingSourceStatsSchema>;
+
+/**
  * Mapping metadata included in responses when field mapping is configured
  */
 export const MappingMetadataSchema = z.object({
@@ -235,6 +247,8 @@ export const MappingMetadataSchema = z.object({
   errors: z.array(MappingErrorSchema).optional(),
   /** Failure mode used */
   failureMode: FailureModeSchema,
+  /** Connection-level mapping resolution stats (only present when using per-app mappings) */
+  connectionResolution: MappingSourceStatsSchema.optional(),
 });
 
 export type MappingMetadata = z.infer<typeof MappingMetadataSchema>;
@@ -272,6 +286,12 @@ export type ResponseMeta = z.infer<typeof ResponseMetaSchema>;
  */
 export const GatewaySuccessResponseSchema = z.object({
   success: z.literal(true),
+  /**
+   * LLM-friendly context string describing the response data.
+   * Only present when the connection has a preamble template configured.
+   * Example: "The Search Contacts results from Salesforce are:"
+   */
+  context: z.string().optional(),
   /** Response data from the external API */
   data: z.unknown(),
   /** Response metadata with execution metrics */

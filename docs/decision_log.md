@@ -39,6 +39,8 @@
 | ADR-023 | 2026-01-04 | arch     | active | Simplified flat-schema prompts for Gemini endpoint extraction |
 | ADR-024 | 2026-01-25 | arch     | active | Multi-App Connections with Connection entity                  |
 | ADR-025 | 2026-01-25 | arch     | active | Tiered health check system for API monitoring                 |
+| ADR-026 | 2026-01-25 | arch     | active | Per-app custom mappings with inheritance model                |
+| ADR-027 | 2026-01-25 | arch     | active | LLM response preamble as optional wrapper                     |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -139,6 +141,107 @@ When working with credentials:
 - Connection resolution happens in `gateway.service.ts` via `resolveConnection()`
 - Use `ensureDefaultConnection()` or `getDefaultConnection()` for backward-compatible access
 - Never require `connectionId` - always provide fallback to default
+
+---
+
+### ADR-027: LLM Response Preamble as Optional Wrapper
+
+**Date:** 2026-01-25 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+LLM-powered applications consuming API responses often need natural language context to interpret JSON data effectively. Users requested a way to prepend contextual text to responses like "The search results from Salesforce are:" to improve LLM comprehension.
+
+#### Decision
+
+1. **Opt-In Wrapper**: Added `preambleTemplate` field to Connection model - when null, responses return raw JSON; when set, responses include a `context` string field.
+
+2. **Template Variables**: Support dynamic placeholders: `{integration_name}`, `{action_name}`, `{connection_name}`, `{result_count}`, etc.
+
+3. **Processing Order**: Preamble applied AFTER field mappings, so it describes the transformed data shape.
+
+4. **Response Format**: When preamble is configured, successful responses include:
+
+   ```json
+   {
+     "success": true,
+     "context": "The Search Contacts results from Salesforce (42 items):",
+     "data": { ... }
+   }
+   ```
+
+5. **Validation**: Invalid template variables are left as literal text (fail-safe, not fail-hard).
+
+#### Rationale
+
+- **Opt-in over default**: Raw JSON is the safest default; extra wrapping should be explicit
+- **After mapping**: Describing pre-mapped fields would confuse the LLM; preamble should match what the app actually receives
+- **Connection-scoped**: Different apps have different LLM requirements; per-connection config allows granular control
+- **Template vs. static**: Templates provide flexibility without complex configuration UI
+
+#### Files
+
+- `src/lib/modules/execution/preamble/` - Core interpolation logic
+- `prisma/schema.prisma` - `preambleTemplate` on Connection model
+- `src/lib/modules/gateway/gateway.service.ts` - Pipeline integration
+- `src/components/features/connections/mappings/PreambleTemplateInput.tsx` - UI component
+
+#### AI Instructions
+
+- When building responses, check `connection.preambleTemplate` - if set, wrap response with `context` field
+- Use `interpolatePreamble()` from `@/lib/modules/execution/preamble` for template processing
+- `calculateResultCount()` detects arrays in common response shapes (items, results, data, records)
+- Preamble logic should NEVER throw - invalid templates should fail open
+
+---
+
+### ADR-026: Per-App Custom Mappings with Inheritance Model
+
+**Date:** 2026-01-25 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+Different consuming applications need different data shapes from the same API action. The basic field mapping feature (V0.5) only supported action-level defaults, meaning all apps received identically transformed responses.
+
+#### Decision
+
+1. **Connection-Level Overrides**: Added optional `connectionId` to FieldMapping model, enabling per-connection mappings.
+
+2. **Inheritance Model**: Mappings with `connectionId = null` are "action-level defaults"; mappings with `connectionId` are "connection overrides" that take precedence.
+
+3. **Merge Logic**: When resolving mappings for a connection:
+   - Start with all action-level defaults
+   - For each connection override, replace the matching default (by sourcePath + direction)
+   - Connection-only mappings (no matching default) are included as additions
+
+4. **Unique Constraint**: `(actionId, connectionId, sourcePath, direction)` prevents duplicate mappings at each level.
+
+5. **Cascade Delete**: Connection deletion cascades to its mappings (no orphans).
+
+6. **UI Visualization**: Mappings show "Inherited" or "Override" badges to clarify origin.
+
+#### Rationale
+
+- **Inheritance over copy**: Defaults propagate automatically; overrides are explicit deviations
+- **Direction as key component**: Input and output mappings for the same path are independent override targets
+- **Additive overrides**: Connections can add new mappings without replacing all defaults
+- **Explicit over implicit**: Connection-level mappings don't magically appear; users must create them
+
+#### Files
+
+- `prisma/schema.prisma` - `connectionId` on FieldMapping
+- `src/lib/modules/execution/mapping/mapping.repository.ts` - `getResolvedMappings()`, cache updates
+- `src/lib/modules/execution/mapping/mapping.service.ts` - `resolveMappings()`, override CRUD
+- `src/app/api/v1/connections/[id]/mappings/` - API endpoints
+- `src/components/features/connections/mappings/` - UI components
+
+#### AI Instructions
+
+- When querying mappings, always consider if a `connectionId` should be used for resolution
+- `getResolvedMappings(actionId, connectionId)` returns merged defaults + overrides
+- `getMappingsByConnection(actionId, connectionId)` returns ONLY overrides
+- In gateway pipeline, pass `connectionId` to `applyInputMapping()` and `applyOutputMapping()`
+- Cache invalidation must propagate to connection-specific caches when defaults change
 
 ---
 

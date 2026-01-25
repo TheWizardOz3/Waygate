@@ -46,6 +46,7 @@ export interface UpdateConnectionDbInput {
   platformConnectorId?: string | null;
   status?: ConnectionStatus;
   metadata?: Prisma.InputJsonValue;
+  preambleTemplate?: string | null;
 }
 
 /**
@@ -402,6 +403,7 @@ export async function updateConnection(
   }
   if (input.status !== undefined) data.status = input.status;
   if (input.metadata !== undefined) data.metadata = input.metadata;
+  if (input.preambleTemplate !== undefined) data.preambleTemplate = input.preambleTemplate;
 
   return prisma.connection.update({
     where: { id },

@@ -247,6 +247,9 @@ model Connection {
   lastFullScanAt          DateTime?         @map("last_full_scan_at")
   healthCheckTestActionId String?           @map("health_check_test_action_id") @db.Uuid
 
+  // LLM Response Preamble
+  preambleTemplate        String?           @map("preamble_template") @db.Text
+
   // Relations
   tenant                Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   integration           Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
@@ -255,6 +258,7 @@ model Connection {
   credentials           IntegrationCredential[]
   requestLogs           RequestLog[]
   healthChecks          HealthCheck[]
+  fieldMappings         FieldMapping[]
 
   // Indexes
   @@unique([tenantId, integrationId, slug], name: "connections_tenant_integration_slug_idx")
@@ -332,22 +336,31 @@ model IntegrationCredential {
 }
 
 /// Field transformation configuration between Waygate and consuming apps
+/// - connectionId = null: Action-level default mapping (applies to all connections)
+/// - connectionId set: Connection-specific override (overrides default for that connection)
 model FieldMapping {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   actionId        String           @map("action_id") @db.Uuid
   tenantId        String?          @map("tenant_id") @db.Uuid
+  connectionId    String?          @map("connection_id") @db.Uuid
   sourcePath      String           @map("source_path") @db.VarChar(255)
   targetPath      String           @map("target_path") @db.VarChar(255)
   transformConfig Json?            @map("transform_config")
   direction       MappingDirection
   createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  action Action  @relation(fields: [actionId], references: [id], onDelete: Cascade)
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  action     Action      @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  tenant     Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connection Connection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
-  // Indexes
+  // Indexes and constraints
+  // Unique constraint: one mapping per (action, connection, sourcePath, direction)
+  // This prevents duplicate mappings for the same source field in the same context
+  @@unique([actionId, connectionId, sourcePath, direction], name: "field_mappings_unique_idx")
   @@index([actionId, tenantId], name: "mappings_action_tenant_idx")
+  @@index([actionId, connectionId], name: "mappings_action_connection_idx")
   @@map("field_mappings")
 }
 

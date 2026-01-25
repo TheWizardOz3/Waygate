@@ -20,6 +20,7 @@ import {
   deleteConnection,
   ConnectionError,
 } from '@/lib/modules/connections';
+import { validatePreambleTemplate } from '@/lib/modules/execution/preamble';
 
 /**
  * Extract connection ID from URL path
@@ -149,6 +150,39 @@ export const PATCH = withApiAuth(async (request: NextRequest, { tenant }) => {
     }
 
     const body = await request.json();
+
+    // Validate preamble template if provided
+    if (body.preambleTemplate !== undefined && body.preambleTemplate !== null) {
+      const invalidVars = validatePreambleTemplate(body.preambleTemplate);
+      if (invalidVars.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Invalid template variables: ${invalidVars.join(', ')}`,
+              details: {
+                invalidVariables: invalidVars,
+                validVariables: [
+                  'integration_name',
+                  'integration_slug',
+                  'action_name',
+                  'action_slug',
+                  'connection_name',
+                  'result_count',
+                ],
+              },
+              suggestedResolution: {
+                action: 'RETRY_WITH_MODIFIED_INPUT',
+                description: `Use only valid template variables: {integration_name}, {action_name}, {connection_name}, etc.`,
+                retryable: true,
+              },
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const connection = await updateConnection(tenant.id, connectionId, body);
 
@@ -291,6 +325,8 @@ function getErrorDescription(code: string): string {
       return 'This connection is currently disabled';
     case 'CANNOT_DELETE_PRIMARY':
       return 'Cannot delete the last connection for an integration';
+    case 'VALIDATION_ERROR':
+      return 'The request data failed validation';
     default:
       return 'An error occurred while processing the connection request';
   }

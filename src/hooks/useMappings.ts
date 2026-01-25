@@ -32,9 +32,15 @@ export const mappingKeys = {
 // Types
 // =============================================================================
 
+interface MappingStats {
+  defaultMappingsCount: number;
+  connectionsWithOverrides: number;
+}
+
 interface MappingsResponse {
   mappings: FieldMapping[];
   config?: MappingConfig;
+  stats?: MappingStats;
 }
 
 // =============================================================================
@@ -43,17 +49,27 @@ interface MappingsResponse {
 
 /**
  * Fetch all mappings for an action
+ * @param includeStats - Whether to include connection override stats
  */
-export function useMappings(actionId: string | undefined, integrationId: string | undefined) {
+export function useMappings(
+  actionId: string | undefined,
+  integrationId: string | undefined,
+  options?: { includeStats?: boolean }
+) {
+  const includeStats = options?.includeStats ?? false;
   return useQuery({
-    queryKey: mappingKeys.list(actionId ?? ''),
+    queryKey: [...mappingKeys.list(actionId ?? ''), { includeStats }] as const,
     queryFn: async (): Promise<MappingsResponse> => {
       if (!actionId || !integrationId) {
         return { mappings: [] };
       }
       // apiClient already unwraps the `data` property from API responses
+      const params = new URLSearchParams({
+        includeConfig: 'true',
+        ...(includeStats && { includeStats: 'true' }),
+      });
       return apiClient.get<MappingsResponse>(
-        `/integrations/${integrationId}/actions/${actionId}/mappings?includeConfig=true`
+        `/integrations/${integrationId}/actions/${actionId}/mappings?${params.toString()}`
       );
     },
     enabled: !!actionId && !!integrationId,

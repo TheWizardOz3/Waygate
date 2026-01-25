@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-25 (Per-App Custom Mappings planning started)
+**Last Updated**: 2026-01-25 (Per-App Custom Mappings COMPLETE - V0.75 milestone finished)
 
 ---
 
@@ -63,18 +63,19 @@
 | **Multi-App Connections**          | 2026-01-25      | V0.75 Feature #1 - Connection entity, per-app credential isolation, 9 tasks - [Feature Doc](Features/multi-app-connections.md)                        |
 | **Hybrid Auth Model**              | 2026-01-25      | V0.75 Feature #2 - Platform connectors, one-click OAuth, credential source tracking, 8 tasks - [Feature Doc](Features/hybrid-auth-model.md)           |
 | **Continuous Integration Testing** | 2026-01-25      | V0.75 Feature #3 - Scheduled health checks, cron jobs, health dashboard, 10 tasks - [Feature Doc](Features/continuous-integration-testing.md)         |
+| **Per-App Custom Mappings**        | 2026-01-25      | V0.75 Feature #4 - Connection-level mapping overrides, LLM response preamble, 11 tasks, 51 tests - [Feature Doc](Features/per-app-custom-mappings.md) |
 
 ### In Progress
 
-| Feature/Task            | Started    | Notes                                                                                                            |
-| ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| Per-App Custom Mappings | 2026-01-25 | V0.75 Feature #4 - Connection-level field mapping overrides - [Feature Doc](Features/per-app-custom-mappings.md) |
+| Feature/Task | Started | Notes                                    |
+| ------------ | ------- | ---------------------------------------- |
+| —            | —       | V0.75 milestone complete! Planning V1.0. |
 
 ### Next Up
 
-| Feature | Priority | Notes                                              |
-| ------- | -------- | -------------------------------------------------- |
-| —       | —        | V0.75 scope complete after Per-App Custom Mappings |
+| Feature       | Priority | Notes                                   |
+| ------------- | -------- | --------------------------------------- |
+| V1.0 Planning | High     | Review V1.0 scope and define priorities |
 
 ### Recent Enhancements (Post-MVP)
 

@@ -11,9 +11,11 @@
 
 ## 1. Overview
 
-### 1.1 User Story
+### 1.1 User Stories
 
 > As a developer with multiple consuming apps connected to the same integration, I want each app to have its own field mapping configuration, so that different apps can receive data in their preferred shapes without affecting each other.
+
+> As a developer building LLM-powered applications, I want to configure a contextual preamble for API responses, so that my AI agent receives data with human-readable context (e.g., "The search results from Salesforce are: {...}").
 
 ### 1.2 Problem Statement
 
@@ -23,18 +25,20 @@ Currently, field mappings are defined at the action level and apply to all consu
 2. **Breaking changes** - Updating a mapping affects all consuming apps simultaneously
 3. **Legacy compatibility** - New apps can't adopt cleaner data shapes without breaking old apps
 4. **LLM integration variance** - Different AI agents may need data structured differently for their tool schemas
+5. **Raw JSON lacks context** - LLM-powered apps receive raw API responses without understanding what the data represents, making it harder for agents to interpret results
 
-With Multi-App Connections now in place, we need per-connection mapping overrides so each consuming app can customize how data flows to/from it.
+With Multi-App Connections now in place, we need per-connection customization so each consuming app can control both the **shape** of data (field mappings) and the **presentation** of data (response formatting for LLMs).
 
 ### 1.3 Solution Summary
 
-Extend the existing Field Mapping system to support **Connection-level overrides**:
+Extend the existing Field Mapping system to support **Connection-level customization**:
 
 1. **Default mappings** - Action-level mappings remain the baseline (existing behavior)
 2. **Connection overrides** - Each Connection can define its own mappings that override or extend the defaults
 3. **Merge strategy** - Connection mappings take precedence; defaults apply where no override exists
 4. **UI management** - Configure per-connection mappings from the Connection detail panel
 5. **Clear inheritance** - Indicate which mappings are inherited vs overridden
+6. **LLM Response Preamble** - Optional contextual prefix for responses, helping AI agents understand what data they received
 
 ```
 Action: slack.getUser
@@ -45,8 +49,12 @@ Action: slack.getUser
 ├── Connection: "App A - Production"
 │   └── (uses defaults, no overrides)
 │
-└── Connection: "App B - Legacy"
-    └── Override: $.profile.email → $.user_email  ← Different target path
+├── Connection: "App B - Legacy"
+│   └── Override: $.profile.email → $.user_email  ← Different target path
+│
+└── Connection: "AI Agent App"
+    ├── (uses default mappings)
+    └── Preamble: "The user profile from Slack is:"  ← LLM-friendly context
 ```
 
 ### 1.4 Design Philosophy
@@ -55,6 +63,7 @@ Action: slack.getUser
 - **Non-destructive** - Connection mappings don't affect the action defaults or other connections
 - **Explicit over implicit** - Clear indicators when a mapping is overridden vs inherited
 - **Backward compatible** - Existing mappings continue working unchanged
+- **LLM-first optional** - Response preambles are opt-in; traditional apps get raw JSON by default
 
 ---
 
@@ -62,18 +71,23 @@ Action: slack.getUser
 
 ### 2.1 Functional Requirements
 
-| ID    | Requirement                                                  | Priority |
-| ----- | ------------------------------------------------------------ | -------- |
-| FR-1  | Add connectionId to FieldMapping for connection-level scope  | P0       |
-| FR-2  | Connection mappings override action-level defaults           | P0       |
-| FR-3  | Null connectionId = action-level default (existing behavior) | P0       |
-| FR-4  | Merged mappings applied during action invocation             | P0       |
-| FR-5  | CRUD API for connection-level mappings                       | P0       |
-| FR-6  | UI to view inherited vs overridden mappings per connection   | P0       |
-| FR-7  | UI to add/edit/remove connection-specific overrides          | P0       |
-| FR-8  | Mapping preview respects connection context                  | P1       |
-| FR-9  | Copy mappings from defaults or another connection            | P2       |
-| FR-10 | Bulk reset connection to use defaults (remove all overrides) | P2       |
+| ID    | Requirement                                                                    | Priority |
+| ----- | ------------------------------------------------------------------------------ | -------- |
+| FR-1  | Add connectionId to FieldMapping for connection-level scope                    | P0       |
+| FR-2  | Connection mappings override action-level defaults                             | P0       |
+| FR-3  | Null connectionId = action-level default (existing behavior)                   | P0       |
+| FR-4  | Merged mappings applied during action invocation                               | P0       |
+| FR-5  | CRUD API for connection-level mappings                                         | P0       |
+| FR-6  | UI to view inherited vs overridden mappings per connection                     | P0       |
+| FR-7  | UI to add/edit/remove connection-specific overrides                            | P0       |
+| FR-8  | Mapping preview respects connection context                                    | P1       |
+| FR-9  | Copy mappings from defaults or another connection                              | P2       |
+| FR-10 | Bulk reset connection to use defaults (remove all overrides)                   | P2       |
+| FR-11 | Connection-level response preamble template configuration                      | P1       |
+| FR-12 | Preamble supports template variables ({integration_name}, {action_name}, etc.) | P1       |
+| FR-13 | Preamble wraps response in structured format (context + data)                  | P1       |
+| FR-14 | Preamble is opt-in; disabled by default (raw JSON)                             | P0       |
+| FR-15 | UI to configure preamble template per connection                               | P1       |
 
 ### 2.2 Non-Functional Requirements
 
@@ -85,6 +99,8 @@ Action: slack.getUser
 
 ### 2.3 Acceptance Criteria
 
+**Field Mapping Overrides:**
+
 1. **AC-1:** Given action with default mapping `$.email → $.userEmail`, and connection override `$.email → $.contactEmail`, invoking with that connection returns `{ contactEmail: "..." }`
 2. **AC-2:** Given action with default mapping and connection without overrides, connection receives default-mapped data
 3. **AC-3:** Given connection with partial overrides, unoverridden defaults still apply
@@ -93,6 +109,14 @@ Action: slack.getUser
 6. **AC-6:** Mapping preview with connectionId shows connection-specific results
 7. **AC-7:** Deleting a connection override reverts to using the default
 8. **AC-8:** Existing integrations without connections continue working unchanged
+
+**LLM Response Preamble:**
+
+9. **AC-9:** Given preamble template `"The {action_name} results from {integration_name}:"`, response includes interpolated context string
+10. **AC-10:** Given preamble enabled, response format is `{ context: "...", data: {...}, meta: {...} }`
+11. **AC-11:** Given no preamble configured (default), response is raw JSON (backward compatible)
+12. **AC-12:** Template variables `{integration_name}`, `{action_name}`, `{connection_name}` interpolate correctly
+13. **AC-13:** Preamble is applied after field mappings (describes final data shape)
 
 ---
 
@@ -302,6 +326,127 @@ response.mapping = {
 };
 ```
 
+### 3.8 LLM Response Preamble
+
+#### Data Model
+
+Add response formatting configuration to the Connection model:
+
+```typescript
+// Connection model extension (in metadata or dedicated field)
+interface ConnectionResponseFormat {
+  preambleTemplate?: string; // e.g., "The {action_name} results from {integration_name}:"
+}
+
+// Stored in Connection.metadata.responseFormat or as dedicated column
+```
+
+#### Template Variables
+
+Available variables for preamble interpolation:
+
+| Variable             | Description                | Example Value     |
+| -------------------- | -------------------------- | ----------------- |
+| `{integration_name}` | Integration display name   | "Salesforce"      |
+| `{integration_slug}` | Integration slug           | "salesforce"      |
+| `{action_name}`      | Action display name        | "Search Contacts" |
+| `{action_slug}`      | Action slug                | "search-contacts" |
+| `{connection_name}`  | Connection label           | "Production"      |
+| `{result_count}`     | Number of items (if array) | "42"              |
+
+#### Response Format
+
+When preamble is configured, the response wraps data in a structured format:
+
+```typescript
+// Without preamble (default - raw JSON)
+{
+  "success": true,
+  "data": { "contacts": [...] },
+  "meta": { "requestId": "...", "timestamp": "..." }
+}
+
+// With preamble (LLM-friendly wrapped format)
+{
+  "success": true,
+  "context": "The Search Contacts results from Salesforce are:",
+  "data": { "contacts": [...] },
+  "meta": { "requestId": "...", "timestamp": "..." }
+}
+```
+
+#### Processing Order
+
+```
+API Response → Validate → Apply Field Mappings → Apply Preamble → Return
+                                                      ↑
+                                         Preamble describes the FINAL
+                                         (mapped) data shape
+```
+
+#### Zod Schema
+
+```typescript
+// Connection response format schema
+export const connectionResponseFormatSchema = z.object({
+  preambleTemplate: z
+    .string()
+    .max(500)
+    .optional()
+    .describe('Template for LLM-friendly response context'),
+});
+
+// Validation: ensure template only uses valid variables
+const VALID_TEMPLATE_VARS = [
+  'integration_name',
+  'integration_slug',
+  'action_name',
+  'action_slug',
+  'connection_name',
+  'result_count',
+];
+```
+
+#### Implementation
+
+```typescript
+// src/lib/modules/execution/preamble.ts
+
+interface PreambleContext {
+  integrationName: string;
+  integrationSlug: string;
+  actionName: string;
+  actionSlug: string;
+  connectionName: string;
+  resultCount?: number;
+}
+
+function interpolatePreamble(template: string, context: PreambleContext): string {
+  return template
+    .replace(/{integration_name}/g, context.integrationName)
+    .replace(/{integration_slug}/g, context.integrationSlug)
+    .replace(/{action_name}/g, context.actionName)
+    .replace(/{action_slug}/g, context.actionSlug)
+    .replace(/{connection_name}/g, context.connectionName)
+    .replace(/{result_count}/g, String(context.resultCount ?? 'N/A'));
+}
+
+function wrapResponseWithPreamble(
+  data: unknown,
+  preambleTemplate: string | undefined,
+  context: PreambleContext
+): { context?: string; data: unknown } {
+  if (!preambleTemplate) {
+    return { data }; // No wrapping, return raw
+  }
+
+  return {
+    context: interpolatePreamble(preambleTemplate, context),
+    data,
+  };
+}
+```
+
 ---
 
 ## 4. UI Design
@@ -322,7 +467,19 @@ Add a "Mappings" section to the Connection detail slide-out panel:
 │  │ Action: slack.getUser                                          [▼]  │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
-│  Mapping Configuration                                                      │
+│  ─── LLM Response Format ───────────────────────────────────────────────    │
+│                                                                             │
+│  Response Preamble (optional - for LLM-powered apps):                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ The {action_name} results from {integration_name}:                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ⓘ Available: {integration_name}, {action_name}, {connection_name},        │
+│    {result_count}                                                           │
+│                                                                             │
+│  Preview: "The Get User results from Slack:"                                │
+│                                                                             │
+│  ─── Field Mapping Configuration ───────────────────────────────────────    │
+│                                                                             │
 │  ☑ Enable Field Mapping                                                     │
 │  ☑ Preserve unmapped fields                                                 │
 │  Failure Mode: (●) Passthrough  ( ) Fail                                    │
@@ -410,92 +567,151 @@ On the action's mapping panel, show if any connections have overrides:
 
 ## 5. Implementation Tasks
 
-### Task 1: Database Schema Update (30 min)
+### Task 1: Database Schema Update (30 min) ✅ COMPLETE
 
 **Files:** `prisma/schema.prisma`, new migration file
 
-- [ ] Add `connectionId` column to `FieldMapping` model (nullable)
-- [ ] Add foreign key constraint to `Connection`
-- [ ] Add unique constraint on (actionId, connectionId, sourcePath, direction)
-- [ ] Create and run migration
+- [x] Add `connectionId` column to `FieldMapping` model (nullable)
+- [x] Add foreign key constraint to `Connection`
+- [x] Add unique constraint on (actionId, connectionId, sourcePath, direction)
+- [x] Add `preambleTemplate` column to `Connection` model for LLM preamble
+- [x] Create and run migration
 
-### Task 2: Mapping Repository Updates (45 min)
+### Task 2: Mapping Repository Updates (45 min) ✅ COMPLETE
 
-**Files:** `src/lib/modules/execution/mapping/mapping.repository.ts`
+**Files:** `src/lib/modules/execution/mapping/mapping.repository.ts`, `mapping.schemas.ts`
 
-- [ ] Update `getMappings()` to accept optional connectionId filter
-- [ ] Add `getMappingsByConnection()` for connection-specific queries
-- [ ] Add `getResolvedMappings()` that fetches defaults + connection overrides
-- [ ] Update create/update/delete to handle connectionId
-- [ ] Update cache key structure for connection awareness
-- [ ] Update cache invalidation logic
+- [x] Update `getMappingsForAction()` to accept optional connectionId filter
+- [x] Add `getMappingsByConnection()` for connection-specific queries
+- [x] Add `getResolvedMappings()` that fetches defaults + connection overrides with merge logic
+- [x] Add `createConnectionMapping()` for creating connection-specific overrides
+- [x] Add `resetConnectionMappings()` to delete all connection overrides (revert to defaults)
+- [x] Add `copyDefaultsToConnection()` to copy action defaults as connection overrides
+- [x] Add `countConnectionsWithOverrides()` for UI indicator
+- [x] Update cache key structure: `actionId` for defaults, `actionId:connectionId` for connection-specific
+- [x] Update cache invalidation logic with `invalidateConnectionCache()`
+- [x] Export new types: `ResolvedMapping`, `FieldMappingWithConnection`, `ConnectionMappingState`, etc.
 
-### Task 3: Mapping Service Updates (45 min)
+### Task 3: Mapping Service Updates (45 min) ✅ COMPLETE
 
 **Files:** `src/lib/modules/execution/mapping/mapping.service.ts`
 
-- [ ] Add `resolveMappings(actionId, connectionId)` with merge logic
-- [ ] Add `getConnectionMappingState()` returning inheritance info
-- [ ] Add `createConnectionOverride()`
-- [ ] Add `deleteConnectionOverride()` (revert to default)
-- [ ] Add `resetConnectionMappings()` (bulk reset)
-- [ ] Add `copyMappingsToConnection()` helper
+- [x] Add `resolveMappings(actionId, connectionId)` - Returns merged defaults + connection overrides
+- [x] Add `getConnectionMappingState()` - Full state with inheritance info, counts
+- [x] Add `createConnectionOverride()` - Create connection-specific mapping with validation
+- [x] Add `deleteConnectionOverride()` - Delete single override (revert to default)
+- [x] Add `resetConnectionMappings()` - Bulk delete all connection overrides
+- [x] Add `copyMappingsToConnection()` - Copy action defaults as starting point
+- [x] Add `getConnectionMappingStats()` - Stats on override vs default counts
+- [x] Add `getConnectionOverrides()` - Get only the overrides, not merged
+- [x] Add `previewWithConnection()` - Preview mapping with connection context
+- [x] Update `applyInputMapping()` / `applyOutputMapping()` to use connection context
+- [x] Add `invalidateConnectionCaches()` for connection-specific cache clearing
 
-### Task 4: Connection Mapping API Endpoints (45 min)
+### Task 4: Connection Mapping API Endpoints (45 min) ✅ COMPLETE
 
 **Files:** `src/app/api/v1/connections/[id]/mappings/`
 
-- [ ] GET `/connections/:id/mappings` - List with inheritance state
-- [ ] POST `/connections/:id/mappings` - Create override
-- [ ] PATCH `/connections/:id/mappings/:mappingId` - Update override
-- [ ] DELETE `/connections/:id/mappings/:mappingId` - Delete override
-- [ ] POST `/connections/:id/mappings/preview` - Preview with connection context
-- [ ] DELETE `/connections/:id/mappings/all` - Reset to defaults
+- [x] GET `/connections/:id/mappings?actionId=...` - List with inheritance state, stats
+- [x] POST `/connections/:id/mappings` - Create override (requires actionId in body)
+- [x] PATCH `/connections/:id/mappings/:mappingId` - Update override
+- [x] DELETE `/connections/:id/mappings/:mappingId?actionId=...` - Delete override
+- [x] POST `/connections/:id/mappings/preview` - Preview with connection context
+- [x] DELETE `/connections/:id/mappings?actionId=...` - Reset all overrides to defaults
+- [x] POST `/connections/:id/mappings/copy` - Copy action defaults to connection
 
-### Task 5: Execution Pipeline Integration (30 min)
+### Task 5: Execution Pipeline Integration (30 min) ✅ COMPLETE
 
-**Files:** `src/lib/modules/execution/request-pipeline.ts`
+**Files:** `src/lib/modules/gateway/gateway.service.ts`, `gateway.schemas.ts`
 
-- [ ] Update mapping resolution to use connection context
-- [ ] Pass connectionId through pipeline context
-- [ ] Update response metadata with resolution stats
-- [ ] Ensure cache invalidation propagates correctly
+- [x] Update `applyInputMapping()` call to pass `connectionId` from resolved connection
+- [x] Update `applyOutputMapping()` call to pass `connectionId` from resolved connection
+- [x] Connection already resolved at step 1b, ID passed through context
+- [x] Add `MappingSourceStatsSchema` to response metadata for connection resolution stats
+- [x] Add `connectionResolution` optional field to `MappingMetadataSchema`
+- [x] Cache invalidation propagates via existing `invalidateConnectionCache()` in mapping service
 
-### Task 6: React Hooks for Connection Mappings (30 min)
+### Task 6: React Hooks for Connection Mappings (30 min) ✅ COMPLETE
 
-**Files:** `src/hooks/useConnectionMappings.ts`
+**Files:** `src/hooks/useConnectionMappings.ts`, `src/hooks/index.ts`
 
-- [ ] Add `useConnectionMappings(connectionId, actionId)` hook
-- [ ] Add `useCreateConnectionOverride()` mutation
-- [ ] Add `useDeleteConnectionOverride()` mutation
-- [ ] Add `useResetConnectionMappings()` mutation
-- [ ] Add query invalidation on mutations
+- [x] Add `useConnectionMappings(connectionId, actionId)` - Fetch resolved mappings with inheritance info
+- [x] Add `useCreateConnectionOverride()` - Create connection-specific override
+- [x] Add `useUpdateConnectionOverride()` - Update existing override
+- [x] Add `useDeleteConnectionOverride()` - Delete override (revert to default)
+- [x] Add `useResetConnectionMappings()` - Reset all overrides for an action
+- [x] Add `useCopyDefaultsToConnection()` - Copy action defaults as starting overrides
+- [x] Add `usePreviewConnectionMapping()` - Preview with connection context
+- [x] Add `useConnectionOverrideCount()` - For UI indicator (placeholder)
+- [x] Add query invalidation on all mutations (both connection and action-level caches)
+- [x] Export from `src/hooks/index.ts`
 
-### Task 7: Connection Mappings UI Components (60 min)
+### Task 7: Connection Mappings UI Components (60 min) ✅
 
 **Files:** `src/components/features/connections/mappings/`
 
-- [ ] Create `ConnectionMappingList` component
-- [ ] Create `ConnectionMappingCard` with inheritance indicator
-- [ ] Create `OverrideMappingDialog` for add/edit
-- [ ] Create `MappingInheritanceBadge` (inherited/overridden state)
-- [ ] Add action selector dropdown
+- [x] Create `ConnectionMappingList` component
+- [x] Create `ConnectionMappingCard` with inheritance indicator
+- [x] Create `OverrideMappingDialog` for add/edit
+- [x] Create `MappingInheritanceBadge` (inherited/overridden state)
+- [x] Add action selector dropdown
+- [x] Create `ResetMappingsDialog` for resetting to defaults
+- [x] Export components from `src/components/features/connections/index.ts`
 
-### Task 8: Integration into Connection Detail Panel (30 min)
+### Task 8: Integration into Connection Detail Panel (30 min) ✅
 
 **Files:** `src/components/features/connections/ConnectionDetail.tsx`
 
-- [ ] Add "Mappings" tab to connection detail panel
-- [ ] Wire up ConnectionMappingList component
-- [ ] Add "Reset to Defaults" confirmation dialog
-- [ ] Add "Copy Mappings" flow
+- [x] Add Field Mappings section to connection detail panel
+- [x] Wire up ConnectionMappingList component with action data
+- [x] Reset to Defaults dialog already integrated in ConnectionMappingList
+- [x] Copy Mappings flow already integrated in ConnectionMappingList
 
-### Task 9: Action Mapping Panel - Connection Indicator (15 min)
+### Task 9: Action Mapping Panel - Connection Indicator (15 min) ✅
 
-**Files:** `src/components/features/actions/ActionMappingPanel.tsx`
+**Files:** `src/components/features/actions/editor/MappingsTab.tsx`
 
-- [ ] Add indicator showing how many connections have overrides
-- [ ] Add link to view/manage connection-specific mappings
+- [x] Enhanced mappings API endpoint with `includeStats` query param
+- [x] Updated `useMappings` hook to support stats option
+- [x] Updated `useConnectionOverrideCount` hook to use new API
+- [x] Added connection override indicator badge in MappingsTab header
+- [x] Badge shows count of connections with custom overrides
+- [x] Tooltip provides guidance to view connection details for per-app mappings
+
+### Task 10: LLM Response Preamble (45 min) ✅
+
+**Files:** `src/lib/modules/execution/preamble/`, `src/lib/modules/connections/`, `src/lib/modules/gateway/`
+
+- [x] Create preamble interpolation utility (`src/lib/modules/execution/preamble/preamble.ts`)
+  - `PreambleContext` interface with integration/action/connection names + result_count
+  - `interpolatePreamble()` function for template variable substitution
+  - `validatePreambleTemplate()` to check for invalid variables
+  - `applyPreamble()` main API to process and apply preambles
+  - `calculateResultCount()` to auto-detect array lengths
+- [x] Add `preambleTemplate` field to Connection model (`prisma/schema.prisma`)
+- [x] Created migration (`20260125300000_add_preamble_template_to_connections`)
+- [x] Update `ConnectionResponse` schema to include `preambleTemplate`
+- [x] Update `UpdateConnectionInput` schema to accept `preambleTemplate`
+- [x] Update connection repository to handle `preambleTemplate` in updates
+- [x] Add preamble template validation to PATCH `/connections/:id` endpoint
+- [x] Integrate preamble wrapping into execution pipeline (gateway.service.ts)
+  - Applied AFTER output mapping, BEFORE response formatting
+  - Added `context` field to `GatewaySuccessResponse` schema
+- [x] Generated Prisma client with new field
+
+### Task 11: Preamble UI Components (30 min) ✅
+
+**Files:** `src/components/features/connections/mappings/`
+
+- [x] Create `PreambleTemplateInput` component with:
+  - Template textarea with placeholder example
+  - Real-time validation showing invalid variables
+  - Clickable variable badges to insert into template
+  - Live preview with sample interpolated data
+  - Save/Clear buttons with loading states
+  - Unsaved changes indicator
+- [x] Integrate into Connection Detail panel (after Field Mappings section)
+- [x] Export from connections component index
 
 ---
 
@@ -503,42 +719,62 @@ On the action's mapping panel, show if any connections have overrides:
 
 ### Unit Tests
 
-**Mapping Resolution:**
+**Mapping Resolution:** (tests/unit/execution/connection-mappings.test.ts - 11 tests)
 
-- [ ] Returns only defaults when connectionId is null
-- [ ] Merges defaults with connection overrides correctly
-- [ ] Connection override takes precedence over default with same sourcePath
-- [ ] Unoverridden defaults are preserved in merge
-- [ ] Empty connection overrides returns all defaults
+- [x] Returns only defaults when connectionId is null
+- [x] Merges defaults with connection overrides correctly
+- [x] Connection override takes precedence over default with same sourcePath
+- [x] Unoverridden defaults are preserved in merge
+- [x] Empty connection overrides returns all defaults
 
 **Cache Behavior:**
 
-- [ ] Default mapping CRUD invalidates all connection caches for that action
-- [ ] Connection mapping CRUD only invalidates that connection's cache
+- [x] Default mapping CRUD invalidates all connection caches for that action (implementation verified)
+- [x] Connection mapping CRUD only invalidates that connection's cache (implementation verified)
 
 **API Validation:**
 
-- [ ] Cannot create duplicate override (same sourcePath/direction for connection)
-- [ ] Connection must belong to same tenant
+- [x] Cannot create duplicate override (same sourcePath/direction for connection) - enforced by unique constraint
+- [x] Connection must belong to same tenant - enforced by API middleware
+
+**Preamble Interpolation:** (tests/unit/execution/preamble.test.ts - 40 tests)
+
+- [x] All template variables interpolate correctly
+- [x] Unknown variables are left as-is (or stripped)
+- [x] Empty template returns no context wrapper
+- [x] `{result_count}` calculates array length correctly
+- [x] Non-array responses show "N/A" for result_count
 
 ### Integration Tests
+
+_Note: Integration tests require full database/API setup. Gateway pipeline integration verified via code review._
 
 - [ ] Create connection override → resolves correctly in action invocation
 - [ ] Delete connection override → reverts to default in action invocation
 - [ ] Multiple connections with different overrides → each gets correct mappings
 - [ ] Mapping preview with connectionId shows connection-specific results
 - [ ] Reset all overrides → connection uses all defaults
+- [ ] Connection with preamble → response includes `context` field
+- [ ] Connection without preamble → response is raw JSON (no `context` field)
+- [ ] Preamble applied after field mappings (describes mapped data)
 
 ### Manual Testing
+
+_Note: Requires running application with database and seed data._
 
 - [ ] UI shows inherited vs overridden badges correctly
 - [ ] Override editor shows current default for reference
 - [ ] Reset confirmation works and refreshes list
 - [ ] Action invocation with different connections returns different shapes
+- [ ] Preamble template input shows available variables
+- [ ] Preamble preview updates live as template is edited
+- [ ] LLM-powered app receives contextual response format
 
 ---
 
 ## 7. Edge Cases & Error Handling
+
+**Field Mapping Edge Cases:**
 
 | Edge Case                                       | Handling                                           |
 | ----------------------------------------------- | -------------------------------------------------- |
@@ -548,6 +784,17 @@ On the action's mapping panel, show if any connections have overrides:
 | Connection has override, action has no default  | Override still applies (no merge, just override)   |
 | Copy mappings to self                           | No-op, return success                              |
 | Reset when no overrides exist                   | No-op, return success                              |
+
+**Preamble Edge Cases:**
+
+| Edge Case                                      | Handling                                          |
+| ---------------------------------------------- | ------------------------------------------------- |
+| Template with invalid variable (e.g., `{foo}`) | Leave as literal text `{foo}` in output           |
+| Template is empty string                       | Treat as no preamble (raw JSON response)          |
+| Template is only whitespace                    | Treat as no preamble (raw JSON response)          |
+| Response is error (not success)                | No preamble wrapping - errors use standard format |
+| `{result_count}` on non-array response         | Interpolate as "1" (single item) or "N/A"         |
+| Very long template (>500 chars)                | Validation error on save                          |
 
 ---
 
@@ -606,6 +853,7 @@ Consider feature flag `ENABLE_CONNECTION_MAPPINGS` for gradual rollout:
 
 ## 12. Revision History
 
-| Date       | Author       | Changes                       |
-| ---------- | ------------ | ----------------------------- |
-| 2026-01-25 | AI Assistant | Initial feature specification |
+| Date       | Author       | Changes                                                              |
+| ---------- | ------------ | -------------------------------------------------------------------- |
+| 2026-01-25 | AI Assistant | Initial feature specification                                        |
+| 2026-01-25 | AI Assistant | Added LLM Response Preamble capability (FR-11 to FR-15, Tasks 10-11) |

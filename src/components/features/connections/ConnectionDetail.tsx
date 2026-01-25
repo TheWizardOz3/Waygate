@@ -25,10 +25,11 @@ import {
   Activity,
   Zap,
 } from 'lucide-react';
-import { useConnection, useDeleteConnection, useLogs } from '@/hooks';
+import { useConnection, useDeleteConnection, useLogs, useActions } from '@/hooks';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ConnectionCredentialPanel } from './ConnectionCredentialPanel';
 import { ConnectionHealthSection } from './ConnectionHealthSection';
+import { ConnectionMappingList, PreambleTemplateInput } from './mappings';
 import { ConnectorTypeBadge } from './ConnectorTypeBadge';
 import { EditConnectionDialog } from './EditConnectionDialog';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
@@ -54,6 +55,10 @@ export function ConnectionDetail({
 
   const { data: connection, isLoading, isError, refetch } = useConnection(connectionId);
   const deleteMutation = useDeleteConnection(integration.id);
+
+  // Fetch actions for the mappings section
+  const { data: actionsData } = useActions(integration.id);
+  const actions = actionsData?.actions ?? [];
 
   // Get recent logs for this integration (connection-level filtering requires API update)
   // TODO: Add connectionId filter when API supports it
@@ -173,6 +178,22 @@ export function ConnectionDetail({
 
             {/* Health Status Section */}
             <ConnectionHealthSection connectionId={connection.id} />
+
+            {/* Field Mappings Section */}
+            {actions.length > 0 && (
+              <ConnectionMappingList
+                connectionId={connection.id}
+                actions={actions.map((a) => ({ id: a.id, name: a.name, slug: a.slug }))}
+              />
+            )}
+
+            {/* LLM Response Preamble */}
+            <PreambleTemplateInput
+              connectionId={connection.id}
+              integrationId={integration.id}
+              integrationName={integration.name}
+              integrationSlug={integration.slug}
+            />
 
             {/* Configuration Card */}
             <Card>

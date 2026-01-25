@@ -15,6 +15,7 @@ import {
   createMapping,
   getMappingConfig,
   updateMappingConfig,
+  countConnectionsWithOverrides,
   FieldMappingSchema,
   MappingConfigSchema,
   validateMappings,
@@ -63,6 +64,7 @@ export const GET = withApiAuth(async (request: NextRequest, { tenant }) => {
     const { searchParams } = new URL(request.url);
     const direction = searchParams.get('direction') as 'input' | 'output' | null;
     const includeConfig = searchParams.get('includeConfig') === 'true';
+    const includeStats = searchParams.get('includeStats') === 'true';
 
     // Get mappings
     const mappings = await listMappings(actionId, {
@@ -76,12 +78,23 @@ export const GET = withApiAuth(async (request: NextRequest, { tenant }) => {
       config = await getMappingConfig(actionId);
     }
 
+    // Optionally include connection override stats
+    let stats;
+    if (includeStats) {
+      const connectionsWithOverrides = await countConnectionsWithOverrides(actionId);
+      stats = {
+        defaultMappingsCount: mappings.length,
+        connectionsWithOverrides,
+      };
+    }
+
     return NextResponse.json(
       {
         success: true,
         data: {
           mappings,
           ...(config && { config }),
+          ...(stats && { stats }),
         },
       },
       { status: 200 }

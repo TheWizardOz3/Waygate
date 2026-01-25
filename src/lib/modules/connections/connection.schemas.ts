@@ -96,6 +96,8 @@ export const UpdateConnectionInputSchema = z.object({
   isPrimary: z.boolean().optional(),
   status: ConnectionStatusSchema.optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  // LLM Response Preamble
+  preambleTemplate: z.string().max(500).nullable().optional(),
 });
 
 export type UpdateConnectionInput = z.infer<typeof UpdateConnectionInputSchema>;
@@ -167,6 +169,8 @@ export const ConnectionResponseSchema = z.object({
   // Health status fields (optional for backward compatibility)
   healthStatus: HealthCheckStatusSchema.optional(),
   health: ConnectionHealthSummarySchema.optional(),
+  // LLM Response Preamble
+  preambleTemplate: z.string().nullable().optional(),
 });
 
 export type ConnectionResponse = z.infer<typeof ConnectionResponseSchema>;
@@ -221,6 +225,8 @@ interface DbConnection {
   lastCredentialCheckAt?: Date | null;
   lastConnectivityCheckAt?: Date | null;
   lastFullScanAt?: Date | null;
+  // LLM Response Preamble
+  preambleTemplate?: string | null;
 }
 
 /**
@@ -265,6 +271,11 @@ export function toConnectionResponse(
       lastConnectivityCheckAt: connection.lastConnectivityCheckAt?.toISOString() ?? null,
       lastFullScanAt: connection.lastFullScanAt?.toISOString() ?? null,
     };
+  }
+
+  // Add preamble template if present
+  if (connection.preambleTemplate !== undefined) {
+    response.preambleTemplate = connection.preambleTemplate;
   }
 
   return response;
