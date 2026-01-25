@@ -14,6 +14,8 @@
 
 | Version | Date       | Type       | Summary                                                               |
 | ------- | ---------- | ---------- | --------------------------------------------------------------------- |
+| 1.0.1   | 2026-01-25 | patch      | Fix Connections API 500 error (schema drift & response format)        |
+| 1.0.0   | 2026-01-25 | major      | **V0.75 Complete + Milestone Restructure** - AI Tool Factory roadmap  |
 | 0.9.0   | 2026-01-25 | minor      | **Per-App Custom Mappings - V0.75 Feature #4 complete** (11/11 Tasks) |
 | 0.8.1   | 2026-01-25 | patch      | Continuous Integration Testing - Complete Feature (10/10 Tasks)       |
 | 0.8.0   | 2026-01-25 | minor      | **Hybrid Auth Model - V0.75 Feature #2 complete**                     |
@@ -71,6 +73,39 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [1.0.1] - 2026-01-25
+
+### Fixed
+
+- **Connections API 500 Error**: Fixed two critical issues preventing the Connections tab from loading
+  - **Schema Drift**: Added missing database migration for `ConnectorType` enum, `PlatformConnectorStatus` enum, `platform_connectors` table, and `connections.connector_type`/`platform_connector_id` columns
+  - **API Response Format**: Fixed connections list endpoint to nest `connections` and `pagination` inside `data` object to match expected schema (was incorrectly returning `data: [...]` with `pagination` at top level)
+
+---
+
+## [1.0.0] - 2026-01-25
+
+### Added
+
+- **Milestone Restructure**: Complete reorganization of future milestones with new AI Tool Factory roadmap
+  - V1: UI & Stability Cleanup + Enhanced Logging & Monitoring
+  - V1.1: Reference Data Sync (renamed from Smart Data Caching) + Complex Nested Data Handling
+  - V1.5: AI Tool Factory - Foundations (Simple Tools, Composite Tools, LangChain/Vercel AI/MCP export)
+  - V1.6: AI Tool Factory - Agentic Tools (Agent-Embedded Tools, Multi-Agent Pipelines)
+  - V2: Scale & Reliability (Async Job System, Batch Operations)
+  - V2.1: Developer Experience (Webhooks, SDK Generation)
+  - V2.2: Self-Service & Access (No-Code UI, RBAC, JIT Auth)
+  - V3: Maintenance & Safety (Sandbox/Prod Environments, Versioning, Schema Drift, Auto-Maintenance)
+
+### Changed
+
+- **V0.75 marked complete**: All four features (Multi-App Connections, Hybrid Auth, Continuous Integration Testing, Per-App Custom Mappings) finalized
+- **Reference Data Sync**: Rescoped from simple caching to proactive reference data syncing for solving rate limit asymmetry (e.g., Slack user IDs synced on cron instead of looked up per-request)
+- **AI Tool Factory**: Expanded from single "LLM Tool Wrapping" feature into two dedicated milestones covering simple, composite, agent-embedded, and multi-agent tool types
+- **Long-term features** pushed to V4+ (Connector Marketplace, End-User Widget, GraphQL Gateway, Multi-Region, Compliance)
 
 ---
 

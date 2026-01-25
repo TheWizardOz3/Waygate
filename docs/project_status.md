@@ -1,35 +1,37 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-25 (Per-App Custom Mappings COMPLETE - V0.75 milestone finished)
+**Last Updated**: 2026-01-25 (Milestone restructure - V0.75 complete, new AI Tool Factory milestones added)
 
 ---
 
-## Current Milestone: V0.75 (Multi-Tenancy & Expanded Capabilities)
+## Current Milestone: V1 (UI & Stability Cleanup)
 
-**Functionality Summary**: Expand platform capabilities for multi-app support, streamlined authentication, continuous testing, and per-app configuration flexibility.
+**Functionality Summary**: Comprehensive cleanup pass focusing on service integration, UI polish, stability, and observability. Ensure all services are working together seamlessly and configuration screens are organized into a more usable format.
 
 ### Scope Definition
 
 #### In Scope for This Milestone
 
-- **Multi-App Connections**: Multiple consuming apps per integration with separate credentials/baseUrls
-- **Hybrid Auth Model**: Platform-owned OAuth apps for major providers + bring-your-own-app option
-- **Continuous Integration Testing**: Scheduled health checks on all integrations
-- **Per-App Custom Mappings**: Consuming apps can define their own field mappings
+- **Service Integration**: Verify all services connect and communicate properly end-to-end
+- **Configuration UI Cleanup**: Reorganize config screens for better usability and logical flow
+- **Stability Pass**: Fix edge cases, improve error handling, ensure consistent behavior
+- **Polish**: Loading states, empty states, responsive design improvements
+- **Enhanced Logging & Monitoring**: Structured logs, basic metrics dashboard
 
 #### Explicitly Out of Scope
 
-| Item                     | Reason for Exclusion          | Planned Milestone |
-| ------------------------ | ----------------------------- | ----------------- |
-| Smart Data Caching Layer | Performance optimization      | V1.1              |
-| Async Job System         | Scale feature                 | V1.1              |
-| Auto-Maintenance System  | Advanced automation           | V2                |
-| Versioning & Rollbacks   | Production safety feature     | V2                |
-| Full No-Code UI          | Non-technical user enablement | V2.1              |
-| Webhook Ingestion        | Event-driven architecture     | V2.2              |
-| LLM Tool Wrapping        | AI agent integration          | V2.2              |
-| SDK Generation           | Developer experience          | V2.2              |
-| RBAC & Team Management   | Multi-user collaboration      | V2.1              |
+| Item                         | Reason for Exclusion          | Planned Milestone |
+| ---------------------------- | ----------------------------- | ----------------- |
+| Reference Data Sync          | Data layer feature            | V1.1              |
+| Simple/Composite Tool Export | AI Tool Factory               | V1.5              |
+| Agentic Tools                | AI Tool Factory               | V1.6              |
+| Async Job System             | Scale feature                 | V2                |
+| Webhook Ingestion            | Developer experience          | V2.1              |
+| SDK Generation               | Developer experience          | V2.1              |
+| Full No-Code UI              | Non-technical user enablement | V2.2              |
+| RBAC & Team Management       | Multi-user collaboration      | V2.2              |
+| Auto-Maintenance System      | Advanced automation           | V3                |
+| Versioning & Rollbacks       | Production safety feature     | V3                |
 
 #### Boundaries
 
@@ -67,15 +69,17 @@
 
 ### In Progress
 
-| Feature/Task | Started | Notes                                    |
-| ------------ | ------- | ---------------------------------------- |
-| —            | —       | V0.75 milestone complete! Planning V1.0. |
+| Feature/Task | Started | Notes                           |
+| ------------ | ------- | ------------------------------- |
+| —            | —       | V1 milestone starting. Planning |
 
 ### Next Up
 
-| Feature       | Priority | Notes                                   |
-| ------------- | -------- | --------------------------------------- |
-| V1.0 Planning | High     | Review V1.0 scope and define priorities |
+| Feature                    | Priority | Notes                                        |
+| -------------------------- | -------- | -------------------------------------------- |
+| Service Integration Audit  | High     | Verify all services work together end-to-end |
+| Config UI Cleanup          | High     | Reorganize configuration screens             |
+| Enhanced Logging & Metrics | Medium   | Structured logs, basic metrics dashboard     |
 
 ### Recent Enhancements (Post-MVP)
 
@@ -92,11 +96,15 @@
 | Intelligent Crawling      | 2026-01-03      | LLM-guided page selection using Firecrawl map + URL triage, wishlist awareness, auth prioritization |
 | UX Navigation Polish      | 2026-01-03      | Clickable logo, clickable cards, copy buttons for endpoints, clickable wizard steps                 |
 
-### Not Started (V0.75)
+### Not Started (V1)
 
-| Feature/Task | Priority | Notes                                          |
-| ------------ | -------- | ---------------------------------------------- |
-| —            | —        | All V0.75 features now complete or in progress |
+| Feature/Task               | Priority | Notes                                    |
+| -------------------------- | -------- | ---------------------------------------- |
+| Service Integration Audit  | High     | Verify all services work end-to-end      |
+| Config UI Cleanup          | High     | Reorganize configuration screens         |
+| Stability Pass             | High     | Fix edge cases, improve error handling   |
+| Polish                     | Medium   | Loading states, empty states, responsive |
+| Enhanced Logging & Metrics | Medium   | Structured logs, basic metrics dashboard |
 
 ---
 
@@ -135,35 +143,28 @@
 
 ---
 
-## V0.75 Build Order
+### ✅ V0.75 (Completed 2026-01-25)
 
-| #   | Feature                        | Dependencies     | Complexity | Status      | Notes                                              |
-| --- | ------------------------------ | ---------------- | ---------- | ----------- | -------------------------------------------------- |
-| 1   | Multi-App Connections          | V0.5 complete    | HIGH       | ✅ DONE     | Connection entity, per-app credential isolation    |
-| 2   | Hybrid Auth Model              | #1               | HIGH       | ✅ DONE     | Platform connectors, compliance tracking           |
-| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | ✅ DONE     | Scheduled health checks on all integrations        |
-| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | 🚧 PLANNING | Consuming apps can define their own field mappings |
+**Goal**: Expand platform capabilities for multi-tenancy and per-app configuration flexibility.
 
-**Rationale:**
-
-1. Multi-App Connections and Hybrid Auth expand platform capabilities for multi-tenancy
-2. Continuous Integration Testing ensures reliability before scaling
-3. Per-App Custom Mappings enables different consuming apps to have different data shapes
+| #   | Feature                        | Notes                                                   |
+| --- | ------------------------------ | ------------------------------------------------------- |
+| 1   | Multi-App Connections          | Connection entity, per-app credential isolation         |
+| 2   | Hybrid Auth Model              | Platform connectors, one-click OAuth, credential source |
+| 3   | Continuous Integration Testing | Scheduled health checks, cron jobs, health dashboard    |
+| 4   | Per-App Custom Mappings        | Connection-level mapping overrides, LLM preamble        |
 
 ---
 
-## Future Milestones
+## V1 Build Order
 
-### V1: UI & Stability Cleanup
-
-**Functionality Summary**: Comprehensive cleanup pass focusing on service integration, UI polish, and stability. Ensure all services are working together seamlessly and configuration screens are organized into a more usable format.
-
-**Key Focus Areas:**
-
-- **Service Integration**: Verify all services connect and communicate properly end-to-end
-- **Configuration UI Cleanup**: Reorganize config screens for better usability and logical flow
-- **Stability Pass**: Fix edge cases, improve error handling, ensure consistent behavior
-- **Polish**: Loading states, empty states, responsive design improvements
+| #   | Feature                    | Dependencies   | Complexity | Status  | Notes                                    |
+| --- | -------------------------- | -------------- | ---------- | ------- | ---------------------------------------- |
+| 1   | Service Integration Audit  | V0.75 complete | MED        | PENDING | Verify all services work end-to-end      |
+| 2   | Configuration UI Cleanup   | #1             | MED        | PENDING | Reorganize config screens                |
+| 3   | Stability Pass             | #1             | MED        | PENDING | Fix edge cases, improve error handling   |
+| 4   | Polish                     | #2, #3         | LOW        | PENDING | Loading states, empty states, responsive |
+| 5   | Enhanced Logging & Metrics | Gateway API    | MED        | PENDING | Structured logs, basic metrics dashboard |
 
 **Definition of Done:**
 
@@ -171,77 +172,174 @@
 - Configuration screens reorganized with clear navigation
 - No critical bugs or broken workflows
 - Consistent UI patterns across all screens
+- Structured logging and basic observability in place
 
 ---
 
-### V1.1: Scale & Reliability
+## Future Milestones
 
-**Functionality Summary**: Add intelligent data caching, asynchronous operations, and enhanced configuration flexibility. Building on V0.75's multi-app foundation, V1.1 makes the system suitable for production applications with moderate scale.
+### V1.1: Reference Data Sync & Data Handling
+
+**Functionality Summary**: Enable proactive syncing of reference data from external APIs to solve rate limit asymmetry problems and improve AI agent efficiency. Also improve handling of complex nested API responses.
 
 **Key Features:**
 
-- Smart Data Caching Layer (configurable caching for slow-changing data)
-- Async Job System (background processing for long operations, batch imports)
-- Complex Nested Data Handling
-- Batch Operations Support
-- Enhanced Logging & Monitoring
+- **Reference Data Sync**: Proactively fetch and store reference data (e.g., Slack user IDs) on a schedule, making it available as variables for action invocations without hitting rate-limited lookup endpoints
+- **Complex Nested Data Handling**: Better support for deeply nested API responses with path-based access and transformation
+
+**Use Case Example:**
+
+```
+Slack "search users" endpoint: 20/min rate limit
+Slack "send message" endpoint: 10,000/min rate limit
+
+Problem: Need user ID from "search" to call "send message"
+Solution: Sync user IDs on cron → AI agents reference stored data → No search call needed
+```
 
 **Technical Scope:**
 
-- Upstash Redis for caching layer
+- Reference data source definitions (which action, which fields, how often)
+- Per-connection scoped data storage
+- Variable substitution in action invocations
+- Query interface for AI agents to look up reference data
+
+**Build Order:**
+
+| #   | Feature                      | Dependencies | Complexity | Notes                                          |
+| --- | ---------------------------- | ------------ | ---------- | ---------------------------------------------- |
+| 1   | Reference Data Source Config | V1 complete  | MED        | Define what data to sync, from which actions   |
+| 2   | Sync Scheduler               | #1           | MED        | Cron-based sync jobs per connection            |
+| 3   | Reference Data Storage       | #1           | MED        | Per-connection scoped storage with query API   |
+| 4   | Variable Substitution        | #3           | MED        | Inject reference data into action invocations  |
+| 5   | Complex Nested Data          | V1 complete  | MED        | Better support for deeply nested API responses |
+
+---
+
+### V1.5: AI Tool Factory - Foundations
+
+**Functionality Summary**: Enable exporting Waygate actions as AI-consumable tools for LangChain, Vercel AI SDK, and MCP. Start with simple single-action tools and deterministic composite tools (multi-endpoint orchestration without embedded LLMs).
+
+**Key Features:**
+
+- **Simple Tool Export**: Single-action tools with typed inputs/outputs, ready for LLM function calling
+- **Composite Tool Builder**: Multi-endpoint tools with deterministic routing (no LLM interpretation)
+- **Variable/Context System**: Capture outputs from one step as variables for subsequent steps
+- **LangChain Adapter**: Export tools as LangChain-compatible tool definitions
+- **Vercel AI SDK Adapter**: Export tools for Vercel AI SDK
+- **MCP Server Generation**: Export tools as Model Context Protocol compatible server
+
+**Technical Scope:**
+
+- Tool definition schema (inputs, outputs, description for LLMs)
+- Composite tool orchestration engine (step sequencing, variable passing)
+- Code generation for LangChain/Vercel AI tool wrappers
+- MCP server scaffold generation
+
+**Build Order:**
+
+| #   | Feature                 | Dependencies  | Complexity | Notes                                         |
+| --- | ----------------------- | ------------- | ---------- | --------------------------------------------- |
+| 1   | Tool Definition Schema  | V1.1 complete | LOW        | Define tool structure for LLM consumption     |
+| 2   | Simple Tool Export      | #1            | LOW        | Single-action tools with typed I/O            |
+| 3   | Variable/Context System | #2            | MED        | Capture outputs, inject into subsequent steps |
+| 4   | Composite Tool Builder  | #3            | MED        | Multi-step deterministic orchestration        |
+| 5   | LangChain Adapter       | #2            | LOW        | Export as LangChain tool definitions          |
+| 6   | Vercel AI SDK Adapter   | #2            | LOW        | Export for Vercel AI SDK                      |
+| 7   | MCP Server Generation   | #4            | MED        | Export tools as MCP-compatible server         |
+
+---
+
+### V1.6: AI Tool Factory - Agentic Tools
+
+**Functionality Summary**: Enable embedding LLMs inside tools for data interpretation, query transformation, and multi-step reasoning. These "agentic" tools go beyond deterministic orchestration to include AI-powered decision making within the tool itself.
+
+**Key Features:**
+
+- **Agent-Embedded Tools**: Tools with an embedded LLM for data interpretation or transforming simple user queries into structured API calls (e.g., natural language → SQL, fuzzy name → exact user ID lookup)
+- **Multi-Agent Pipelines**: Sequential actions where outputs from previous steps are captured as variables and embedded in subsequent steps' prompts/inputs, with LLM reasoning between steps
+
+**Use Case Examples:**
+
+1. **Agent-Embedded**: User says "send a message to John about the meeting" → embedded LLM resolves "John" to user ID, interprets "about the meeting" into message content
+2. **Multi-Agent Pipeline**: Complex workflow where each step's output informs the next step's prompt, with LLM deciding how to proceed
+
+**Technical Scope:**
+
+- Embedded LLM configuration per tool (model, system prompt, temperature)
+- Prompt template system with variable injection
+- Step output capture and prompt embedding
+- Execution tracing for debugging agentic flows
+
+**Build Order:**
+
+| #   | Feature                    | Dependencies  | Complexity | Notes                                            |
+| --- | -------------------------- | ------------- | ---------- | ------------------------------------------------ |
+| 1   | Embedded LLM Configuration | V1.5 complete | MED        | Configure LLM per tool (model, prompt, settings) |
+| 2   | Prompt Template System     | #1            | MED        | Templates with variable injection                |
+| 3   | Agent-Embedded Tools       | #2            | HIGH       | Single tools with embedded LLM interpretation    |
+| 4   | Step Output Capture        | #3            | MED        | Capture outputs as variables for next steps      |
+| 5   | Multi-Agent Pipelines      | #4            | HIGH       | Sequential steps with inter-step LLM reasoning   |
+| 6   | Execution Tracing          | #5            | MED        | Debug and observe agentic tool execution         |
+
+---
+
+### V2: Scale & Reliability
+
+**Functionality Summary**: Add asynchronous operations and batch processing for high-volume use cases. Building on V1.x foundations, V2 makes the system suitable for production applications with moderate to high scale.
+
+**Key Features:**
+
+- **Async Job System**: Background processing for long-running operations, batch imports
+- **Batch Operations Support**: Queue and batch high-volume write operations
+
+**Technical Scope:**
+
 - Trigger.dev for background job queue
-- Per-tenant configuration storage
-- Basic metrics collection and display
+- Job status tracking and callbacks
+- Batch operation API with progress reporting
 
 **Build Order:**
 
-| #   | Feature                  | Dependencies    | Complexity | Notes                                          |
-| --- | ------------------------ | --------------- | ---------- | ---------------------------------------------- |
-| 1   | Smart Data Caching Layer | V1 complete     | HIGH       | Configurable caching with TTL                  |
-| 2   | Async Job System         | #1              | HIGH       | Background processing for long operations      |
-| 3   | Complex Nested Data      | Action Registry | MED        | Better support for deeply nested API responses |
-| 4   | Batch Operations Support | #2              | MED        | Queue and batch high-volume write operations   |
-| 5   | Enhanced Logging         | Gateway API     | MED        | Structured logs, basic metrics dashboard       |
+| #   | Feature                  | Dependencies  | Complexity | Notes                                        |
+| --- | ------------------------ | ------------- | ---------- | -------------------------------------------- |
+| 1   | Async Job System         | V1.6 complete | HIGH       | Background processing for long operations    |
+| 2   | Batch Operations Support | #1            | MED        | Queue and batch high-volume write operations |
 
 ---
 
-### V2: Maintenance & Safety
+### V2.1: Developer Experience
 
-**Functionality Summary**: Automatic maintenance, versioning, and environment management. Keep integrations healthy and provide safety nets for production systems.
+**Functionality Summary**: Expand developer tooling with webhooks and SDK generation for easier integration.
 
 **Key Features:**
 
-- Auto-Maintenance System (detect API changes, auto-update with approval workflow)
-- Versioning & Rollbacks (track versions, per-app pinning, instant rollback)
-- Sandbox/Production Environments (separate testing and production configurations)
-- Schema Drift Detection (alert when API responses change from documented schema)
+- **Webhook Ingestion**: Receive and route webhooks from external services
+- **SDK Generation**: Auto-generate TypeScript/Python client libraries
 
 **Technical Scope:**
 
-- Scheduled documentation re-scraping
-- Version history storage and diff computation
-- Environment isolation in database
+- Webhook endpoint router with signature verification
+- Code generation pipeline for typed SDKs
 
 **Build Order:**
 
-| #   | Feature                         | Dependencies  | Complexity | Notes                                         |
-| --- | ------------------------------- | ------------- | ---------- | --------------------------------------------- |
-| 1   | Sandbox/Production Environments | V1.1 complete | MED        | Separate testing and production configs       |
-| 2   | Versioning & Rollbacks          | #1            | HIGH       | Track versions, per-app pinning, rollback     |
-| 3   | Schema Drift Detection          | #2            | MED        | Alert when API responses change               |
-| 4   | Auto-Maintenance System         | #2, #3        | HIGH       | Detect API changes, auto-update with approval |
+| #   | Feature           | Dependencies | Complexity | Notes                                |
+| --- | ----------------- | ------------ | ---------- | ------------------------------------ |
+| 1   | Webhook Ingestion | V2 complete  | MED        | Receive and route webhooks           |
+| 2   | SDK Generation    | #1           | HIGH       | Auto-generate TypeScript/Python SDKs |
 
 ---
 
-### V2.1: Self-Service & Access
+### V2.2: Self-Service & Access
 
 **Functionality Summary**: Enable non-technical users and expand access control. Full no-code experience with team collaboration features.
 
 **Key Features:**
 
-- Full No-Code UI (wizard flows, guided setup, visual configuration)
-- Just-in-Time Auth (on-demand OAuth flows for end users)
-- RBAC & Team Management (role-based access control, team invitations)
+- **Full No-Code UI**: Wizard flows, guided setup, visual configuration
+- **RBAC & Team Management**: Role-based access control, team invitations
+- **Just-in-Time Auth**: On-demand OAuth flows for end users
 
 **Technical Scope:**
 
@@ -251,51 +349,53 @@
 
 **Build Order:**
 
-| #   | Feature                | Dependencies | Complexity | Notes                                     |
-| --- | ---------------------- | ------------ | ---------- | ----------------------------------------- |
-| 1   | Full No-Code UI        | V2 complete  | HIGH       | Wizard flows, guided setup, visual config |
-| 2   | RBAC & Team Management | #1           | MED        | Roles, permissions, team invitations      |
-| 3   | Just-in-Time Auth      | #2           | HIGH       | On-demand OAuth flows for end users       |
+| #   | Feature                | Dependencies  | Complexity | Notes                                     |
+| --- | ---------------------- | ------------- | ---------- | ----------------------------------------- |
+| 1   | Full No-Code UI        | V2.1 complete | HIGH       | Wizard flows, guided setup, visual config |
+| 2   | RBAC & Team Management | #1            | MED        | Roles, permissions, team invitations      |
+| 3   | Just-in-Time Auth      | #2            | HIGH       | On-demand OAuth flows for end users       |
 
 ---
 
-### V2.2: Developer Experience & AI Integration
+### V3: Maintenance & Safety
 
-**Functionality Summary**: Expand developer tooling and enable AI agent integration through LLM tool generation and webhooks.
+**Functionality Summary**: Automatic maintenance, versioning, and environment management. Keep integrations healthy and provide safety nets for production systems.
 
 **Key Features:**
 
-- Webhook Ingestion (receive and route webhooks from external services)
-- SDK Generation (auto-generate TypeScript/Python client libraries)
-- LLM Tool Wrapping (export actions as LangChain-compatible tools)
+- **Sandbox/Production Environments**: Separate testing and production configurations
+- **Versioning & Rollbacks**: Track versions, per-app pinning, instant rollback
+- **Schema Drift Detection**: Alert when API responses change from documented schema
+- **Auto-Maintenance System**: Detect API changes, auto-update with approval workflow
 
 **Technical Scope:**
 
-- Webhook endpoint router
-- Code generation pipeline
-- LangChain tool factory
+- Environment isolation in database
+- Scheduled documentation re-scraping
+- Version history storage and diff computation
 
 **Build Order:**
 
-| #   | Feature           | Dependencies  | Complexity | Notes                                        |
-| --- | ----------------- | ------------- | ---------- | -------------------------------------------- |
-| 1   | Webhook Ingestion | V2.1 complete | MED        | Receive and route webhooks                   |
-| 2   | SDK Generation    | #1            | HIGH       | Auto-generate TypeScript/Python SDKs         |
-| 3   | LLM Tool Wrapping | #1            | MED        | Export actions as LangChain-compatible tools |
+| #   | Feature                         | Dependencies  | Complexity | Notes                                         |
+| --- | ------------------------------- | ------------- | ---------- | --------------------------------------------- |
+| 1   | Sandbox/Production Environments | V2.2 complete | MED        | Separate testing and production configs       |
+| 2   | Versioning & Rollbacks          | #1            | HIGH       | Track versions, per-app pinning, rollback     |
+| 3   | Schema Drift Detection          | #2            | MED        | Alert when API responses change               |
+| 4   | Auto-Maintenance System         | #2, #3        | HIGH       | Detect API changes, auto-update with approval |
 
 ---
 
 ### Long-Term / Future Considerations
 
-| Feature/Capability              | Rationale                                    | Tentative Timeline            |
-| ------------------------------- | -------------------------------------------- | ----------------------------- |
-| Pre-built Connector Marketplace | Community-contributed integrations           | V3 (if demand emerges)        |
-| End-User Facing Widget          | Embeddable integration UI for end users      | V3                            |
-| GraphQL Gateway                 | Alternative to REST for some use cases       | V3 (if demand emerges)        |
-| Multi-Region Deployment         | Global latency optimization                  | V3                            |
-| SOC2/HIPAA Compliance           | Enterprise requirements                      | V3 (if selling to enterprise) |
-| Expanded Platform Connectors    | Additional pre-registered OAuth providers    | Ongoing from V0.75            |
-| Connector Certification Tiers   | Verified vs community-contributed connectors | V3                            |
+| Feature/Capability              | Rationale                                    | Tentative Timeline             |
+| ------------------------------- | -------------------------------------------- | ------------------------------ |
+| Pre-built Connector Marketplace | Community-contributed integrations           | V4+ (if demand emerges)        |
+| End-User Facing Widget          | Embeddable integration UI for end users      | V4+                            |
+| GraphQL Gateway                 | Alternative to REST for some use cases       | V4+ (if demand emerges)        |
+| Multi-Region Deployment         | Global latency optimization                  | V4+                            |
+| SOC2/HIPAA Compliance           | Enterprise requirements                      | V4+ (if selling to enterprise) |
+| Expanded Platform Connectors    | Additional pre-registered OAuth providers    | Ongoing from V0.75             |
+| Connector Certification Tiers   | Verified vs community-contributed connectors | V4+                            |
 
 ---
 
