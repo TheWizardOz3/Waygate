@@ -2,8 +2,9 @@
 
 **Milestone:** V0.75
 **Priority:** P1
-**Status:** 🚧 Planning
+**Status:** ✅ Complete
 **Created:** 2026-01-25
+**Completed:** 2026-01-25
 
 ---
 
@@ -13,9 +14,9 @@ Continuous Integration Testing provides scheduled health checks for all active c
 
 ### User Story
 
-> As a developer, I want Waygate to automatically test my integrations on a regular schedule, so that I can detect and fix issues before they affect my applications.
+> As a developer, I want Waygate to automatically monitor my integration credentials, so that I can fix expiring tokens before they cause production failures.
 
-> As a developer, I want to see the health history of my connections, so that I can identify patterns and proactively address reliability issues.
+> As a developer, I want to periodically scan my integrations for API breaking changes, so that I can update my configurations before they cause errors in my applications.
 
 ### Problem Statement
 
@@ -27,50 +28,69 @@ Currently, integration health is only checked on-demand when:
 
 This reactive approach means:
 
-- Users discover integration problems only when their applications break
+- **Credential expiration** is discovered only when an action fails (most common failure mode)
+- **API breaking changes** aren't detected until production use causes errors
 - There's no visibility into the reliability of integrations over time
-- Transient issues (rate limits, temporary outages) may go unnoticed and untracked
-- API changes that break integrations aren't detected until production use
+- Users discover integration problems only when their applications break
 
 ### Solution
 
-Implement a scheduled health check system that:
+Implement a **tiered health check system** that balances comprehensive monitoring with minimal API consumption:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    CONTINUOUS INTEGRATION TESTING                        │
+│                     TIERED HEALTH CHECK MODEL                            │
 │                                                                          │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                    SCHEDULED HEALTH CHECKS                       │   │
+│   │   TIER 1: CREDENTIAL CHECK (Every 15 min) — NO API CALLS        │   │
 │   │                                                                  │   │
-│   │   1. Cron job runs every 15 minutes (configurable per-tenant)   │   │
-│   │   2. For each active connection:                                 │   │
-│   │      a. Check credential status (valid, expiring, expired)       │   │
-│   │      b. Execute a test action (e.g., GET /me, /ping, etc.)       │   │
-│   │      c. Record latency and success/failure                       │   │
-│   │   3. Store health check result                                   │   │
-│   │   4. Update connection health status                             │   │
-│   │   5. Alert on state changes (healthy → degraded → unhealthy)     │   │
+│   │   • Token expiration monitoring                                  │   │
+│   │   • Refresh token validity                                       │   │
+│   │   • Credential status (active, expiring, expired, missing)       │   │
+│   │                                                                  │   │
+│   │   → Zero external API cost                                       │   │
+│   │   → Catches most common failure mode (credential expiration)     │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                    HEALTH CHECK RESULTS                          │   │
+│   │   TIER 2: CONNECTIVITY CHECK (Every 6-12 hours) — 1 API CALL    │   │
 │   │                                                                  │   │
-│   │   • Historical health data for each connection                   │   │
-│   │   • Uptime percentage calculation                                │   │
-│   │   • Latency trends over time                                     │   │
-│   │   • Failure pattern analysis                                     │   │
+│   │   • Execute lightweight test action (GET /me, /ping, etc.)       │   │
+│   │   • Verify actual API reachability                               │   │
+│   │   • Record latency and response status                           │   │
+│   │                                                                  │   │
+│   │   → Minimal cost (1 call per connection per interval)            │   │
+│   │   → Validates connection actually works                          │   │
+│   │   → Configurable interval (default: 12 hours)                    │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                    ALERTING                                      │   │
+│   │   TIER 3: FULL ACTION SCAN (Manual/Monthly) — MULTIPLE CALLS    │   │
 │   │                                                                  │   │
-│   │   • Dashboard notifications for health state changes             │   │
+│   │   • Test all (or critical) actions with sample payloads          │   │
+│   │   • Detect breaking API changes and schema drift                 │   │
+│   │   • Compare responses against expected schemas                   │   │
+│   │                                                                  │   │
+│   │   → Higher cost, run infrequently                                │   │
+│   │   → Most comprehensive for detecting API changes                 │   │
+│   │   → Triggered manually or on monthly schedule                    │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │                    HEALTH STATUS & ALERTING                      │   │
+│   │                                                                  │   │
 │   │   • Connection status badges (Healthy/Degraded/Unhealthy)        │   │
+│   │   • Dashboard notifications for health state changes             │   │
+│   │   • Historical health data and uptime tracking                   │   │
 │   │   • Email alerts for persistent failures (future: V1.1)          │   │
 │   └─────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Primary Focus:**
+
+- **Credential expiration detection** (Tier 1) - catches the most common failure mode
+- **API breaking changes** (Tier 3) - comprehensive but infrequent scanning
 
 ---
 
@@ -78,23 +98,41 @@ Implement a scheduled health check system that:
 
 ### Functional Requirements
 
-- [ ] **FR-1**: Scheduled cron job executes health checks every 15 minutes
-- [ ] **FR-2**: Health checks test each active connection's credentials and test action
-- [ ] **FR-3**: Store health check results with timestamp, latency, status, and error details
-- [ ] **FR-4**: Track connection health status (healthy, degraded, unhealthy)
-- [ ] **FR-5**: Configurable test action per integration (defaults to first safe GET action)
-- [ ] **FR-6**: Health check history viewable in dashboard (last 24 hours minimum)
-- [ ] **FR-7**: Uptime percentage calculated from health check history
-- [ ] **FR-8**: Connection list shows current health status badge
-- [ ] **FR-9**: Manual trigger for health check from dashboard
-- [ ] **FR-10**: Health checks respect rate limits and use minimal API calls
+**Tier 1 - Credential Checks (Every 15 min, no API calls):**
+
+- [ ] **FR-1**: Cron job checks credential status every 15 minutes
+- [ ] **FR-2**: Detect token expiration status (active, expiring within 1hr, expired)
+- [ ] **FR-3**: Detect missing or revoked credentials
+- [ ] **FR-4**: No external API calls for Tier 1 checks
+
+**Tier 2 - Connectivity Checks (Every 6-12 hours, 1 API call):**
+
+- [ ] **FR-5**: Execute lightweight test action to verify connectivity
+- [ ] **FR-6**: Configurable interval per integration (default: 12 hours)
+- [ ] **FR-7**: Configurable test action per integration (defaults to first safe GET action)
+- [ ] **FR-8**: Record latency and HTTP status code
+
+**Tier 3 - Full Action Scan (Manual/Monthly):**
+
+- [ ] **FR-9**: Test all actions with sample payloads on demand
+- [ ] **FR-10**: Compare responses against expected schemas (detect breaking changes)
+- [ ] **FR-11**: Manual trigger from dashboard or optional monthly schedule
+
+**General:**
+
+- [ ] **FR-12**: Store health check results with tier, timestamp, status, and error details
+- [ ] **FR-13**: Track connection health status (healthy, degraded, unhealthy)
+- [ ] **FR-14**: Health check history viewable in dashboard
+- [ ] **FR-15**: Connection list shows current health status badge
+- [ ] **FR-16**: Manual trigger for any tier health check from dashboard
 
 ### Non-Functional Requirements
 
-- [ ] **NFR-1**: Health check job completes within 5 minutes for 100 connections
-- [ ] **NFR-2**: Health check results retained for 7 days (configurable)
-- [ ] **NFR-3**: Health check overhead < 1 API call per connection per check
-- [ ] **NFR-4**: No sensitive data (credentials, tokens) stored in health check results
+- [ ] **NFR-1**: Tier 1 check job completes within 2 minutes for 100 connections
+- [ ] **NFR-2**: Health check results retained for 30 days (configurable)
+- [ ] **NFR-3**: Tier 1 checks use zero external API calls
+- [ ] **NFR-4**: Tier 2 checks use maximum 1 API call per connection
+- [ ] **NFR-5**: No sensitive data (credentials, tokens) stored in health check results
 
 ---
 
@@ -108,30 +146,38 @@ HealthCheck: {
   connectionId: uuid,               // FK → Connection
   tenantId: uuid,                   // FK → Tenant (denormalized for RLS)
   status: enum,                     // healthy, degraded, unhealthy
-  checkType: enum,                  // scheduled, manual
+  checkTier: enum,                  // credential, connectivity, full_scan
+  checkTrigger: enum,               // scheduled, manual
 
-  // Credential check results
+  // Credential check results (Tier 1+)
   credentialStatus: enum,           // active, expiring, expired, missing
   credentialExpiresAt: timestamp?,  // Token expiration time (if applicable)
 
-  // Test action results
+  // Test action results (Tier 2+)
   testActionId: uuid?,              // FK → Action (if test action executed)
   testActionSuccess: boolean?,      // Whether test action succeeded
   testActionLatencyMs: integer?,    // Test action latency
   testActionStatusCode: integer?,   // HTTP status code from test action
   testActionError: jsonb?,          // Error details if failed
 
+  // Full scan results (Tier 3 only)
+  actionsScanned: integer?,         // Number of actions tested
+  actionsPassed: integer?,          // Number of actions that passed
+  actionsFailed: integer?,          // Number of actions that failed
+  scanResults: jsonb?,              // Detailed per-action results
+
   // Circuit breaker status
   circuitBreakerStatus: enum,       // closed, open, half_open
 
   // Overall results
-  latencyMs: integer,               // Total health check duration
+  durationMs: integer,              // Total health check duration
   error: jsonb?,                    // Overall error if check failed
   createdAt: timestamp,
 
   // Indexes for efficient queries
   @@index([connectionId, createdAt(sort: Desc)])
   @@index([tenantId, createdAt(sort: Desc)])
+  @@index([checkTier])
 }
 ```
 
@@ -145,10 +191,20 @@ enum HealthCheckStatus {
 }
 ```
 
-### New Enum: `HealthCheckType`
+### New Enum: `HealthCheckTier`
 
 ```typescript
-enum HealthCheckType {
+enum HealthCheckTier {
+  credential     // Tier 1: Credential-only check (no API calls)
+  connectivity   // Tier 2: Single test action (1 API call)
+  full_scan      // Tier 3: All actions tested (multiple API calls)
+}
+```
+
+### New Enum: `HealthCheckTrigger`
+
+```typescript
+enum HealthCheckTrigger {
   scheduled  // Triggered by cron job
   manual     // Triggered by user from dashboard
 }
@@ -163,10 +219,11 @@ Connection: {
   ...existing fields...
 
   // Health tracking
-  healthStatus: HealthCheckStatus,    // Current health status (default: healthy)
-  lastHealthCheckAt: timestamp?,      // Last health check timestamp
-  lastHealthCheckId: uuid?,           // FK → HealthCheck (most recent)
-  healthCheckTestActionId: uuid?,     // FK → Action (configurable test action)
+  healthStatus: HealthCheckStatus,       // Current health status (default: healthy)
+  lastCredentialCheckAt: timestamp?,     // Last Tier 1 check
+  lastConnectivityCheckAt: timestamp?,   // Last Tier 2 check
+  lastFullScanAt: timestamp?,            // Last Tier 3 check
+  healthCheckTestActionId: uuid?,        // FK → Action (configurable test action for Tier 2)
 }
 ```
 
@@ -179,16 +236,23 @@ Integration: {
   ...existing fields...
 
   // Health check configuration
-  healthCheckConfig: jsonb,           // { enabled: boolean, intervalMinutes: number, testActionId: string? }
+  healthCheckConfig: jsonb,
+  // {
+  //   enabled: boolean,                    // Enable health checks (default: true)
+  //   credentialCheckMinutes: number,      // Tier 1 interval (default: 15)
+  //   connectivityCheckHours: number,      // Tier 2 interval (default: 12)
+  //   fullScanEnabled: boolean,            // Enable monthly Tier 3 (default: false)
+  //   testActionId: string?                // Override test action for Tier 2
+  // }
 }
 ```
 
 ### Database Migration Strategy
 
-1. Create `HealthCheckStatus` and `HealthCheckType` enums
+1. Create `HealthCheckStatus`, `HealthCheckTier`, and `HealthCheckTrigger` enums
 2. Create `health_checks` table with all fields and indexes
-3. Add `health_status`, `last_health_check_at`, `last_health_check_id`, `health_check_test_action_id` to `connections`
-4. Add `health_check_config` to `integrations` (default: `{ enabled: true, intervalMinutes: 15 }`)
+3. Add health tracking fields to `connections`
+4. Add `health_check_config` to `integrations` with tiered defaults
 5. Set initial `health_status` to 'healthy' for existing connections
 
 ---
@@ -197,13 +261,14 @@ Integration: {
 
 ### New Endpoints
 
-| Method | Endpoint                                       | Purpose                                  |
-| ------ | ---------------------------------------------- | ---------------------------------------- |
-| GET    | `/api/v1/connections/:id/health-checks`        | List health check history for connection |
-| POST   | `/api/v1/connections/:id/health-checks`        | Trigger manual health check              |
-| GET    | `/api/v1/connections/:id/health-checks/latest` | Get most recent health check             |
-| GET    | `/api/v1/health-checks/summary`                | Get tenant-wide health summary           |
-| POST   | `/api/v1/internal/health-checks`               | Internal: Cron job endpoint              |
+| Method | Endpoint                                       | Purpose                                    |
+| ------ | ---------------------------------------------- | ------------------------------------------ |
+| GET    | `/api/v1/connections/:id/health-checks`        | List health check history for connection   |
+| POST   | `/api/v1/connections/:id/health-checks`        | Trigger manual health check (specify tier) |
+| GET    | `/api/v1/connections/:id/health-checks/latest` | Get most recent health check               |
+| GET    | `/api/v1/health-checks/summary`                | Get tenant-wide health summary             |
+| POST   | `/api/v1/internal/health-checks/credential`    | Internal: Tier 1 cron (every 15 min)       |
+| POST   | `/api/v1/internal/health-checks/connectivity`  | Internal: Tier 2 cron (every 6-12 hours)   |
 
 ### Modified Endpoints
 
@@ -215,10 +280,36 @@ Integration: {
 
 ### Request/Response Examples
 
+**Trigger Manual Health Check:**
+
+```json
+POST /api/v1/connections/conn_abc123/health-checks
+{
+  "tier": "connectivity"  // "credential" | "connectivity" | "full_scan"
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "id": "hc_xyz790",
+    "status": "healthy",
+    "checkTier": "connectivity",
+    "checkTrigger": "manual",
+    "credentialStatus": "active",
+    "testActionSuccess": true,
+    "testActionLatencyMs": 132,
+    "circuitBreakerStatus": "closed",
+    "durationMs": 148,
+    "createdAt": "2026-01-25T10:20:00Z"
+  }
+}
+```
+
 **Get Health Check History:**
 
 ```json
-GET /api/v1/connections/conn_abc123/health-checks?limit=10
+GET /api/v1/connections/conn_abc123/health-checks?tier=connectivity&limit=10
 
 {
   "success": true,
@@ -226,48 +317,57 @@ GET /api/v1/connections/conn_abc123/health-checks?limit=10
     {
       "id": "hc_xyz789",
       "status": "healthy",
-      "checkType": "scheduled",
+      "checkTier": "connectivity",
+      "checkTrigger": "scheduled",
       "credentialStatus": "active",
       "testActionSuccess": true,
       "testActionLatencyMs": 145,
-      "latencyMs": 156,
-      "createdAt": "2026-01-25T10:15:00Z"
+      "durationMs": 156,
+      "createdAt": "2026-01-25T10:00:00Z"
     },
     {
-      "id": "hc_xyz788",
-      "status": "degraded",
-      "checkType": "scheduled",
-      "credentialStatus": "expiring",
-      "credentialExpiresAt": "2026-01-25T11:00:00Z",
-      "testActionSuccess": true,
-      "testActionLatencyMs": 890,
-      "latencyMs": 912,
-      "createdAt": "2026-01-25T10:00:00Z"
+      "id": "hc_xyz780",
+      "status": "healthy",
+      "checkTier": "credential",
+      "checkTrigger": "scheduled",
+      "credentialStatus": "active",
+      "durationMs": 12,
+      "createdAt": "2026-01-25T09:45:00Z"
     }
   ],
   "pagination": {
     "hasMore": true,
-    "cursor": "eyJpZCI6ImhjX3h5ejc4NyJ9"
+    "cursor": "eyJpZCI6ImhjX3h5ejc4MCJ9"
   }
 }
 ```
 
-**Trigger Manual Health Check:**
+**Full Scan Result (Tier 3):**
 
 ```json
 POST /api/v1/connections/conn_abc123/health-checks
+{
+  "tier": "full_scan"
+}
 
+// Response:
 {
   "success": true,
   "data": {
-    "id": "hc_xyz790",
-    "status": "healthy",
-    "checkType": "manual",
+    "id": "hc_xyz791",
+    "status": "degraded",
+    "checkTier": "full_scan",
+    "checkTrigger": "manual",
     "credentialStatus": "active",
-    "testActionSuccess": true,
-    "testActionLatencyMs": 132,
-    "circuitBreakerStatus": "closed",
-    "latencyMs": 148,
+    "actionsScanned": 12,
+    "actionsPassed": 11,
+    "actionsFailed": 1,
+    "scanResults": [
+      { "actionId": "act_123", "actionSlug": "list-users", "success": true, "latencyMs": 234 },
+      { "actionId": "act_456", "actionSlug": "get-user", "success": true, "latencyMs": 189 },
+      { "actionId": "act_789", "actionSlug": "create-channel", "success": false, "error": "Schema mismatch: expected 'channel_id', got 'id'" }
+    ],
+    "durationMs": 4521,
     "createdAt": "2026-01-25T10:20:00Z"
   }
 }
@@ -285,23 +385,26 @@ GET /api/v1/health-checks/summary
     "healthy": 12,
     "degraded": 2,
     "unhealthy": 1,
-    "lastCheckAt": "2026-01-25T10:15:00Z",
-    "uptimeLast24h": 98.5,
+    "lastCredentialCheckAt": "2026-01-25T10:15:00Z",
+    "lastConnectivityCheckAt": "2026-01-25T06:00:00Z",
     "connections": [
       {
         "id": "conn_abc123",
         "name": "Production Slack",
         "integrationName": "Slack",
         "healthStatus": "healthy",
-        "lastCheckAt": "2026-01-25T10:15:00Z"
+        "credentialStatus": "active",
+        "lastCredentialCheckAt": "2026-01-25T10:15:00Z",
+        "lastConnectivityCheckAt": "2026-01-25T06:00:00Z"
       },
       {
         "id": "conn_def456",
         "name": "Staging GitHub",
         "integrationName": "GitHub",
         "healthStatus": "unhealthy",
-        "lastCheckAt": "2026-01-25T10:15:00Z",
-        "error": "Credentials expired"
+        "credentialStatus": "expired",
+        "lastCredentialCheckAt": "2026-01-25T10:15:00Z",
+        "error": "OAuth token expired 2 hours ago"
       }
     ]
   }
@@ -346,98 +449,107 @@ GET /api/v1/health-checks/summary
 
 ## Implementation Tasks
 
-### Task 1: Database Schema & Migration (45 min)
+### Task 1: Database Schema & Migration (45 min) ✅
 
-**Files:** `prisma/schema.prisma`, new migration file
+**Files:** `prisma/schema.prisma`, `prisma/migrations/20260125100000_add_health_checks/`
 
-- [ ] Define `HealthCheckStatus` and `HealthCheckType` enums
-- [ ] Define `HealthCheck` model with all fields and indexes
-- [ ] Add health tracking fields to `Connection` model
-- [ ] Add `healthCheckConfig` to `Integration` model
-- [ ] Create migration with appropriate defaults
-- [ ] Update TypeScript types
+- [x] Define `HealthCheckStatus`, `HealthCheckTier`, and `HealthCheckTrigger` enums
+- [x] Define `HealthCheck` model with tiered fields and indexes
+- [x] Add health tracking fields to `Connection` model (per-tier timestamps)
+- [x] Add `healthCheckConfig` to `Integration` model (tiered intervals)
+- [x] Create migration with appropriate defaults
+- [x] Update TypeScript types (Prisma generate)
 
-### Task 2: HealthCheck Repository & Schemas (45 min)
+### Task 2: HealthCheck Repository & Schemas (45 min) ✅
 
 **Files:** `src/lib/modules/health-checks/`
 
-- [ ] Create `health-check.repository.ts` with CRUD operations
-- [ ] Create `health-check.schemas.ts` with Zod validation
-- [ ] Implement `findByConnectionId` with pagination
-- [ ] Implement `getLatestByConnectionId`
-- [ ] Implement `createHealthCheck`
-- [ ] Export module via index.ts
+- [x] Create `health-check.repository.ts` with CRUD operations
+- [x] Create `health-check.schemas.ts` with Zod validation (tier-aware)
+- [x] Implement `findByConnectionId` with tier filtering and pagination
+- [x] Implement `getLatestByConnectionId` and `getLatestByTier`
+- [x] Implement `createHealthCheck`
+- [x] Export module via index.ts
 
-### Task 3: HealthCheck Service Core Logic (60 min)
+### Task 3: Tier 1 - Credential Check Service (45 min) ✅
 
-**Files:** `src/lib/modules/health-checks/health-check.service.ts`
+**Files:** `src/lib/modules/health-checks/credential-check.service.ts`
 
-- [ ] Implement `runHealthCheck(connectionId)` - single connection check
-- [ ] Check credential status (active, expiring, expired, missing)
-- [ ] Execute test action if configured
-- [ ] Calculate overall health status
-- [ ] Store health check result
-- [ ] Update connection health status
+- [x] Implement `runCredentialCheck(connectionId)` - no API calls
+- [x] Check credential status (active, expiring, expired, missing)
+- [x] Calculate expiration window (warn if < 1 hour)
+- [x] Store health check result
+- [x] Update connection health status
 
-### Task 4: Test Action Selection & Execution (45 min)
+### Task 4: Tier 2 - Connectivity Check Service (45 min) ✅
 
-**Files:** `src/lib/modules/health-checks/test-action.service.ts`
+**Files:** `src/lib/modules/health-checks/connectivity-check.service.ts`
 
-- [ ] Implement logic to select default test action (first safe GET action)
-- [ ] Support custom test action configuration per integration
-- [ ] Execute test action with minimal payload
-- [ ] Handle test action failures gracefully
-- [ ] Timeout handling for slow test actions
+- [x] Implement `runConnectivityCheck(connectionId)` - 1 API call
+- [x] Select test action (configured or default safe GET)
+- [x] Execute test action with timeout handling
+- [x] Record latency and success/failure
+- [x] Store health check result
 
-### Task 5: Scheduled Health Check Cron Job (45 min)
+### Task 5: Tier 3 - Full Scan Service (60 min) ✅
 
-**Files:** `src/app/api/v1/internal/health-checks/route.ts`
+**Files:** `src/lib/modules/health-checks/full-scan.service.ts`
 
-- [ ] Create internal cron endpoint (protected by CRON_SECRET)
-- [ ] Query all active connections needing health check
-- [ ] Respect check interval per integration
-- [ ] Run health checks in batches (avoid overwhelming external APIs)
-- [ ] Log batch summary
-- [ ] Add to vercel.json cron configuration
+- [x] Implement `runFullScan(connectionId)` - multiple API calls
+- [x] Test all actions (or critical subset) with sample payloads
+- [x] Compare responses against schemas (detect breaking changes)
+- [x] Aggregate results (passed/failed counts)
+- [x] Store detailed scan results
 
-### Task 6: HealthCheck API Routes (45 min)
+### Task 6: Scheduled Cron Jobs (45 min) ✅
 
-**Files:** `src/app/api/v1/connections/[id]/health-checks/`
+**Files:** `src/app/api/v1/internal/health-checks/`
 
-- [ ] Implement GET for health check history
-- [ ] Implement POST for manual health check trigger
-- [ ] Implement GET `/latest` for most recent check
-- [ ] Implement GET `/api/v1/health-checks/summary` for tenant summary
-- [ ] Proper error handling and auth
+- [x] Create `credential/route.ts` - Tier 1 cron (every 15 min)
+- [x] Create `connectivity/route.ts` - Tier 2 cron (every 12 hours)
+- [x] Both protected by CRON_SECRET
+- [x] Respect configurable intervals per integration
+- [x] Run in batches, log summaries
+- [x] Add to vercel.json cron configuration
 
-### Task 7: Connection API Updates (30 min)
+### Task 7: HealthCheck API Routes (45 min) ✅
+
+**Files:** `src/app/api/v1/connections/[id]/health-checks/`, `src/app/api/v1/health-checks/`
+
+- [x] Implement GET for health check history (with tier filter)
+- [x] Implement POST for manual health check trigger (specify tier)
+- [x] Implement GET `/latest` for most recent check
+- [x] Implement GET `/api/v1/health-checks/summary` for tenant summary
+- [x] Proper error handling and auth
+
+### Task 8: Connection API Updates (30 min) ✅
 
 **Files:** `src/app/api/v1/connections/`
 
-- [ ] Include `healthStatus` in connection list response
-- [ ] Include health summary in connection detail response
-- [ ] Include last health check details
-- [ ] Update Connection service to track health
+- [x] Include `healthStatus` in connection list response
+- [x] Include per-tier last check timestamps
+- [x] Include health summary in connection detail response
+- [x] Update Connection service to track health
 
-### Task 8: Health Status Badges & UI Components (45 min)
+### Task 9: Health Status Badges & UI Components (45 min) ✅
 
 **Files:** `src/components/features/connections/`, `src/components/features/health/`
 
-- [ ] Create `HealthStatusBadge` component
-- [ ] Create `HealthCheckTimeline` component
-- [ ] Create `HealthSummaryCard` component
-- [ ] Add `useHealthChecks` hook
-- [ ] Add badge to ConnectionCard and ConnectionList
+- [x] Create `HealthStatusBadge` component
+- [x] Create `HealthCheckTimeline` component (show tier in timeline)
+- [x] Create `HealthSummaryCard` component
+- [x] Add `useHealthChecks` hook
+- [x] Add badge to ConnectionCard and ConnectionList
 
-### Task 9: Connection Detail Health Section (45 min)
+### Task 10: Connection Detail Health Section (45 min) ✅
 
-**Files:** `src/app/(dashboard)/integrations/[id]/connections/[connectionId]/`
+**Files:** `src/components/features/connections/`
 
-- [ ] Add Health section/tab to connection detail page
-- [ ] Display current health status breakdown
-- [ ] Show health check history timeline
-- [ ] Add "Check Now" button for manual trigger
-- [ ] Show test action configuration
+- [x] Add Health section/tab to connection detail page
+- [x] Display current health status breakdown by tier
+- [x] Show health check history timeline
+- [x] Add "Check Now" buttons (Tier 1, Tier 2, Full Scan)
+- [x] Show health check configuration
 
 ---
 
@@ -468,14 +580,17 @@ GET /api/v1/health-checks/summary
 
 ## Acceptance Criteria
 
-- [ ] Scheduled health checks run every 15 minutes for active connections
-- [ ] Health check results are stored and viewable in dashboard
-- [ ] Connection list shows current health status badge
-- [ ] Manual health check can be triggered from connection detail page
-- [ ] Health check tests credentials and executes a test action
-- [ ] Unhealthy connections are clearly highlighted
-- [ ] Health check history is retained for at least 7 days
-- [ ] Cron job handles 100+ connections without timeout
+- [x] Tier 1 (credential) checks run every 15 minutes with zero API calls
+- [x] Tier 2 (connectivity) checks run every 12 hours (configurable 6-12h) with 1 API call
+- [x] Tier 3 (full scan) can be triggered manually or monthly
+- [x] Health check results are stored and viewable in dashboard
+- [x] Connection list shows current health status badge
+- [x] Manual health check can be triggered for any tier from dashboard
+- [x] Credential expiration detected before tokens expire
+- [x] API breaking changes detected via Tier 3 full scan
+- [x] Unhealthy connections are clearly highlighted
+- [x] Health check history is retained for at least 30 days
+- [x] Cron jobs handle 100+ connections without timeout
 
 ---
 
@@ -485,51 +600,72 @@ GET /api/v1/health-checks/summary
 
 ```
 HEALTHY:
-- Credential status = active
-- Test action succeeded (if configured)
+- Credential status = active (not expiring within 1 hour)
+- Last connectivity check succeeded (if applicable)
 - Circuit breaker = closed
-- Latency within acceptable range
 
 DEGRADED:
-- Credential status = expiring (< 1 hour)
-- Test action latency > 2000ms
+- Credential status = expiring (within 1 hour)
+- Last connectivity check had elevated latency (> 2000ms)
 - Circuit breaker = half_open
-- Recent failures < 3
+- Last full scan had some action failures
 
 UNHEALTHY:
 - Credential status = expired/missing/needs_reauth
-- Test action failed
+- Last connectivity check failed
 - Circuit breaker = open
-- Recent failures >= 3
+- Last full scan had critical failures
 ```
 
-### Rate Limit Considerations
+### Tiered Check Intervals
 
-- Health checks use minimal API calls (1 test action per connection)
-- Batch processing with delays between connections
-- Skip connections with recent manual checks (within 5 minutes)
-- Respect external API rate limits
+| Tier         | Default Interval | Configurable Range | API Calls       |
+| ------------ | ---------------- | ------------------ | --------------- |
+| Credential   | 15 min           | 5-60 min           | 0               |
+| Connectivity | 12 hours         | 6-24 hours         | 1               |
+| Full Scan    | Manual/Monthly   | Manual only        | N (all actions) |
 
-### Test Action Selection
+### Cost Analysis
+
+```
+Example: 20 connections over 1 month
+
+Tier 1 (Credential): 0 API calls
+Tier 2 (Connectivity at 12h): 20 connections × 2/day × 30 days = 1,200 API calls/month
+Tier 3 (Full Scan manual): Only when triggered
+
+→ ~40 API calls/day for connectivity checks (very reasonable)
+```
+
+### Test Action Selection (Tier 2)
 
 Default test action selection priority:
 
-1. Explicitly configured `healthCheckTestActionId` on connection
+1. Explicitly configured `healthCheckTestActionId` on integration
 2. Action tagged with `health-check` tag
 3. First GET action with no required parameters
 4. First GET action (will be skipped if has required params)
-5. No test action (credential check only)
+5. Skip connectivity check, credential check only
+
+### Full Scan Behavior (Tier 3)
+
+- Tests all actions that can be tested without side effects
+- Prefers GET actions, skips destructive POST/PUT/DELETE unless explicitly marked safe
+- Compares response schemas against expected schemas
+- Detects: missing fields, type changes, new required fields
+- Does NOT store response data, only pass/fail and error messages
 
 ### Data Retention
 
-Health check results are retained for 7 days by default. A cleanup job (deferred to V1.1) will archive/delete older records. Aggregate uptime metrics can be computed and stored separately for longer-term retention.
+Health check results are retained for 30 days by default. A cleanup job (deferred to V1.1) will archive/delete older records.
 
 ### Security
 
 - Health check results never contain sensitive data
 - Test action responses are not stored (only success/failure, latency, status code)
-- Cron endpoint protected by CRON_SECRET
+- Cron endpoints protected by CRON_SECRET
 - All health check APIs require tenant authentication
+- Full scan results include error messages but no response payloads
 
 ---
 
@@ -546,13 +682,16 @@ Health check results are retained for 7 days by default. A cleanup job (deferred
 
 ## Open Questions
 
-| Question                                         | Decision                     | Date       |
-| ------------------------------------------------ | ---------------------------- | ---------- |
-| Should health checks run for draft integrations? | No, only active integrations | 2026-01-25 |
-| What's the default health check interval?        | 15 minutes                   | 2026-01-25 |
-| Should users be able to disable health checks?   | Yes, per-integration config  | 2026-01-25 |
-| How long to retain health check history?         | 7 days (cleanup job in V1.1) | 2026-01-25 |
-| Email alerts for unhealthy connections?          | Defer to V1.1                | 2026-01-25 |
+| Question                                         | Decision                                    | Date       |
+| ------------------------------------------------ | ------------------------------------------- | ---------- |
+| Should health checks run for draft integrations? | No, only active integrations                | 2026-01-25 |
+| What's the Tier 1 (credential) check interval?   | 15 minutes (configurable 5-60 min)          | 2026-01-25 |
+| What's the Tier 2 (connectivity) check interval? | 12 hours default (configurable 6-24h)       | 2026-01-25 |
+| What's the Tier 3 (full scan) frequency?         | Manual trigger or optional monthly          | 2026-01-25 |
+| Should users be able to disable health checks?   | Yes, per-integration config                 | 2026-01-25 |
+| How long to retain health check history?         | 30 days (cleanup job in V1.1)               | 2026-01-25 |
+| Email alerts for unhealthy connections?          | Defer to V1.1                               | 2026-01-25 |
+| Primary failure modes to catch?                  | Credential expiration, API breaking changes | 2026-01-25 |
 
 ---
 

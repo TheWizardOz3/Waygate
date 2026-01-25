@@ -18,6 +18,12 @@ export const ConnectionStatusSchema = z.enum(['active', 'error', 'disabled']);
 export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
 
 /**
+ * Health check status - overall health of the connection
+ */
+export const HealthCheckStatusSchema = z.enum(['healthy', 'degraded', 'unhealthy']);
+export type HealthCheckStatus = z.infer<typeof HealthCheckStatusSchema>;
+
+/**
  * Connector type - determines whether connection uses Waygate's OAuth app or custom credentials
  * - platform: Uses Waygate's registered OAuth app (one-click connect)
  * - custom: User provides their own OAuth app credentials
@@ -130,6 +136,18 @@ export type ListConnectionsQuery = z.infer<typeof ListConnectionsQuerySchema>;
 // =============================================================================
 
 /**
+ * Health summary for a connection
+ */
+export const ConnectionHealthSummarySchema = z.object({
+  status: HealthCheckStatusSchema,
+  lastCredentialCheckAt: z.string().nullable(),
+  lastConnectivityCheckAt: z.string().nullable(),
+  lastFullScanAt: z.string().nullable(),
+});
+
+export type ConnectionHealthSummary = z.infer<typeof ConnectionHealthSummarySchema>;
+
+/**
  * Connection as returned by the API
  */
 export const ConnectionResponseSchema = z.object({
@@ -146,6 +164,9 @@ export const ConnectionResponseSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),
   createdAt: z.string(),
   updatedAt: z.string(),
+  // Health status fields (optional for backward compatibility)
+  healthStatus: HealthCheckStatusSchema.optional(),
+  health: ConnectionHealthSummarySchema.optional(),
 });
 
 export type ConnectionResponse = z.infer<typeof ConnectionResponseSchema>;
@@ -179,9 +200,9 @@ export type ListConnectionsResponse = z.infer<typeof ListConnectionsResponseSche
 // =============================================================================
 
 /**
- * Converts a database Connection to API response format
+ * Database connection type with optional health fields
  */
-export function toConnectionResponse(connection: {
+interface DbConnection {
   id: string;
   tenantId: string;
   integrationId: string;
@@ -195,8 +216,31 @@ export function toConnectionResponse(connection: {
   metadata: unknown;
   createdAt: Date;
   updatedAt: Date;
-}): ConnectionResponse {
-  return {
+  // Health fields (from new schema)
+  healthStatus?: string | null;
+  lastCredentialCheckAt?: Date | null;
+  lastConnectivityCheckAt?: Date | null;
+  lastFullScanAt?: Date | null;
+}
+
+/**
+ * Options for connection response formatting
+ */
+interface ToConnectionResponseOptions {
+  /** Include health summary in response (default: true) */
+  includeHealth?: boolean;
+}
+
+/**
+ * Converts a database Connection to API response format
+ */
+export function toConnectionResponse(
+  connection: DbConnection,
+  options: ToConnectionResponseOptions = {}
+): ConnectionResponse {
+  const { includeHealth = true } = options;
+
+  const response: ConnectionResponse = {
     id: connection.id,
     tenantId: connection.tenantId,
     integrationId: connection.integrationId,
@@ -211,6 +255,19 @@ export function toConnectionResponse(connection: {
     createdAt: connection.createdAt.toISOString(),
     updatedAt: connection.updatedAt.toISOString(),
   };
+
+  // Add health fields if available and requested
+  if (includeHealth && connection.healthStatus) {
+    response.healthStatus = connection.healthStatus as HealthCheckStatus;
+    response.health = {
+      status: connection.healthStatus as HealthCheckStatus,
+      lastCredentialCheckAt: connection.lastCredentialCheckAt?.toISOString() ?? null,
+      lastConnectivityCheckAt: connection.lastConnectivityCheckAt?.toISOString() ?? null,
+      lastFullScanAt: connection.lastFullScanAt?.toISOString() ?? null,
+    };
+  }
+
+  return response;
 }
 
 // =============================================================================

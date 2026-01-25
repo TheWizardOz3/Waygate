@@ -99,6 +99,41 @@ enum PlatformConnectorStatus {
   deprecated
 }
 
+/// Health check status for connections
+enum HealthCheckStatus {
+  healthy   // All checks passed
+  degraded  // Some issues (e.g., expiring credentials, elevated latency)
+  unhealthy // Critical issues (e.g., expired credentials, test action failed)
+}
+
+/// Health check tier (determines what gets checked)
+enum HealthCheckTier {
+  credential   // Tier 1: Credential-only check (no API calls)
+  connectivity // Tier 2: Single test action (1 API call)
+  full_scan    // Tier 3: All actions tested (multiple API calls)
+}
+
+/// How the health check was triggered
+enum HealthCheckTrigger {
+  scheduled // Triggered by cron job
+  manual    // Triggered by user from dashboard
+}
+
+/// Credential health status for health checks
+enum CredentialHealthStatus {
+  active   // Credentials are valid and not expiring soon
+  expiring // Credentials will expire within 1 hour
+  expired  // Credentials have expired
+  missing  // No credentials found for connection
+}
+
+/// Circuit breaker status
+enum CircuitBreakerStatus {
+  closed    // Normal operation
+  open      // Circuit is open, failing fast
+  half_open // Testing if service has recovered
+}
+
 // =============================================================================
 // MODELS
 // =============================================================================
@@ -121,6 +156,7 @@ model Tenant {
   requestLogs            RequestLog[]
   scrapeJobs             ScrapeJob[]
   validationFailures     ValidationFailure[]
+  healthChecks           HealthCheck[]
 
   @@map("tenants")
 }
@@ -140,6 +176,10 @@ model Integration {
   metadata         Json              @default("{}")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Health check configuration
+  // { enabled: boolean, credentialCheckMinutes: number, connectivityCheckHours: number, fullScanEnabled: boolean, testActionId: string? }
+  healthCheckConfig Json @default("{\"enabled\": true, \"credentialCheckMinutes\": 15, \"connectivityCheckHours\": 12, \"fullScanEnabled\": false}") @map("health_check_config")
 
   // Relations
   tenant      Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -186,26 +226,35 @@ model PlatformConnector {
 
 /// Connection - links a consuming app to an integration with its own credentials
 model Connection {
-  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId              String            @map("tenant_id") @db.Uuid
-  integrationId         String            @map("integration_id") @db.Uuid
-  name                  String            @db.VarChar(255)
-  slug                  String            @db.VarChar(100)
-  baseUrl               String?           @map("base_url") @db.Text
-  isPrimary             Boolean           @default(false) @map("is_primary")
-  connectorType         ConnectorType     @default(custom) @map("connector_type")
-  platformConnectorId   String?           @map("platform_connector_id") @db.Uuid
-  status                ConnectionStatus  @default(active)
-  metadata              Json              @default("{}")
-  createdAt             DateTime          @default(now()) @map("created_at")
-  updatedAt             DateTime          @updatedAt @map("updated_at")
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                String            @map("tenant_id") @db.Uuid
+  integrationId           String            @map("integration_id") @db.Uuid
+  name                    String            @db.VarChar(255)
+  slug                    String            @db.VarChar(100)
+  baseUrl                 String?           @map("base_url") @db.Text
+  isPrimary               Boolean           @default(false) @map("is_primary")
+  connectorType           ConnectorType     @default(custom) @map("connector_type")
+  platformConnectorId     String?           @map("platform_connector_id") @db.Uuid
+  status                  ConnectionStatus  @default(active)
+  metadata                Json              @default("{}")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  // Health tracking
+  healthStatus            HealthCheckStatus @default(healthy) @map("health_status")
+  lastCredentialCheckAt   DateTime?         @map("last_credential_check_at")
+  lastConnectivityCheckAt DateTime?         @map("last_connectivity_check_at")
+  lastFullScanAt          DateTime?         @map("last_full_scan_at")
+  healthCheckTestActionId String?           @map("health_check_test_action_id") @db.Uuid
 
   // Relations
-  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration       Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  platformConnector PlatformConnector?      @relation(fields: [platformConnectorId], references: [id], onDelete: SetNull)
-  credentials       IntegrationCredential[]
-  requestLogs       RequestLog[]
+  tenant                Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration           Integration             @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  platformConnector     PlatformConnector?      @relation(fields: [platformConnectorId], references: [id], onDelete: SetNull)
+  healthCheckTestAction Action?                 @relation("ConnectionTestAction", fields: [healthCheckTestActionId], references: [id], onDelete: SetNull)
+  credentials           IntegrationCredential[]
+  requestLogs           RequestLog[]
+  healthChecks          HealthCheck[]
 
   // Indexes
   @@unique([tenantId, integrationId, slug], name: "connections_tenant_integration_slug_idx")
@@ -213,6 +262,7 @@ model Connection {
   @@index([integrationId], name: "connections_integration_id_idx")
   @@index([platformConnectorId], name: "connections_platform_connector_id_idx")
   @@index([status], name: "connections_status_idx")
+  @@index([healthStatus], name: "connections_health_status_idx")
   @@map("connections")
 }
 
@@ -238,10 +288,12 @@ model Action {
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  integration        Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  fieldMappings      FieldMapping[]
-  requestLogs        RequestLog[]
-  validationFailures ValidationFailure[]
+  integration              Integration         @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  fieldMappings            FieldMapping[]
+  requestLogs              RequestLog[]
+  validationFailures       ValidationFailure[]
+  connectionTestActionFor  Connection[]        @relation("ConnectionTestAction")
+  healthChecksAsTestAction HealthCheck[]       @relation("HealthCheckTestAction")
 
   // Indexes
   @@unique([integrationId, slug], name: "actions_integration_slug_idx")
@@ -357,17 +409,17 @@ model ScrapeJob {
 
 /// Tracks validation failures for schema drift detection
 model ValidationFailure {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  actionId        String    @map("action_id") @db.Uuid
-  tenantId        String    @map("tenant_id") @db.Uuid
-  issueCode       String    @map("issue_code") @db.VarChar(50)
-  fieldPath       String    @map("field_path") @db.VarChar(255)
-  expectedType    String?   @map("expected_type") @db.VarChar(50)
-  receivedType    String?   @map("received_type") @db.VarChar(50)
-  failureCount    Int       @default(1) @map("failure_count")
-  firstSeenAt     DateTime  @default(now()) @map("first_seen_at")
-  lastSeenAt      DateTime  @default(now()) @map("last_seen_at")
-  driftAlertSent  Boolean   @default(false) @map("drift_alert_sent")
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actionId         String    @map("action_id") @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  issueCode        String    @map("issue_code") @db.VarChar(50)
+  fieldPath        String    @map("field_path") @db.VarChar(255)
+  expectedType     String?   @map("expected_type") @db.VarChar(50)
+  receivedType     String?   @map("received_type") @db.VarChar(50)
+  failureCount     Int       @default(1) @map("failure_count")
+  firstSeenAt      DateTime  @default(now()) @map("first_seen_at")
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at")
+  driftAlertSent   Boolean   @default(false) @map("drift_alert_sent")
   driftAlertSentAt DateTime? @map("drift_alert_sent_at")
 
   // Relations
@@ -380,4 +432,51 @@ model ValidationFailure {
   @@index([tenantId], name: "validation_failures_tenant_idx")
   @@index([lastSeenAt], name: "validation_failures_last_seen_idx")
   @@map("validation_failures")
+}
+
+/// Health check results for connections (tiered: credential, connectivity, full_scan)
+model HealthCheck {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId String             @map("connection_id") @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  status       HealthCheckStatus  // healthy, degraded, unhealthy
+  checkTier    HealthCheckTier    @map("check_tier") // credential, connectivity, full_scan
+  checkTrigger HealthCheckTrigger @map("check_trigger") // scheduled, manual
+
+  // Credential check results (Tier 1+)
+  credentialStatus    CredentialHealthStatus? @map("credential_status") // active, expiring, expired, missing
+  credentialExpiresAt DateTime?               @map("credential_expires_at")
+
+  // Test action results (Tier 2+)
+  testActionId         String? @map("test_action_id") @db.Uuid
+  testActionSuccess    Boolean? @map("test_action_success")
+  testActionLatencyMs  Int?    @map("test_action_latency_ms")
+  testActionStatusCode Int?    @map("test_action_status_code")
+  testActionError      Json?   @map("test_action_error")
+
+  // Full scan results (Tier 3 only)
+  actionsScanned Int?  @map("actions_scanned")
+  actionsPassed  Int?  @map("actions_passed")
+  actionsFailed  Int?  @map("actions_failed")
+  scanResults    Json? @map("scan_results") // Detailed per-action results
+
+  // Circuit breaker status
+  circuitBreakerStatus CircuitBreakerStatus? @map("circuit_breaker_status")
+
+  // Overall results
+  durationMs Int   @map("duration_ms")
+  error      Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  testAction Action?    @relation("HealthCheckTestAction", fields: [testActionId], references: [id], onDelete: SetNull)
+
+  // Indexes
+  @@index([connectionId, createdAt(sort: Desc)], name: "health_checks_connection_created_idx")
+  @@index([tenantId, createdAt(sort: Desc)], name: "health_checks_tenant_created_idx")
+  @@index([checkTier], name: "health_checks_tier_idx")
+  @@index([status], name: "health_checks_status_idx")
+  @@map("health_checks")
 }

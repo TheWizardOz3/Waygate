@@ -64,6 +64,7 @@ const mockIntegration = {
   status: IntegrationStatus.active,
   tags: [],
   metadata: {},
+  healthCheckConfig: {},
   createdAt: new Date(),
   updatedAt: new Date(),
 };

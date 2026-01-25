@@ -67,6 +67,7 @@ describe('OAuth Flow Integration', () => {
     documentationUrl: null,
     tags: [],
     metadata: {},
+    healthCheckConfig: {},
     createdAt: new Date(),
     updatedAt: new Date(),
   };

@@ -2,6 +2,10 @@
 
 export { ConnectionStatusBadge } from './ConnectionStatusBadge';
 export { ConnectionHealthBadge } from './ConnectionHealthBadge';
+export {
+  ConnectionHealthSection,
+  ConnectionHealthSectionSkeleton,
+} from './ConnectionHealthSection';
 export { ConnectionCard, ConnectionCardSkeleton } from './ConnectionCard';
 export { ConnectionList } from './ConnectionList';
 export { ConnectionDetail } from './ConnectionDetail';

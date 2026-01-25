@@ -38,6 +38,7 @@
 | ADR-022 | 2026-01-04 | api      | active | Enriched log responses with integration/action names          |
 | ADR-023 | 2026-01-04 | arch     | active | Simplified flat-schema prompts for Gemini endpoint extraction |
 | ADR-024 | 2026-01-25 | arch     | active | Multi-App Connections with Connection entity                  |
+| ADR-025 | 2026-01-25 | arch     | active | Tiered health check system for API monitoring                 |
 
 **Categories:** `arch` | `data` | `api` | `ui` | `test` | `infra` | `error`
 
@@ -1547,5 +1548,75 @@ When working with logs:
 - `status` field is pre-computed - don't derive from statusCode in UI
 - Log list responses include all necessary data for display without follow-up queries
 - For log stats, use dedicated `/logs/stats` endpoint with aggregation
+
+---
+
+## ADR-025: Tiered Health Check System
+
+**Date:** 2026-01-25 | **Category:** arch | **Status:** active
+
+#### Trigger
+
+Integration health was only checked reactively when actions failed or users manually triggered checks. This meant credential expirations, API breaking changes, and connectivity issues were discovered too late—when production workflows were already impacted.
+
+#### Decision
+
+Implemented a **three-tier health check system** that balances comprehensive monitoring with API consumption costs:
+
+1. **Tier 1: Credential Check (Every 15 min)**
+   - Zero API calls
+   - Checks token expiration, refresh token validity
+   - Statuses: active, expiring (<1hr), expired, missing
+   - Primary defense against credential-related failures
+
+2. **Tier 2: Connectivity Check (Every 12 hours, configurable 6-24h)**
+   - Single API call to test action
+   - Verifies API reachability and authentication
+   - Smart test action selection: configured > integration default > safe GET patterns
+   - Records latency for performance monitoring
+
+3. **Tier 3: Full Scan (Manual/Monthly)**
+   - Tests all safe GET actions
+   - Schema validation against stored output schemas
+   - Detects API breaking changes and schema drift
+   - Rate-limited (500ms between requests, max 50 actions)
+
+**Health Status Model:**
+
+- `healthy`: All checks passing, credentials active
+- `degraded`: Expiring credentials, elevated latency, some action failures
+- `unhealthy`: Expired credentials, connectivity failure, critical issues
+
+**Architecture Choices:**
+
+- Vercel Cron for scheduling (already used for token refresh)
+- Per-connection health tracking with tier-specific timestamps
+- 30-day retention for health check history
+- Batch processing with configurable limits per cron run
+
+#### Rationale
+
+- **Cost Efficiency**: Tier 1 is free (no API calls), Tier 2 is minimal (1 call), Tier 3 is manual
+- **Early Detection**: Credential issues caught 15 min before impact vs. at failure time
+- **Configurable**: Integration-level settings for check frequency and test action
+- **Non-Invasive**: Only uses safe GET actions, no side effects on external APIs
+
+#### Migration
+
+- **Schema changes:** New `HealthCheck` model, health fields on `Connection`, `healthCheckConfig` on `Integration`
+- **New cron jobs:** `/api/v1/internal/health-checks/credential`, `/api/v1/internal/health-checks/connectivity`
+- **New APIs:** `/connections/:id/health-checks`, `/health-checks/summary`
+- **Breaking changes:** None - additive only
+
+#### AI Instructions
+
+When working with health checks:
+
+- Tier 1 runs frequently but makes no API calls—ideal for credential monitoring
+- Tier 2 makes exactly one API call per connection—configure test actions thoughtfully
+- Tier 3 should only be triggered manually for debugging API issues
+- `healthStatus` on Connection represents the overall health from latest checks
+- Use `getHealthStatusFromCredential()` and `calculateOverallHealthStatus()` helpers for status logic
+- Health check results include previous status for tracking status changes
 
 ---

@@ -74,3 +74,13 @@ export {
   useActivePlatformConnectors,
   platformConnectorKeys,
 } from './usePlatformConnectors';
+
+// Health check hooks
+export {
+  useHealthChecks,
+  useLatestHealthCheck,
+  useHealthSummary,
+  useTriggerHealthCheck,
+  useInvalidateHealthChecks,
+  healthCheckKeys,
+} from './useHealthChecks';

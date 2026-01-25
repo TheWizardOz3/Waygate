@@ -28,6 +28,7 @@ import {
 import { useConnection, useDeleteConnection, useLogs } from '@/hooks';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ConnectionCredentialPanel } from './ConnectionCredentialPanel';
+import { ConnectionHealthSection } from './ConnectionHealthSection';
 import { ConnectorTypeBadge } from './ConnectorTypeBadge';
 import { EditConnectionDialog } from './EditConnectionDialog';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
@@ -169,6 +170,9 @@ export function ConnectionDetail({
               integration={integration}
               onCredentialChange={() => refetch()}
             />
+
+            {/* Health Status Section */}
+            <ConnectionHealthSection connectionId={connection.id} />
 
             {/* Configuration Card */}
             <Card>

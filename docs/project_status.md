@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated**: 2026-01-25 (Hybrid Auth Model feature complete)
+**Last Updated**: 2026-01-25 (Per-App Custom Mappings planning started)
 
 ---
 
@@ -45,35 +45,36 @@
 
 ### Completed
 
-| Feature/Task                   | Completion Date | Notes                                                                                                                                                 |
-| ------------------------------ | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Project Scaffolding            | 2026-01-01      | Next.js 14, TypeScript, Tailwind, Shadcn/ui, Prisma - [Feature Doc](Features/project-scaffolding.md)                                                  |
-| Database Setup                 | 2026-01-02      | Supabase config, Prisma schema, seed data, 16 integration tests - [Feature Doc](Features/database-setup.md)                                           |
-| Authentication Framework       | 2026-01-02      | Multi-type auth, encryption, OAuth, API keys, 139 tests - [Feature Doc](Features/authentication-framework.md)                                         |
-| Retry Logic & Error Handling   | 2026-01-02      | Exponential backoff, circuit breaker, HTTP client, 252 total tests - [Feature Doc](Features/retry-error-handling.md)                                  |
-| AI Documentation Scraper       | 2026-01-02      | Firecrawl, LLM abstraction, job processing, OpenAPI parser, AI extraction, action generator - [Feature Doc](Features/ai-documentation-scraper.md)     |
-| Action Registry & Schema       | 2026-01-02      | Zod schemas, repository, service, JSON Schema validator (Ajv), REST APIs, 472 total tests - [Feature Doc](Features/action-registry-schema.md)         |
-| Token Refresh Management       | 2026-01-02      | Advisory locks, retry logic, cron job, manual refresh API, 505 total tests - [Feature Doc](Features/token-refresh-management.md)                      |
-| Gateway API                    | 2026-01-02      | Unified REST API, action invocation pipeline, health endpoint, request logs, 592 total tests - [Feature Doc](Features/gateway-api.md)                 |
-| **Basic Configuration UI**     | 2026-01-02      | Full dashboard with wizard, action CRUD, testing, logs, design system, 592 tests - [Feature Doc](Features/basic-configuration-ui.md)                  |
-| **Pagination Handler**         | 2026-01-03      | V0.5 Feature #1 - Auto pagination with cursor/offset/page/link strategies, LLM-friendly limits - [Feature Doc](Features/pagination-handler.md)        |
-| **Response Validation**        | 2026-01-03      | V0.5 Feature #2 - Zod-based schema validation with strict/warn/lenient modes, drift detection - [Feature Doc](Features/response-validation.md)        |
-| **Basic Field Mapping**        | 2026-01-03      | V0.5 Feature #3 - JSONPath mapping, type coercion, fail-open mode, UI configuration - [Feature Doc](Features/basic-field-mapping.md)                  |
-| **Dashboard Polish & Tagging** | 2026-01-04      | V0.5 Feature #4 - Integration/action tags, tag filters, real dashboard stats, enriched logs - [Feature Doc](Features/dashboard-polish-and-tagging.md) |
-| **Multi-App Connections**      | 2026-01-25      | V0.75 Feature #1 - Connection entity, per-app credential isolation, 9 tasks - [Feature Doc](Features/multi-app-connections.md)                        |
-| **Hybrid Auth Model**          | 2026-01-25      | V0.75 Feature #2 - Platform connectors, one-click OAuth, credential source tracking, 8 tasks - [Feature Doc](Features/hybrid-auth-model.md)           |
+| Feature/Task                       | Completion Date | Notes                                                                                                                                                 |
+| ---------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project Scaffolding                | 2026-01-01      | Next.js 14, TypeScript, Tailwind, Shadcn/ui, Prisma - [Feature Doc](Features/project-scaffolding.md)                                                  |
+| Database Setup                     | 2026-01-02      | Supabase config, Prisma schema, seed data, 16 integration tests - [Feature Doc](Features/database-setup.md)                                           |
+| Authentication Framework           | 2026-01-02      | Multi-type auth, encryption, OAuth, API keys, 139 tests - [Feature Doc](Features/authentication-framework.md)                                         |
+| Retry Logic & Error Handling       | 2026-01-02      | Exponential backoff, circuit breaker, HTTP client, 252 total tests - [Feature Doc](Features/retry-error-handling.md)                                  |
+| AI Documentation Scraper           | 2026-01-02      | Firecrawl, LLM abstraction, job processing, OpenAPI parser, AI extraction, action generator - [Feature Doc](Features/ai-documentation-scraper.md)     |
+| Action Registry & Schema           | 2026-01-02      | Zod schemas, repository, service, JSON Schema validator (Ajv), REST APIs, 472 total tests - [Feature Doc](Features/action-registry-schema.md)         |
+| Token Refresh Management           | 2026-01-02      | Advisory locks, retry logic, cron job, manual refresh API, 505 total tests - [Feature Doc](Features/token-refresh-management.md)                      |
+| Gateway API                        | 2026-01-02      | Unified REST API, action invocation pipeline, health endpoint, request logs, 592 total tests - [Feature Doc](Features/gateway-api.md)                 |
+| **Basic Configuration UI**         | 2026-01-02      | Full dashboard with wizard, action CRUD, testing, logs, design system, 592 tests - [Feature Doc](Features/basic-configuration-ui.md)                  |
+| **Pagination Handler**             | 2026-01-03      | V0.5 Feature #1 - Auto pagination with cursor/offset/page/link strategies, LLM-friendly limits - [Feature Doc](Features/pagination-handler.md)        |
+| **Response Validation**            | 2026-01-03      | V0.5 Feature #2 - Zod-based schema validation with strict/warn/lenient modes, drift detection - [Feature Doc](Features/response-validation.md)        |
+| **Basic Field Mapping**            | 2026-01-03      | V0.5 Feature #3 - JSONPath mapping, type coercion, fail-open mode, UI configuration - [Feature Doc](Features/basic-field-mapping.md)                  |
+| **Dashboard Polish & Tagging**     | 2026-01-04      | V0.5 Feature #4 - Integration/action tags, tag filters, real dashboard stats, enriched logs - [Feature Doc](Features/dashboard-polish-and-tagging.md) |
+| **Multi-App Connections**          | 2026-01-25      | V0.75 Feature #1 - Connection entity, per-app credential isolation, 9 tasks - [Feature Doc](Features/multi-app-connections.md)                        |
+| **Hybrid Auth Model**              | 2026-01-25      | V0.75 Feature #2 - Platform connectors, one-click OAuth, credential source tracking, 8 tasks - [Feature Doc](Features/hybrid-auth-model.md)           |
+| **Continuous Integration Testing** | 2026-01-25      | V0.75 Feature #3 - Scheduled health checks, cron jobs, health dashboard, 10 tasks - [Feature Doc](Features/continuous-integration-testing.md)         |
 
 ### In Progress
 
-| Feature/Task                   | Started    | Notes                                                                                                  |
-| ------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------ |
-| Continuous Integration Testing | 2026-01-25 | V0.75 Feature #3 - Scheduled health checks - [Feature Doc](Features/continuous-integration-testing.md) |
+| Feature/Task            | Started    | Notes                                                                                                            |
+| ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| Per-App Custom Mappings | 2026-01-25 | V0.75 Feature #4 - Connection-level field mapping overrides - [Feature Doc](Features/per-app-custom-mappings.md) |
 
 ### Next Up
 
-| Feature                 | Priority | Notes                                              |
-| ----------------------- | -------- | -------------------------------------------------- |
-| Per-App Custom Mappings | P2       | V0.75 Feature #4 - Per-app field mapping overrides |
+| Feature | Priority | Notes                                              |
+| ------- | -------- | -------------------------------------------------- |
+| —       | —        | V0.75 scope complete after Per-App Custom Mappings |
 
 ### Recent Enhancements (Post-MVP)
 
@@ -92,9 +93,9 @@
 
 ### Not Started (V0.75)
 
-| Feature/Task            | Priority | Notes                                              |
-| ----------------------- | -------- | -------------------------------------------------- |
-| Per-App Custom Mappings | P2       | Consuming apps can define their own field mappings |
+| Feature/Task | Priority | Notes                                          |
+| ------------ | -------- | ---------------------------------------------- |
+| —            | —        | All V0.75 features now complete or in progress |
 
 ---
 
@@ -139,8 +140,8 @@
 | --- | ------------------------------ | ---------------- | ---------- | ----------- | -------------------------------------------------- |
 | 1   | Multi-App Connections          | V0.5 complete    | HIGH       | ✅ DONE     | Connection entity, per-app credential isolation    |
 | 2   | Hybrid Auth Model              | #1               | HIGH       | ✅ DONE     | Platform connectors, compliance tracking           |
-| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | 🚧 PLANNING | Scheduled health checks on all integrations        |
-| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | —           | Consuming apps can define their own field mappings |
+| 3   | Continuous Integration Testing | Gateway API ✅   | MED        | ✅ DONE     | Scheduled health checks on all integrations        |
+| 4   | Per-App Custom Mappings        | Field Mapping ✅ | MED        | 🚧 PLANNING | Consuming apps can define their own field mappings |
 
 **Rationale:**
 

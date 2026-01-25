@@ -381,7 +381,7 @@ export async function listConnections(
   );
 
   return {
-    connections: result.connections.map(toConnectionResponse),
+    connections: result.connections.map((c) => toConnectionResponse(c)),
     pagination: {
       cursor: result.nextCursor,
       hasMore: result.nextCursor !== null,
@@ -399,7 +399,7 @@ export async function getAllConnections(
   integrationId: string
 ): Promise<ConnectionResponse[]> {
   const connections = await findAllConnectionsForIntegration(tenantId, integrationId);
-  return connections.map(toConnectionResponse);
+  return connections.map((c) => toConnectionResponse(c));
 }
 
 /**

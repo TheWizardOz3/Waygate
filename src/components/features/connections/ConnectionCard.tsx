@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ConnectorTypeBadge } from './ConnectorTypeBadge';
+import { HealthStatusDot } from '@/components/features/health';
 import { cn } from '@/lib/utils';
 import type { ConnectionResponse } from '@/lib/modules/connections/connection.schemas';
 
@@ -43,7 +44,8 @@ export function ConnectionCard({
   isSelected,
   className,
 }: ConnectionCardProps) {
-  const { id, name, slug, status, isPrimary, connectorType, baseUrl, createdAt } = connection;
+  const { id, name, slug, status, isPrimary, connectorType, baseUrl, createdAt, healthStatus } =
+    connection;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only select if we didn't click on an interactive element
@@ -115,8 +117,9 @@ export function ConnectionCard({
             </div>
           </div>
 
-          {/* Status Badge & Arrow */}
+          {/* Status Badge & Health & Arrow */}
           <div className="flex items-center gap-2">
+            {healthStatus && <HealthStatusDot status={healthStatus} size="default" />}
             <ConnectionStatusBadge status={status} size="sm" />
             {onSelect && (
               <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />

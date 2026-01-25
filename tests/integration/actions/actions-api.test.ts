@@ -80,6 +80,7 @@ const mockIntegration = {
   status: IntegrationStatus.active,
   tags: [],
   metadata: { baseUrl: 'https://api.slack.com' },
+  healthCheckConfig: {},
   createdAt: new Date(),
   updatedAt: new Date(),
 };

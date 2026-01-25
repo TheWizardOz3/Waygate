@@ -4,6 +4,14 @@
     {
       "path": "/api/v1/internal/token-refresh",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/v1/internal/health-checks/credential",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/v1/internal/health-checks/connectivity",
+      "schedule": "0 */12 * * *"
     }
   ]
 }

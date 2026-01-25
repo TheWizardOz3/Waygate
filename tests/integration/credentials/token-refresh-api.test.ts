@@ -93,6 +93,7 @@ describe('Token Refresh API Endpoints', () => {
     status: 'active',
     tags: [],
     metadata: {},
+    healthCheckConfig: {},
     createdAt: new Date(),
     updatedAt: new Date(),
   };

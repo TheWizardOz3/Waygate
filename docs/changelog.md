@@ -14,6 +14,7 @@
 
 | Version | Date       | Type       | Summary                                                            |
 | ------- | ---------- | ---------- | ------------------------------------------------------------------ |
+| 0.8.1   | 2026-01-25 | patch      | Continuous Integration Testing - Complete Feature (10/10 Tasks)    |
 | 0.8.0   | 2026-01-25 | minor      | **Hybrid Auth Model - V0.75 Feature #2 complete**                  |
 | 0.7.0   | 2026-01-25 | minor      | Multi-App Connections - V0.75 Feature #1 complete                  |
 | 0.6.2   | 2026-01-05 | patch      | UI Polish - Linear-style design, live data in Overview tab         |
@@ -69,6 +70,142 @@
 - {{Breaking change — reference decision_log entry}}
 - **Migration:** {{Brief migration instruction or link to decision_log}}
 ```
+
+---
+
+## [0.8.1] - 2026-01-25
+
+### Added
+
+- **Continuous Integration Testing - Complete** (V0.75 Feature #3): Full implementation of tiered health checks with database schema, repository, services for all tiers, scheduled cron jobs, API routes, connection updates, UI components, and connection detail health section
+
+#### Database Schema (Task 1)
+
+- `HealthCheck` model for tracking connection health across tiers
+- `HealthCheckStatus` enum (`healthy`, `degraded`, `unhealthy`)
+- `HealthCheckTier` enum (`credential`, `connectivity`, `full_scan`)
+- `HealthCheckTrigger` enum (`scheduled`, `manual`)
+- `CredentialHealthStatus` enum (`active`, `expiring`, `expired`, `missing`)
+- `CircuitBreakerStatus` enum (`closed`, `open`, `half_open`)
+- Health tracking fields on `Connection` model (`healthStatus`, tier timestamps)
+- `healthCheckConfig` JSONB field on `Integration` model
+
+#### Repository & Schemas (Task 2)
+
+- `src/lib/modules/health-checks/health-check.repository.ts`: CRUD operations with tier-aware queries
+  - `createHealthCheck()`: Create health check records
+  - `findByConnectionId()`: Paginated history with tier/status filters
+  - `getLatestByConnectionId()`, `getLatestByTier()`, `getLatestByAllTiers()`: Latest check queries
+  - `getConnectionsNeedingCredentialCheck/ConnectivityCheck/FullScan()`: Scheduling utilities
+  - `updateConnectionHealthStatus()`: Updates connection health after checks
+  - `deleteOldHealthChecks()`: Retention cleanup
+- `src/lib/modules/health-checks/health-check.schemas.ts`: Tier-aware Zod validation
+  - Discriminated union schemas for tier-specific inputs
+  - `CreateCredentialCheckInputSchema`, `CreateConnectivityCheckInputSchema`, `CreateFullScanCheckInputSchema`
+  - Response schemas with helper functions (`toHealthCheckResponse`, `calculateOverallHealthStatus`)
+  - `HealthCheckConfigSchema` for integration-level health check configuration
+- `src/lib/modules/health-checks/index.ts`: Module exports
+
+#### Tier 1 Credential Check Service (Task 3)
+
+- `src/lib/modules/health-checks/credential-check.service.ts`: Credential validation without API calls
+  - `runCredentialCheck()`: Single connection credential check
+  - `runCredentialCheckBatch()`: Batch credential checks for cron jobs
+  - `getConnectionsForCredentialCheck()`: Get tenant connections needing checks
+  - `getAllConnectionsForCredentialCheck()`: Get all connections needing checks (global cron)
+  - Credential status analysis: active, expiring (<1hr warning), expired, missing
+  - Updates connection health status after each check
+
+#### Tier 2 Connectivity Check Service (Task 4)
+
+- `src/lib/modules/health-checks/connectivity-check.service.ts`: API connectivity verification with single test action
+  - `runConnectivityCheck()`: Single connection connectivity check
+  - `runConnectivityCheckBatch()`: Batch connectivity checks for cron jobs with latency averaging
+  - `getConnectionsForConnectivityCheck()`: Get tenant connections needing checks
+  - `getAllConnectionsForConnectivityCheck()`: Get all connections needing checks (global cron)
+  - Smart test action selection: configured > integration default > safe GET patterns > any GET
+  - 30-second timeout handling
+  - Records latency, success/failure, HTTP status codes
+  - Includes Tier 1 credential status in results
+
+#### Tier 3 Full Scan Service (Task 5)
+
+- `src/lib/modules/health-checks/full-scan.service.ts`: Full action testing for API breaking change detection
+  - `runFullScan()`: Tests all safe GET actions for a connection
+  - `getConnectionsForFullScan()`: Get connections for optional monthly scans
+  - Safety: Only tests GET actions (no side effects), skips actions with required params
+  - Schema validation: Compares responses against output schemas to detect drift
+  - Rate limiting: 500ms delay between requests to avoid API rate limits
+  - Max 50 actions per scan
+  - Detailed per-action results with pass/fail/skip status
+  - Aggregated summary: total, passed, failed, skipped counts
+
+#### Scheduled Cron Jobs (Task 6)
+
+- `src/app/api/v1/internal/health-checks/credential/route.ts`: Tier 1 credential check cron
+  - Schedule: Every 15 minutes (`*/15 * * * *`)
+  - Max 100 connections per run
+  - Protected by CRON_SECRET
+  - GET endpoint for status/configuration
+- `src/app/api/v1/internal/health-checks/connectivity/route.ts`: Tier 2 connectivity check cron
+  - Schedule: Every 12 hours (`0 */12 * * *`)
+  - Max 50 connections per run (makes API calls)
+  - 5-minute max duration for longer execution
+  - Tracks average latency across checks
+  - Protected by CRON_SECRET
+
+- `vercel.json`: Added cron configurations for both health check jobs
+
+#### Health Check API Routes (Task 7)
+
+- `src/app/api/v1/connections/[id]/health-checks/route.ts`: Connection health check endpoints
+  - `GET`: List health check history with tier/status filters, pagination
+  - `POST`: Trigger manual health check (specify tier: credential, connectivity, full_scan)
+- `src/app/api/v1/connections/[id]/health-checks/latest/route.ts`: Latest health check
+  - `GET`: Returns most recent health check per tier, connection health summary
+- `src/app/api/v1/health-checks/summary/route.ts`: Tenant health summary
+  - `GET`: Returns health counts (healthy/degraded/unhealthy), health score, connections needing attention
+
+#### Connection API Updates (Task 8)
+
+- `src/lib/modules/connections/connection.schemas.ts`: Updated connection schemas
+  - Added `HealthCheckStatusSchema` enum (healthy, degraded, unhealthy)
+  - Added `ConnectionHealthSummarySchema` with per-tier timestamps
+  - Extended `ConnectionResponseSchema` with `healthStatus` and `health` fields
+  - Updated `toConnectionResponse()` to include health data when available
+
+- `src/lib/modules/connections/connection.service.ts`: Updated service functions
+  - All connection list/detail responses now include health status automatically
+
+#### Health UI Components (Task 9)
+
+- `src/components/features/health/` - New health components directory:
+  - `HealthStatusBadge.tsx`: Badge showing health status (healthy/degraded/unhealthy) with icon and tooltip
+  - `HealthStatusDot.tsx`: Compact dot indicator for inline displays
+  - `HealthCheckTimeline.tsx`: Timeline showing health check history with tier badges
+  - `HealthSummaryCard.tsx`: Dashboard card with health score, progress bar, and status breakdown
+  - `index.ts`: Barrel exports for all health components
+
+- `src/hooks/useHealthChecks.ts`: React Query hooks for health check data
+  - `useHealthChecks`: Fetch health check history for a connection
+  - `useLatestHealthCheck`: Get latest health check per tier
+  - `useHealthSummary`: Fetch tenant-wide health summary
+  - `useTriggerHealthCheck`: Trigger manual health check mutation
+  - `useInvalidateHealthChecks`: Helper to invalidate health caches
+
+- `src/components/features/connections/ConnectionCard.tsx`: Added health status dot
+
+#### Connection Detail Health Section (Task 10)
+
+- `src/components/features/connections/ConnectionHealthSection.tsx`: New health section component
+  - Displays health status badge with current overall status
+  - Shows tier-by-tier breakdown (Credential, Connectivity, Full Scan)
+  - "Run" buttons to trigger manual health checks for each tier
+  - Warning banner when connection is unhealthy
+  - Collapsible health check history timeline
+  - Loading states and skeletons
+
+- `src/components/features/connections/ConnectionDetail.tsx`: Integrated ConnectionHealthSection
 
 ---
 
