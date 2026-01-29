@@ -155,8 +155,9 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
   const onSubmit = async (data: FieldValues) => {
     try {
       if (isEditing && actionId) {
-        const updatePayload: UpdateActionInput & { id: string } = {
+        const updatePayload: UpdateActionInput & { id: string; integrationId: string } = {
           id: actionId,
+          integrationId,
           name: data.name,
           description: data.description,
           httpMethod: data.httpMethod,
@@ -336,7 +337,12 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
 
             {isEditing && actionId && (
               <TabsContent value="mappings" className="mt-6 space-y-0">
-                <MappingsTab actionId={actionId} integrationId={integrationId} />
+                <MappingsTab
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  inputSchema={existingAction?.inputSchema}
+                  outputSchema={existingAction?.outputSchema}
+                />
               </TabsContent>
             )}
 
@@ -344,7 +350,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
               <TabsContent value="testing" className="mt-6 space-y-0">
                 <TestingTab
                   actionId={actionId}
-                  integrationId={integrationId}
+                  integrationSlug={integration?.slug ?? ''}
                   actionSlug={existingAction?.slug ?? ''}
                 />
               </TabsContent>

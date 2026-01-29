@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trash2, ArrowRight, Loader2, Info, Users } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Trash2, ArrowRight, Loader2, Info, Users, FileCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,20 +25,35 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   useMappings,
   useMappingConfig,
   useCreateMapping,
   useDeleteMapping,
 } from '@/hooks/useMappings';
-import type { FieldMapping, MappingDirection, CoercionType } from '@/lib/modules/execution/mapping';
+import {
+  getSchemaFieldPaths,
+  type FieldMapping,
+  type MappingDirection,
+  type CoercionType,
+  type SchemaFieldInfo,
+} from '@/lib/modules/execution/mapping';
+import type { JsonSchema } from '@/lib/modules/actions/action.schemas';
 
 interface MappingsTabProps {
   actionId: string;
   integrationId: string;
+  inputSchema?: JsonSchema | null;
+  outputSchema?: JsonSchema | null;
 }
 
-export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
+export function MappingsTab({
+  actionId,
+  integrationId,
+  inputSchema,
+  outputSchema,
+}: MappingsTabProps) {
   const {
     data: mappingsData,
     isLoading,
@@ -52,11 +67,43 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
     isPending: configPending,
   } = useMappingConfig(actionId, integrationId);
 
-  const mappings = mappingsData?.mappings ?? [];
+  const mappings = useMemo(() => mappingsData?.mappings ?? [], [mappingsData?.mappings]);
   const stats = mappingsData?.stats;
   const connectionsWithOverrides = stats?.connectionsWithOverrides ?? 0;
   const enabled = config?.enabled ?? false;
   const failureMode = config?.failureMode ?? 'passthrough';
+
+  // Extract fields from schemas
+  const outputFields = useMemo(() => {
+    if (!outputSchema) return [];
+    return getSchemaFieldPaths(outputSchema as Parameters<typeof getSchemaFieldPaths>[0]);
+  }, [outputSchema]);
+
+  const inputFields = useMemo(() => {
+    if (!inputSchema) return [];
+    return getSchemaFieldPaths(inputSchema as Parameters<typeof getSchemaFieldPaths>[0]);
+  }, [inputSchema]);
+
+  // Filter out fields that already have mappings configured
+  const configuredOutputPaths = useMemo(
+    () => new Set(mappings.filter((m) => m.direction === 'output').map((m) => m.sourcePath)),
+    [mappings]
+  );
+
+  const configuredInputPaths = useMemo(
+    () => new Set(mappings.filter((m) => m.direction === 'input').map((m) => m.sourcePath)),
+    [mappings]
+  );
+
+  const availableOutputFields = useMemo(
+    () => outputFields.filter((f) => !configuredOutputPaths.has(f.path)),
+    [outputFields, configuredOutputPaths]
+  );
+
+  const availableInputFields = useMemo(
+    () => inputFields.filter((f) => !configuredInputPaths.has(f.path)),
+    [inputFields, configuredInputPaths]
+  );
 
   const handleToggleEnabled = async (value: boolean) => {
     try {
@@ -200,6 +247,17 @@ export function MappingsTab({ actionId, integrationId }: MappingsTabProps) {
                 <code className="rounded bg-muted px-1">$.email</code>
               </p>
             </div>
+          )}
+
+          {/* Schema Fields Suggestions */}
+          {(availableOutputFields.length > 0 || availableInputFields.length > 0) && (
+            <SchemaFieldsSection
+              outputFields={availableOutputFields}
+              inputFields={availableInputFields}
+              actionId={actionId}
+              integrationId={integrationId}
+              onMappingAdded={refetch}
+            />
           )}
         </CardContent>
       )}
@@ -393,5 +451,206 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
         </Button>
       </TableCell>
     </TableRow>
+  );
+}
+
+// =============================================================================
+// Schema Fields Section
+// =============================================================================
+
+interface SchemaFieldsSectionProps {
+  outputFields: SchemaFieldInfo[];
+  inputFields: SchemaFieldInfo[];
+  actionId: string;
+  integrationId: string;
+  onMappingAdded: () => void;
+}
+
+function SchemaFieldsSection({
+  outputFields,
+  inputFields,
+  actionId,
+  integrationId,
+  onMappingAdded,
+}: SchemaFieldsSectionProps) {
+  const [outputOpen, setOutputOpen] = useState(true);
+  const [inputOpen, setInputOpen] = useState(true);
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <FileCode className="h-4 w-4" />
+        <span>Available Schema Fields</span>
+        <Tooltip>
+          <TooltipTrigger>
+            <Info className="h-3.5 w-3.5" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-xs">
+              These fields are detected from your action&apos;s schema. Click the + button to add a
+              mapping, then specify the target path for your app.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {outputFields.length > 0 && (
+        <Collapsible open={outputOpen} onOpenChange={setOutputOpen}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-2 h-8 w-full justify-between px-3 text-xs"
+            >
+              <span className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  output
+                </Badge>
+                Response Fields ({outputFields.length})
+              </span>
+              <ArrowRight
+                className={`h-3 w-3 transition-transform ${outputOpen ? 'rotate-90' : ''}`}
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-1.5 rounded-md border bg-muted/20 p-2">
+              {outputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="output"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {inputFields.length > 0 && (
+        <Collapsible open={inputOpen} onOpenChange={setInputOpen}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-2 h-8 w-full justify-between px-3 text-xs"
+            >
+              <span className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  input
+                </Badge>
+                Request Fields ({inputFields.length})
+              </span>
+              <ArrowRight
+                className={`h-3 w-3 transition-transform ${inputOpen ? 'rotate-90' : ''}`}
+              />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-1.5 rounded-md border bg-muted/20 p-2">
+              {inputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="input"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Schema Field Row
+// =============================================================================
+
+interface SchemaFieldRowProps {
+  field: SchemaFieldInfo;
+  direction: MappingDirection;
+  actionId: string;
+  integrationId: string;
+  onMappingAdded: () => void;
+}
+
+function SchemaFieldRow({
+  field,
+  direction,
+  actionId,
+  integrationId,
+  onMappingAdded,
+}: SchemaFieldRowProps) {
+  const [targetPath, setTargetPath] = useState('');
+  const { mutateAsync: createMapping, isPending } = useCreateMapping(actionId, integrationId);
+
+  const handleAdd = async () => {
+    if (!targetPath.trim()) return;
+
+    try {
+      await createMapping({
+        sourcePath: field.path,
+        targetPath: targetPath.trim(),
+        direction,
+        transformConfig: {
+          omitIfNull: false,
+          omitIfEmpty: false,
+          arrayMode: 'all' as const,
+        },
+      });
+      toast.success('Mapping added');
+      setTargetPath('');
+      onMappingAdded();
+    } catch {
+      toast.error('Failed to add mapping');
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-background px-2 py-1.5">
+      <div className="flex flex-1 items-center gap-2">
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{field.path}</code>
+        <Badge variant="secondary" className="text-[10px]">
+          {field.type}
+        </Badge>
+        {field.required && (
+          <Badge variant="outline" className="border-amber-500/30 text-[10px] text-amber-600">
+            required
+          </Badge>
+        )}
+      </div>
+      <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <Input
+        value={targetPath}
+        onChange={(e) => setTargetPath(e.target.value)}
+        placeholder="$.yourField"
+        className="h-7 w-36 font-mono text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && targetPath.trim()) {
+            handleAdd();
+          }
+        }}
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={handleAdd}
+        disabled={!targetPath.trim() || isPending}
+      >
+        {isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Plus className="h-3.5 w-3.5" />
+        )}
+      </Button>
+    </div>
   );
 }
