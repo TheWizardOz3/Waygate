@@ -61,9 +61,12 @@ import { TagFilter } from '@/components/features/integrations/TagFilter';
 import { TagList } from '@/components/ui/tag-badge';
 import { useActions, useBulkDeleteActions, useIntegration, useTags } from '@/hooks';
 import type { ActionResponse } from '@/lib/modules/actions/action.schemas';
+import type { IntegrationResponse } from '@/lib/modules/integrations/integration.schemas';
 
 interface ActionTableProps {
   integrationId: string;
+  /** Pass integration to avoid redundant fetch - if not provided, will be fetched */
+  integration?: IntegrationResponse;
 }
 
 /**
@@ -73,7 +76,7 @@ function buildWaygateEndpoint(integrationSlug: string, actionSlug: string): stri
   return `/api/v1/actions/${integrationSlug}/${actionSlug}`;
 }
 
-export function ActionTable({ integrationId }: ActionTableProps) {
+export function ActionTable({ integrationId, integration: integrationProp }: ActionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -83,7 +86,9 @@ export function ActionTable({ integrationId }: ActionTableProps) {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const { data, isLoading, isError } = useActions(integrationId);
-  const { data: integration } = useIntegration(integrationId);
+  // Only fetch integration if not passed as prop (avoids redundant queries)
+  const { data: fetchedIntegration } = useIntegration(integrationProp ? undefined : integrationId);
+  const integration = integrationProp ?? fetchedIntegration;
   const { data: tagsData } = useTags('actions');
   const bulkDelete = useBulkDeleteActions();
 

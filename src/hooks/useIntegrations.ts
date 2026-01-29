@@ -25,6 +25,7 @@ export const integrationKeys = {
   details: () => [...integrationKeys.all, 'detail'] as const,
   detail: (id: string) => [...integrationKeys.details(), id] as const,
   health: (id: string) => [...integrationKeys.detail(id), 'health'] as const,
+  credentials: (id: string) => [...integrationKeys.detail(id), 'credentials'] as const,
 };
 
 // =============================================================================
@@ -50,6 +51,22 @@ interface IntegrationHealth {
   lastChecked: string | null;
   credentialStatus: 'active' | 'expired' | 'needs_reauth' | 'missing';
   message?: string;
+}
+
+export interface IntegrationCredentialsResponse {
+  integration: {
+    id: string;
+    name: string;
+    authType: string;
+    status: string;
+  };
+  credentials: {
+    hasCredentials: boolean;
+    status?: string;
+    credentialType?: string;
+    expiresAt?: string | null;
+    scopes?: string[];
+  };
 }
 
 // =============================================================================
@@ -92,6 +109,10 @@ async function deleteIntegration(id: string): Promise<void> {
 
 async function fetchIntegrationHealth(id: string): Promise<IntegrationHealth> {
   return apiClient.get<IntegrationHealth>(`/integrations/${id}/health`);
+}
+
+async function fetchIntegrationCredentials(id: string): Promise<IntegrationCredentialsResponse> {
+  return apiClient.get<IntegrationCredentialsResponse>(`/integrations/${id}/credentials`);
 }
 
 // =============================================================================
@@ -143,6 +164,18 @@ export function useIntegrationHealth(id: string | undefined) {
     enabled: !!id,
     staleTime: 60 * 1000,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch integration credentials status
+ */
+export function useIntegrationCredentials(id: string | undefined) {
+  return useQuery({
+    queryKey: integrationKeys.credentials(id!),
+    queryFn: () => fetchIntegrationCredentials(id!),
+    enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 

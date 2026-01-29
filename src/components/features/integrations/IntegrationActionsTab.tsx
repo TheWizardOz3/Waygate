@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Sparkles } from 'lucide-react';
 import { ActionTable } from '@/components/features/actions/ActionTable';
+import type { IntegrationResponse } from '@/lib/modules/integrations/integration.schemas';
 
 interface IntegrationActionsTabProps {
   integrationId: string;
+  integration?: IntegrationResponse;
 }
 
-export function IntegrationActionsTab({ integrationId }: IntegrationActionsTabProps) {
+export function IntegrationActionsTab({ integrationId, integration }: IntegrationActionsTabProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -34,7 +36,7 @@ export function IntegrationActionsTab({ integrationId }: IntegrationActionsTabPr
         </div>
       </CardHeader>
       <CardContent>
-        <ActionTable integrationId={integrationId} />
+        <ActionTable integrationId={integrationId} integration={integration} />
       </CardContent>
     </Card>
   );

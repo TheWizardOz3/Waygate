@@ -100,6 +100,10 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
     [actions, selectedActionId]
   );
 
+  // Determine if schemas are array types at root
+  const isOutputArray = selectedAction?.outputSchema?.type === 'array';
+  const isInputArray = selectedAction?.inputSchema?.type === 'array';
+
   // Extract schema fields as potential source paths
   const outputSchemaFields = useMemo(() => {
     if (!selectedAction?.outputSchema) return [];
@@ -127,6 +131,10 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
       mappings.filter((m) => m.mapping.direction === 'input').map((m) => m.mapping.sourcePath)
     );
   }, [mappings]);
+
+  // Check if root mapping is already configured
+  const hasRootOutputMapping = configuredOutputPaths.has('$');
+  const hasRootInputMapping = configuredInputPaths.has('$');
 
   // Get unconfigured schema fields
   const unconfiguredOutputFields = useMemo(() => {
@@ -294,13 +302,20 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
             </Button>
           </div>
         ) : mappings.length === 0 &&
-          (unconfiguredOutputFields.length > 0 || unconfiguredInputFields.length > 0) ? (
+          (unconfiguredOutputFields.length > 0 ||
+            unconfiguredInputFields.length > 0 ||
+            (isOutputArray && !hasRootOutputMapping) ||
+            (isInputArray && !hasRootInputMapping)) ? (
           // Show schema fields when no mappings exist yet
           <SchemaFieldsSection
             connectionId={connectionId}
             actionId={selectedActionId}
             outputFields={unconfiguredOutputFields}
             inputFields={unconfiguredInputFields}
+            isOutputArray={isOutputArray}
+            isInputArray={isInputArray}
+            hasRootOutputMapping={hasRootOutputMapping}
+            hasRootInputMapping={hasRootInputMapping}
             onMappingCreated={() => refetch()}
           />
         ) : (
@@ -349,13 +364,20 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
             </div>
 
             {/* Show remaining unconfigured schema fields */}
-            {(unconfiguredOutputFields.length > 0 || unconfiguredInputFields.length > 0) &&
+            {(unconfiguredOutputFields.length > 0 ||
+              unconfiguredInputFields.length > 0 ||
+              (isOutputArray && !hasRootOutputMapping) ||
+              (isInputArray && !hasRootInputMapping)) &&
               showSchemaFields && (
                 <SchemaFieldsSection
                   connectionId={connectionId}
                   actionId={selectedActionId}
                   outputFields={unconfiguredOutputFields}
                   inputFields={unconfiguredInputFields}
+                  isOutputArray={isOutputArray}
+                  isInputArray={isInputArray}
+                  hasRootOutputMapping={hasRootOutputMapping}
+                  hasRootInputMapping={hasRootInputMapping}
                   onMappingCreated={() => refetch()}
                   collapsible
                   onDismiss={() => setShowSchemaFields(false)}
@@ -397,6 +419,10 @@ interface SchemaFieldsSectionProps {
   actionId: string;
   outputFields: SchemaFieldInfo[];
   inputFields: SchemaFieldInfo[];
+  isOutputArray?: boolean;
+  isInputArray?: boolean;
+  hasRootOutputMapping?: boolean;
+  hasRootInputMapping?: boolean;
   onMappingCreated?: () => void;
   collapsible?: boolean;
   onDismiss?: () => void;
@@ -407,6 +433,10 @@ function SchemaFieldsSection({
   actionId,
   outputFields,
   inputFields,
+  isOutputArray = false,
+  isInputArray = false,
+  hasRootOutputMapping = false,
+  hasRootInputMapping = false,
   onMappingCreated,
   collapsible,
   onDismiss,
@@ -414,12 +444,19 @@ function SchemaFieldsSection({
   const [expandedOutput, setExpandedOutput] = useState(true);
   const [expandedInput, setExpandedInput] = useState(false);
 
-  const hasOutputFields = outputFields.length > 0;
-  const hasInputFields = inputFields.length > 0;
+  const hasOutputFields = outputFields.length > 0 || (isOutputArray && !hasRootOutputMapping);
+  const hasInputFields = inputFields.length > 0 || (isInputArray && !hasRootInputMapping);
 
   if (!hasOutputFields && !hasInputFields) {
     return null;
   }
+
+  // Calculate total field count including root array options
+  const totalFields =
+    outputFields.length +
+    inputFields.length +
+    (isOutputArray && !hasRootOutputMapping ? 1 : 0) +
+    (isInputArray && !hasRootInputMapping ? 1 : 0);
 
   return (
     <div className="space-y-4 rounded-lg border border-dashed border-violet-500/30 bg-violet-500/5 p-4">
@@ -428,7 +465,7 @@ function SchemaFieldsSection({
           <Sparkles className="h-4 w-4 text-violet-500" />
           <span className="text-sm font-medium">Available Fields from Schema</span>
           <Badge variant="secondary" className="text-xs">
-            {outputFields.length + inputFields.length} fields
+            {totalFields} fields
           </Badge>
         </div>
         {collapsible && onDismiss && (
@@ -454,11 +491,23 @@ function SchemaFieldsSection({
             />
             Output Fields (API → App)
             <Badge variant="outline" className="ml-auto text-xs">
-              {outputFields.length}
+              {outputFields.length + (isOutputArray && !hasRootOutputMapping ? 1 : 0)}
             </Badge>
           </button>
           {expandedOutput && (
             <div className="space-y-1 pl-6">
+              {/* Root array mapping option */}
+              {isOutputArray && !hasRootOutputMapping && (
+                <RootMappingRow
+                  label="Entire response (array)"
+                  path="$"
+                  type="array"
+                  direction="output"
+                  connectionId={connectionId}
+                  actionId={actionId}
+                  onCreated={onMappingCreated}
+                />
+              )}
               {outputFields.map((field) => (
                 <SchemaFieldRow
                   key={field.path}
@@ -487,11 +536,23 @@ function SchemaFieldsSection({
             />
             Input Fields (App → API)
             <Badge variant="outline" className="ml-auto text-xs">
-              {inputFields.length}
+              {inputFields.length + (isInputArray && !hasRootInputMapping ? 1 : 0)}
             </Badge>
           </button>
           {expandedInput && (
             <div className="space-y-1 pl-6">
+              {/* Root array mapping option */}
+              {isInputArray && !hasRootInputMapping && (
+                <RootMappingRow
+                  label="Entire request (array)"
+                  path="$"
+                  type="array"
+                  direction="input"
+                  connectionId={connectionId}
+                  actionId={actionId}
+                  onCreated={onMappingCreated}
+                />
+              )}
               {inputFields.map((field) => (
                 <SchemaFieldRow
                   key={field.path}
@@ -506,6 +567,102 @@ function SchemaFieldsSection({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Root mapping row for mapping entire array/object
+ */
+interface RootMappingRowProps {
+  label: string;
+  path: string;
+  type: string;
+  direction: 'input' | 'output';
+  connectionId: string;
+  actionId: string;
+  onCreated?: () => void;
+}
+
+function RootMappingRow({
+  label,
+  path,
+  type,
+  direction,
+  connectionId,
+  actionId,
+  onCreated,
+}: RootMappingRowProps) {
+  const [targetPath, setTargetPath] = useState('');
+  const { mutateAsync: createOverride, isPending } = useCreateConnectionOverride(connectionId);
+
+  const handleAdd = async () => {
+    if (!targetPath.trim()) return;
+
+    try {
+      await createOverride({
+        actionId,
+        sourcePath: path,
+        targetPath: targetPath.trim().startsWith('$')
+          ? targetPath.trim()
+          : `$.${targetPath.trim()}`,
+        direction,
+        transformConfig: {
+          omitIfNull: false,
+          omitIfEmpty: false,
+          arrayMode: 'all' as const,
+        },
+      });
+      setTargetPath('');
+      onCreated?.();
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <code className="flex-shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:text-emerald-400">
+            {path}
+          </code>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1 text-xs">
+            <p className="font-medium">{label}</p>
+            <p className="text-muted-foreground">
+              Maps the entire {type} to a single field in your app.
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      <Badge variant="secondary" className="text-[10px]">
+        {type}
+      </Badge>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <ArrowRight className="ml-auto h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <Input
+        value={targetPath}
+        onChange={(e) => setTargetPath(e.target.value)}
+        placeholder="$.data"
+        className="h-7 w-32 font-mono text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && targetPath.trim()) {
+            handleAdd();
+          }
+        }}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={handleAdd}
+        disabled={!targetPath.trim() || isPending}
+      >
+        {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        Add
+      </Button>
     </div>
   );
 }

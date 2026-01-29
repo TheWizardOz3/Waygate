@@ -17,22 +17,30 @@ import { ConnectionInfoBanner } from './ConnectionInfoBanner';
 import { CreateConnectionDialog } from './CreateConnectionDialog';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
 import { toast } from 'sonner';
+import type { IntegrationResponse } from '@/lib/modules/integrations/integration.schemas';
 
 interface ConnectionListProps {
   integrationId: string;
+  /** Pass integration to avoid redundant fetch - if not provided, will be fetched */
+  integration?: IntegrationResponse;
 }
 
 /**
  * List of connections for an integration.
  * Shows connection cards with status and quick actions.
  */
-export function ConnectionList({ integrationId }: ConnectionListProps) {
+export function ConnectionList({
+  integrationId,
+  integration: integrationProp,
+}: ConnectionListProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [connectionToDelete, setConnectionToDelete] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
 
-  const { data: integration } = useIntegration(integrationId);
+  // Only fetch integration if not passed as prop (avoids redundant queries)
+  const { data: fetchedIntegration } = useIntegration(integrationProp ? undefined : integrationId);
+  const integration = integrationProp ?? fetchedIntegration;
   const { data, isLoading, isError, refetch } = useConnections(integrationId);
   const connectMutation = useConnectConnection(integrationId);
   const disconnectMutation = useDisconnectConnection(integrationId);

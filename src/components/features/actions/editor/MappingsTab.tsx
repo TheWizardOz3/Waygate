@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, ArrowRight, Loader2, Info, Users, FileCode } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  ArrowRight,
+  Loader2,
+  Info,
+  Users,
+  ChevronDown,
+  Sparkles,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +34,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   useMappings,
   useMappingConfig,
@@ -73,6 +81,10 @@ export function MappingsTab({
   const enabled = config?.enabled ?? false;
   const failureMode = config?.failureMode ?? 'passthrough';
 
+  // Determine if schemas are array types at root
+  const isOutputArray = outputSchema?.type === 'array';
+  const isInputArray = inputSchema?.type === 'array';
+
   // Extract fields from schemas
   const outputFields = useMemo(() => {
     if (!outputSchema) return [];
@@ -83,6 +95,9 @@ export function MappingsTab({
     if (!inputSchema) return [];
     return getSchemaFieldPaths(inputSchema as Parameters<typeof getSchemaFieldPaths>[0]);
   }, [inputSchema]);
+
+  // Check if there are schema fields available
+  const hasSchemaFields = outputFields.length > 0 || inputFields.length > 0;
 
   // Filter out fields that already have mappings configured
   const configuredOutputPaths = useMemo(
@@ -104,6 +119,10 @@ export function MappingsTab({
     () => inputFields.filter((f) => !configuredInputPaths.has(f.path)),
     [inputFields, configuredInputPaths]
   );
+
+  // Check if root mapping is already configured
+  const hasRootOutputMapping = configuredOutputPaths.has('$');
+  const hasRootInputMapping = configuredInputPaths.has('$');
 
   const handleToggleEnabled = async (value: boolean) => {
     try {
@@ -209,55 +228,66 @@ export function MappingsTab({
             </Select>
           </div>
 
-          {/* Mappings Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-24">Direction</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead className="w-24">Coerce To</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mappings.map((mapping) => (
-                  <MappingRow
-                    key={mapping.id}
-                    mapping={mapping}
-                    actionId={actionId}
-                    integrationId={integrationId}
-                    onDelete={refetch}
-                  />
-                ))}
-                <AddMappingRow actionId={actionId} integrationId={integrationId} onAdd={refetch} />
-              </TableBody>
-            </Table>
-          </div>
+          {/* Configured Mappings Table - Only show if there are mappings */}
+          {mappings.length > 0 && (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-24">Direction</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead>Target</TableHead>
+                    <TableHead className="w-24">Coerce To</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mappings.map((mapping) => (
+                    <MappingRow
+                      key={mapping.id}
+                      mapping={mapping}
+                      actionId={actionId}
+                      integrationId={integrationId}
+                      onDelete={refetch}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-          {mappings.length === 0 && (
+          {/* Schema Fields Section - Primary way to add mappings */}
+          {hasSchemaFields && (
+            <SchemaFieldsSection
+              outputFields={availableOutputFields}
+              inputFields={availableInputFields}
+              isOutputArray={isOutputArray}
+              isInputArray={isInputArray}
+              hasRootOutputMapping={hasRootOutputMapping}
+              hasRootInputMapping={hasRootInputMapping}
+              actionId={actionId}
+              integrationId={integrationId}
+              onMappingAdded={refetch}
+            />
+          )}
+
+          {/* Manual add fallback - Only show when no schema fields available */}
+          {!hasSchemaFields && (
+            <ManualAddSection actionId={actionId} integrationId={integrationId} onAdd={refetch} />
+          )}
+
+          {/* Empty state */}
+          {mappings.length === 0 && !hasSchemaFields && (
             <div className="rounded-lg bg-muted/50 p-4 text-center">
               <p className="text-sm text-muted-foreground">
-                No mappings configured. Use the row above to add your first mapping.
+                No schema detected. Add mappings manually using the form above.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 Example: <code className="rounded bg-muted px-1">$.data.user_email</code> →{' '}
                 <code className="rounded bg-muted px-1">$.email</code>
               </p>
             </div>
-          )}
-
-          {/* Schema Fields Suggestions */}
-          {(availableOutputFields.length > 0 || availableInputFields.length > 0) && (
-            <SchemaFieldsSection
-              outputFields={availableOutputFields}
-              inputFields={availableInputFields}
-              actionId={actionId}
-              integrationId={integrationId}
-              onMappingAdded={refetch}
-            />
           )}
         </CardContent>
       )}
@@ -266,7 +296,7 @@ export function MappingsTab({
 }
 
 // =============================================================================
-// Mapping Row
+// Mapping Row (for existing mappings)
 // =============================================================================
 
 interface MappingRowProps {
@@ -341,16 +371,369 @@ function MappingRow({ mapping, actionId, integrationId, onDelete }: MappingRowPr
 }
 
 // =============================================================================
-// Add Mapping Row
+// Schema Fields Section
 // =============================================================================
 
-interface AddMappingRowProps {
+interface SchemaFieldsSectionProps {
+  outputFields: SchemaFieldInfo[];
+  inputFields: SchemaFieldInfo[];
+  isOutputArray: boolean;
+  isInputArray: boolean;
+  hasRootOutputMapping: boolean;
+  hasRootInputMapping: boolean;
+  actionId: string;
+  integrationId: string;
+  onMappingAdded: () => void;
+}
+
+function SchemaFieldsSection({
+  outputFields,
+  inputFields,
+  isOutputArray,
+  isInputArray,
+  hasRootOutputMapping,
+  hasRootInputMapping,
+  actionId,
+  integrationId,
+  onMappingAdded,
+}: SchemaFieldsSectionProps) {
+  const [outputExpanded, setOutputExpanded] = useState(true);
+  const [inputExpanded, setInputExpanded] = useState(false);
+
+  const hasOutputFields = outputFields.length > 0 || (isOutputArray && !hasRootOutputMapping);
+  const hasInputFields = inputFields.length > 0 || (isInputArray && !hasRootInputMapping);
+
+  if (!hasOutputFields && !hasInputFields) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border border-dashed border-violet-500/30 bg-violet-500/5 p-4">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-violet-500" />
+        <span className="text-sm font-medium">Available Fields from Schema</span>
+        <Badge variant="secondary" className="text-xs">
+          {outputFields.length +
+            inputFields.length +
+            (isOutputArray && !hasRootOutputMapping ? 1 : 0) +
+            (isInputArray && !hasRootInputMapping ? 1 : 0)}{' '}
+          fields
+        </Badge>
+        <Tooltip>
+          <TooltipTrigger>
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-xs">
+              These fields are detected from your action&apos;s schema. Enter a target path and
+              click Add to create a mapping.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Output Fields */}
+      {hasOutputFields && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={() => setOutputExpanded(!outputExpanded)}
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${outputExpanded ? '' : '-rotate-90'}`}
+            />
+            Output Fields (API → Your App)
+            <Badge variant="outline" className="ml-auto text-xs">
+              {outputFields.length + (isOutputArray && !hasRootOutputMapping ? 1 : 0)}
+            </Badge>
+          </button>
+          {outputExpanded && (
+            <div className="space-y-1 pl-6">
+              {/* Root array mapping option */}
+              {isOutputArray && !hasRootOutputMapping && (
+                <RootMappingRow
+                  label="Entire response (array)"
+                  path="$"
+                  type="array"
+                  direction="output"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              )}
+              {outputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="output"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Input Fields */}
+      {hasInputFields && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={() => setInputExpanded(!inputExpanded)}
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${inputExpanded ? '' : '-rotate-90'}`}
+            />
+            Input Fields (Your App → API)
+            <Badge variant="outline" className="ml-auto text-xs">
+              {inputFields.length + (isInputArray && !hasRootInputMapping ? 1 : 0)}
+            </Badge>
+          </button>
+          {inputExpanded && (
+            <div className="space-y-1 pl-6">
+              {/* Root array mapping option */}
+              {isInputArray && !hasRootInputMapping && (
+                <RootMappingRow
+                  label="Entire request (array)"
+                  path="$"
+                  type="array"
+                  direction="input"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              )}
+              {inputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="input"
+                  actionId={actionId}
+                  integrationId={integrationId}
+                  onMappingAdded={onMappingAdded}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Root Mapping Row (for mapping entire array/object)
+// =============================================================================
+
+interface RootMappingRowProps {
+  label: string;
+  path: string;
+  type: string;
+  direction: MappingDirection;
+  actionId: string;
+  integrationId: string;
+  onMappingAdded: () => void;
+}
+
+function RootMappingRow({
+  label,
+  path,
+  type,
+  direction,
+  actionId,
+  integrationId,
+  onMappingAdded,
+}: RootMappingRowProps) {
+  const [targetPath, setTargetPath] = useState('');
+  const { mutateAsync: createMapping, isPending } = useCreateMapping(actionId, integrationId);
+
+  const handleAdd = async () => {
+    if (!targetPath.trim()) return;
+
+    try {
+      await createMapping({
+        sourcePath: path,
+        targetPath: targetPath.trim().startsWith('$')
+          ? targetPath.trim()
+          : `$.${targetPath.trim()}`,
+        direction,
+        transformConfig: {
+          omitIfNull: false,
+          omitIfEmpty: false,
+          arrayMode: 'all' as const,
+        },
+      });
+      toast.success('Mapping added');
+      setTargetPath('');
+      onMappingAdded();
+    } catch {
+      toast.error('Failed to add mapping');
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <code className="flex-shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs text-emerald-700 dark:text-emerald-400">
+            {path}
+          </code>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1 text-xs">
+            <p className="font-medium">{label}</p>
+            <p className="text-muted-foreground">
+              Maps the entire {type} to a single field in your app.
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      <Badge variant="secondary" className="text-[10px]">
+        {type}
+      </Badge>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <ArrowRight className="ml-auto h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <Input
+        value={targetPath}
+        onChange={(e) => setTargetPath(e.target.value)}
+        placeholder="$.data"
+        className="h-7 w-32 font-mono text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && targetPath.trim()) {
+            handleAdd();
+          }
+        }}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={handleAdd}
+        disabled={!targetPath.trim() || isPending}
+      >
+        {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        Add
+      </Button>
+    </div>
+  );
+}
+
+// =============================================================================
+// Schema Field Row
+// =============================================================================
+
+interface SchemaFieldRowProps {
+  field: SchemaFieldInfo;
+  direction: MappingDirection;
+  actionId: string;
+  integrationId: string;
+  onMappingAdded: () => void;
+}
+
+function SchemaFieldRow({
+  field,
+  direction,
+  actionId,
+  integrationId,
+  onMappingAdded,
+}: SchemaFieldRowProps) {
+  const [targetPath, setTargetPath] = useState('');
+  const { mutateAsync: createMapping, isPending } = useCreateMapping(actionId, integrationId);
+
+  const handleAdd = async () => {
+    if (!targetPath.trim()) return;
+
+    try {
+      await createMapping({
+        sourcePath: field.path,
+        targetPath: targetPath.trim().startsWith('$')
+          ? targetPath.trim()
+          : `$.${targetPath.trim()}`,
+        direction,
+        transformConfig: {
+          omitIfNull: false,
+          omitIfEmpty: false,
+          arrayMode: 'all' as const,
+        },
+      });
+      toast.success('Mapping added');
+      setTargetPath('');
+      onMappingAdded();
+    } catch {
+      toast.error('Failed to add mapping');
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-background/50 px-3 py-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <code className="flex-shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            {field.path}
+          </code>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1 text-xs">
+            <p className="font-medium">{field.name}</p>
+            <p className="text-muted-foreground">Type: {field.type}</p>
+            {field.description && <p className="text-muted-foreground">{field.description}</p>}
+            {field.required && (
+              <Badge variant="outline" className="text-[10px]">
+                Required
+              </Badge>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+      <Badge variant="secondary" className="text-[10px]">
+        {field.type}
+      </Badge>
+      {field.required && (
+        <Badge variant="outline" className="border-amber-500/30 text-[10px] text-amber-600">
+          req
+        </Badge>
+      )}
+      <ArrowRight className="ml-auto h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <Input
+        value={targetPath}
+        onChange={(e) => setTargetPath(e.target.value)}
+        placeholder={`$.${field.name}`}
+        className="h-7 w-32 font-mono text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && targetPath.trim()) {
+            handleAdd();
+          }
+        }}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={handleAdd}
+        disabled={!targetPath.trim() || isPending}
+      >
+        {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        Add
+      </Button>
+    </div>
+  );
+}
+
+// =============================================================================
+// Manual Add Section (fallback when no schema)
+// =============================================================================
+
+interface ManualAddSectionProps {
   actionId: string;
   integrationId: string;
   onAdd: () => void;
 }
 
-function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
+function ManualAddSection({ actionId, integrationId, onAdd }: ManualAddSectionProps) {
   const [direction, setDirection] = useState<MappingDirection>('output');
   const [sourcePath, setSourcePath] = useState('');
   const [targetPath, setTargetPath] = useState('');
@@ -388,10 +771,11 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
   };
 
   return (
-    <TableRow className="bg-muted/30">
-      <TableCell>
+    <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+      <p className="text-sm font-medium">Add Mapping Manually</p>
+      <div className="flex items-center gap-2">
         <Select value={direction} onValueChange={(v) => setDirection(v as MappingDirection)}>
-          <SelectTrigger className="h-7 w-20 text-xs">
+          <SelectTrigger className="h-8 w-24 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -399,33 +783,25 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
             <SelectItem value="input">input</SelectItem>
           </SelectContent>
         </Select>
-      </TableCell>
-      <TableCell>
         <Input
           value={sourcePath}
           onChange={(e) => setSourcePath(e.target.value)}
-          placeholder="$.data.field"
-          className="h-7 font-mono text-xs"
+          placeholder="$.source.path"
+          className="h-8 flex-1 font-mono text-xs"
         />
-      </TableCell>
-      <TableCell>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-      </TableCell>
-      <TableCell>
+        <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
         <Input
           value={targetPath}
           onChange={(e) => setTargetPath(e.target.value)}
-          placeholder="$.field"
-          className="h-7 font-mono text-xs"
+          placeholder="$.target.path"
+          className="h-8 flex-1 font-mono text-xs"
         />
-      </TableCell>
-      <TableCell>
         <Select
           value={coercionType}
           onValueChange={(v) => setCoercionType(v as CoercionType | 'none')}
         >
-          <SelectTrigger className="h-7 w-20 text-xs">
-            <SelectValue />
+          <SelectTrigger className="h-8 w-24 text-xs">
+            <SelectValue placeholder="Coerce" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">—</SelectItem>
@@ -434,223 +810,10 @@ function AddMappingRow({ actionId, integrationId, onAdd }: AddMappingRowProps) {
             <SelectItem value="boolean">boolean</SelectItem>
           </SelectContent>
         </Select>
-      </TableCell>
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={handleAdd}
-          disabled={!canAdd || isPending}
-        >
-          {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
+        <Button size="sm" className="h-8" onClick={handleAdd} disabled={!canAdd || isPending}>
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         </Button>
-      </TableCell>
-    </TableRow>
-  );
-}
-
-// =============================================================================
-// Schema Fields Section
-// =============================================================================
-
-interface SchemaFieldsSectionProps {
-  outputFields: SchemaFieldInfo[];
-  inputFields: SchemaFieldInfo[];
-  actionId: string;
-  integrationId: string;
-  onMappingAdded: () => void;
-}
-
-function SchemaFieldsSection({
-  outputFields,
-  inputFields,
-  actionId,
-  integrationId,
-  onMappingAdded,
-}: SchemaFieldsSectionProps) {
-  const [outputOpen, setOutputOpen] = useState(true);
-  const [inputOpen, setInputOpen] = useState(true);
-
-  return (
-    <div className="mt-6 space-y-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <FileCode className="h-4 w-4" />
-        <span>Available Schema Fields</span>
-        <Tooltip>
-          <TooltipTrigger>
-            <Info className="h-3.5 w-3.5" />
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p className="text-xs">
-              These fields are detected from your action&apos;s schema. Click the + button to add a
-              mapping, then specify the target path for your app.
-            </p>
-          </TooltipContent>
-        </Tooltip>
       </div>
-
-      {outputFields.length > 0 && (
-        <Collapsible open={outputOpen} onOpenChange={setOutputOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-2 h-8 w-full justify-between px-3 text-xs"
-            >
-              <span className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  output
-                </Badge>
-                Response Fields ({outputFields.length})
-              </span>
-              <ArrowRight
-                className={`h-3 w-3 transition-transform ${outputOpen ? 'rotate-90' : ''}`}
-              />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="space-y-1.5 rounded-md border bg-muted/20 p-2">
-              {outputFields.map((field) => (
-                <SchemaFieldRow
-                  key={field.path}
-                  field={field}
-                  direction="output"
-                  actionId={actionId}
-                  integrationId={integrationId}
-                  onMappingAdded={onMappingAdded}
-                />
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {inputFields.length > 0 && (
-        <Collapsible open={inputOpen} onOpenChange={setInputOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-2 h-8 w-full justify-between px-3 text-xs"
-            >
-              <span className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  input
-                </Badge>
-                Request Fields ({inputFields.length})
-              </span>
-              <ArrowRight
-                className={`h-3 w-3 transition-transform ${inputOpen ? 'rotate-90' : ''}`}
-              />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="space-y-1.5 rounded-md border bg-muted/20 p-2">
-              {inputFields.map((field) => (
-                <SchemaFieldRow
-                  key={field.path}
-                  field={field}
-                  direction="input"
-                  actionId={actionId}
-                  integrationId={integrationId}
-                  onMappingAdded={onMappingAdded}
-                />
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-    </div>
-  );
-}
-
-// =============================================================================
-// Schema Field Row
-// =============================================================================
-
-interface SchemaFieldRowProps {
-  field: SchemaFieldInfo;
-  direction: MappingDirection;
-  actionId: string;
-  integrationId: string;
-  onMappingAdded: () => void;
-}
-
-function SchemaFieldRow({
-  field,
-  direction,
-  actionId,
-  integrationId,
-  onMappingAdded,
-}: SchemaFieldRowProps) {
-  const [targetPath, setTargetPath] = useState('');
-  const { mutateAsync: createMapping, isPending } = useCreateMapping(actionId, integrationId);
-
-  const handleAdd = async () => {
-    if (!targetPath.trim()) return;
-
-    try {
-      await createMapping({
-        sourcePath: field.path,
-        targetPath: targetPath.trim(),
-        direction,
-        transformConfig: {
-          omitIfNull: false,
-          omitIfEmpty: false,
-          arrayMode: 'all' as const,
-        },
-      });
-      toast.success('Mapping added');
-      setTargetPath('');
-      onMappingAdded();
-    } catch {
-      toast.error('Failed to add mapping');
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2 rounded-md bg-background px-2 py-1.5">
-      <div className="flex flex-1 items-center gap-2">
-        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{field.path}</code>
-        <Badge variant="secondary" className="text-[10px]">
-          {field.type}
-        </Badge>
-        {field.required && (
-          <Badge variant="outline" className="border-amber-500/30 text-[10px] text-amber-600">
-            required
-          </Badge>
-        )}
-      </div>
-      <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-      <Input
-        value={targetPath}
-        onChange={(e) => setTargetPath(e.target.value)}
-        placeholder="$.yourField"
-        className="h-7 w-36 font-mono text-xs"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && targetPath.trim()) {
-            handleAdd();
-          }
-        }}
-      />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
-        onClick={handleAdd}
-        disabled={!targetPath.trim() || isPending}
-      >
-        {isPending ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Plus className="h-3.5 w-3.5" />
-        )}
-      </Button>
     </div>
   );
 }

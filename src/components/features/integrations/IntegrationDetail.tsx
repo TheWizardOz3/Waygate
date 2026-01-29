@@ -75,7 +75,7 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
         </TabsList>
 
         <TabsContent value="actions" className="mt-6 space-y-4">
-          <IntegrationActionsTab integrationId={integrationId} />
+          <IntegrationActionsTab integrationId={integrationId} integration={integration} />
         </TabsContent>
 
         <TabsContent value="overview" className="mt-6 space-y-4">
@@ -87,7 +87,7 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
         </TabsContent>
 
         <TabsContent value="connections" className="mt-6 space-y-4">
-          <ConnectionList integrationId={integrationId} />
+          <ConnectionList integrationId={integrationId} integration={integration} />
         </TabsContent>
       </Tabs>
     </div>

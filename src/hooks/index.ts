@@ -6,10 +6,12 @@ export {
   useIntegration,
   useIntegrationBySlug,
   useIntegrationHealth,
+  useIntegrationCredentials,
   useCreateIntegration,
   useUpdateIntegration,
   useDeleteIntegration,
   integrationKeys,
+  type IntegrationCredentialsResponse,
 } from './useIntegrations';
 
 // Scrape job hooks
