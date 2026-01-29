@@ -84,7 +84,7 @@ export function ConnectionDetail({
   if (isLoading) {
     return (
       <Sheet open onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl lg:max-w-3xl">
           <SheetHeader>
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64" />
@@ -101,7 +101,7 @@ export function ConnectionDetail({
   if (isError || !connection) {
     return (
       <Sheet open onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full sm:max-w-2xl lg:max-w-3xl">
           <SheetHeader>
             <SheetTitle>Error</SheetTitle>
             <SheetDescription>Failed to load connection details.</SheetDescription>
@@ -123,7 +123,7 @@ export function ConnectionDetail({
   return (
     <>
       <Sheet open onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl lg:max-w-3xl">
           <SheetHeader>
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -183,7 +183,13 @@ export function ConnectionDetail({
             {actions.length > 0 && (
               <ConnectionMappingList
                 connectionId={connection.id}
-                actions={actions.map((a) => ({ id: a.id, name: a.name, slug: a.slug }))}
+                actions={actions.map((a) => ({
+                  id: a.id,
+                  name: a.name,
+                  slug: a.slug,
+                  inputSchema: a.inputSchema,
+                  outputSchema: a.outputSchema,
+                }))}
               />
             )}
 

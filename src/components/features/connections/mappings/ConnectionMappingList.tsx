@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Plus,
   Loader2,
@@ -11,6 +11,9 @@ import {
   Pencil,
   ChevronDown,
   Info,
+  ArrowRight,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,16 +32,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ConnectionMappingCard } from './ConnectionMappingCard';
+import { MappingInheritanceBadge } from './MappingInheritanceBadge';
 import { OverrideMappingDialog } from './OverrideMappingDialog';
 import { ResetMappingsDialog } from './ResetMappingsDialog';
-import { useConnectionMappings, useCopyDefaultsToConnection } from '@/hooks';
-import type { Action } from '@prisma/client';
+import {
+  useConnectionMappings,
+  useCopyDefaultsToConnection,
+  useDeleteConnectionOverride,
+  useCreateConnectionOverride,
+} from '@/hooks';
+import type { ResolvedMapping, SchemaFieldInfo } from '@/lib/modules/execution/mapping';
+import { getSchemaFieldPaths } from '@/lib/modules/execution/mapping';
+import type { JsonSchema } from '@/lib/modules/actions/action.schemas';
+
+interface ActionWithSchema {
+  id: string;
+  name: string;
+  slug: string;
+  inputSchema?: JsonSchema;
+  outputSchema?: JsonSchema;
+}
 
 interface ConnectionMappingListProps {
   connectionId: string;
-  actions: Pick<Action, 'id' | 'name' | 'slug'>[];
+  actions: ActionWithSchema[];
 }
 
 /**
@@ -50,6 +77,7 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
   );
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showSchemaFields, setShowSchemaFields] = useState(true);
 
   const {
     data: mappingsData,
@@ -60,9 +88,54 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
   const { mutateAsync: copyDefaults, isPending: copyPending } =
     useCopyDefaultsToConnection(connectionId);
 
-  const mappings = mappingsData?.mappings ?? [];
   const stats = mappingsData?.stats;
   const config = mappingsData?.config;
+
+  // Memoize mappings to avoid unstable references
+  const mappings = useMemo(() => mappingsData?.mappings ?? [], [mappingsData?.mappings]);
+
+  // Get the selected action's schema
+  const selectedAction = useMemo(
+    () => actions.find((a) => a.id === selectedActionId),
+    [actions, selectedActionId]
+  );
+
+  // Extract schema fields as potential source paths
+  const outputSchemaFields = useMemo(() => {
+    if (!selectedAction?.outputSchema) return [];
+    return getSchemaFieldPaths(
+      selectedAction.outputSchema as Parameters<typeof getSchemaFieldPaths>[0]
+    );
+  }, [selectedAction?.outputSchema]);
+
+  const inputSchemaFields = useMemo(() => {
+    if (!selectedAction?.inputSchema) return [];
+    return getSchemaFieldPaths(
+      selectedAction.inputSchema as Parameters<typeof getSchemaFieldPaths>[0]
+    );
+  }, [selectedAction?.inputSchema]);
+
+  // Find which schema fields already have mappings configured
+  const configuredOutputPaths = useMemo(() => {
+    return new Set(
+      mappings.filter((m) => m.mapping.direction === 'output').map((m) => m.mapping.sourcePath)
+    );
+  }, [mappings]);
+
+  const configuredInputPaths = useMemo(() => {
+    return new Set(
+      mappings.filter((m) => m.mapping.direction === 'input').map((m) => m.mapping.sourcePath)
+    );
+  }, [mappings]);
+
+  // Get unconfigured schema fields
+  const unconfiguredOutputFields = useMemo(() => {
+    return outputSchemaFields.filter((f) => !configuredOutputPaths.has(f.path));
+  }, [outputSchemaFields, configuredOutputPaths]);
+
+  const unconfiguredInputFields = useMemo(() => {
+    return inputSchemaFields.filter((f) => !configuredInputPaths.has(f.path));
+  }, [inputSchemaFields, configuredInputPaths]);
 
   const handleCopyDefaults = async () => {
     if (!selectedActionId) return;
@@ -73,10 +146,6 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
       // Error toast handled by hook
     }
   };
-
-  // Filter mappings by direction for display
-  const inputMappings = mappings.filter((m) => m.mapping.direction === 'input');
-  const outputMappings = mappings.filter((m) => m.mapping.direction === 'output');
 
   if (actions.length === 0) {
     return (
@@ -205,7 +274,9 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
           <div className="py-12 text-center">
             <p className="text-sm text-muted-foreground">Select an action to view its mappings</p>
           </div>
-        ) : mappings.length === 0 ? (
+        ) : mappings.length === 0 &&
+          unconfiguredOutputFields.length === 0 &&
+          unconfiguredInputFields.length === 0 ? (
           <div className="py-12 text-center">
             <Layers className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">No mappings configured for this action</p>
@@ -222,6 +293,16 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
               Add First Override
             </Button>
           </div>
+        ) : mappings.length === 0 &&
+          (unconfiguredOutputFields.length > 0 || unconfiguredInputFields.length > 0) ? (
+          // Show schema fields when no mappings exist yet
+          <SchemaFieldsSection
+            connectionId={connectionId}
+            actionId={selectedActionId}
+            outputFields={unconfiguredOutputFields}
+            inputFields={unconfiguredInputFields}
+            onMappingCreated={() => refetch()}
+          />
         ) : (
           <>
             {/* Mapping Config Info */}
@@ -239,55 +320,47 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
               </div>
             )}
 
-            {/* Output Mappings */}
-            {outputMappings.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    output
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Transform API response before returning to your app
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {outputMappings.map((rm, idx) => (
-                    <ConnectionMappingCard
-                      key={rm.mapping.id ?? `output-${idx}`}
+            {/* Mappings Table */}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-20">Type</TableHead>
+                    <TableHead>Source Path</TableHead>
+                    <TableHead className="w-8"></TableHead>
+                    <TableHead>Target Path</TableHead>
+                    <TableHead className="w-24">Transform</TableHead>
+                    <TableHead className="w-24">Source</TableHead>
+                    <TableHead className="w-16"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mappings.map((rm, idx) => (
+                    <MappingTableRow
+                      key={rm.mapping.id ?? `mapping-${idx}`}
                       resolvedMapping={rm}
                       connectionId={connectionId}
                       actionId={selectedActionId}
                       onDeleted={() => refetch()}
                     />
                   ))}
-                </div>
-              </div>
-            )}
+                </TableBody>
+              </Table>
+            </div>
 
-            {/* Input Mappings */}
-            {inputMappings.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    input
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Transform your request before sending to API
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {inputMappings.map((rm, idx) => (
-                    <ConnectionMappingCard
-                      key={rm.mapping.id ?? `input-${idx}`}
-                      resolvedMapping={rm}
-                      connectionId={connectionId}
-                      actionId={selectedActionId}
-                      onDeleted={() => refetch()}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Show remaining unconfigured schema fields */}
+            {(unconfiguredOutputFields.length > 0 || unconfiguredInputFields.length > 0) &&
+              showSchemaFields && (
+                <SchemaFieldsSection
+                  connectionId={connectionId}
+                  actionId={selectedActionId}
+                  outputFields={unconfiguredOutputFields}
+                  inputFields={unconfiguredInputFields}
+                  onMappingCreated={() => refetch()}
+                  collapsible
+                  onDismiss={() => setShowSchemaFields(false)}
+                />
+              )}
           </>
         )}
       </CardContent>
@@ -313,5 +386,337 @@ export function ConnectionMappingList({ connectionId, actions }: ConnectionMappi
         </>
       )}
     </Card>
+  );
+}
+
+/**
+ * Schema fields section showing available fields from the action's schema
+ */
+interface SchemaFieldsSectionProps {
+  connectionId: string;
+  actionId: string;
+  outputFields: SchemaFieldInfo[];
+  inputFields: SchemaFieldInfo[];
+  onMappingCreated?: () => void;
+  collapsible?: boolean;
+  onDismiss?: () => void;
+}
+
+function SchemaFieldsSection({
+  connectionId,
+  actionId,
+  outputFields,
+  inputFields,
+  onMappingCreated,
+  collapsible,
+  onDismiss,
+}: SchemaFieldsSectionProps) {
+  const [expandedOutput, setExpandedOutput] = useState(true);
+  const [expandedInput, setExpandedInput] = useState(false);
+
+  const hasOutputFields = outputFields.length > 0;
+  const hasInputFields = inputFields.length > 0;
+
+  if (!hasOutputFields && !hasInputFields) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border border-dashed border-violet-500/30 bg-violet-500/5 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-violet-500" />
+          <span className="text-sm font-medium">Available Fields from Schema</span>
+          <Badge variant="secondary" className="text-xs">
+            {outputFields.length + inputFields.length} fields
+          </Badge>
+        </div>
+        {collapsible && onDismiss && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onDismiss}>
+            Hide
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        These fields are available in the action schema. Add a target path to create a mapping.
+      </p>
+
+      {/* Output Fields */}
+      {hasOutputFields && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={() => setExpandedOutput(!expandedOutput)}
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${expandedOutput ? '' : '-rotate-90'}`}
+            />
+            Output Fields (API → App)
+            <Badge variant="outline" className="ml-auto text-xs">
+              {outputFields.length}
+            </Badge>
+          </button>
+          {expandedOutput && (
+            <div className="space-y-1 pl-6">
+              {outputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="output"
+                  connectionId={connectionId}
+                  actionId={actionId}
+                  onCreated={onMappingCreated}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Input Fields */}
+      {hasInputFields && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={() => setExpandedInput(!expandedInput)}
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${expandedInput ? '' : '-rotate-90'}`}
+            />
+            Input Fields (App → API)
+            <Badge variant="outline" className="ml-auto text-xs">
+              {inputFields.length}
+            </Badge>
+          </button>
+          {expandedInput && (
+            <div className="space-y-1 pl-6">
+              {inputFields.map((field) => (
+                <SchemaFieldRow
+                  key={field.path}
+                  field={field}
+                  direction="input"
+                  connectionId={connectionId}
+                  actionId={actionId}
+                  onCreated={onMappingCreated}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single schema field row with editable target path
+ */
+interface SchemaFieldRowProps {
+  field: SchemaFieldInfo;
+  direction: 'input' | 'output';
+  connectionId: string;
+  actionId: string;
+  onCreated?: () => void;
+}
+
+function SchemaFieldRow({
+  field,
+  direction,
+  connectionId,
+  actionId,
+  onCreated,
+}: SchemaFieldRowProps) {
+  const [targetPath, setTargetPath] = useState('');
+  const { mutateAsync: createOverride, isPending } = useCreateConnectionOverride(connectionId);
+
+  const handleAdd = async () => {
+    if (!targetPath.trim()) return;
+
+    try {
+      await createOverride({
+        actionId,
+        sourcePath: field.path,
+        targetPath: targetPath.trim().startsWith('$')
+          ? targetPath.trim()
+          : `$.${targetPath.trim()}`,
+        direction,
+        transformConfig: {
+          omitIfNull: false,
+          omitIfEmpty: false,
+          arrayMode: 'all' as const,
+        },
+      });
+      setTargetPath('');
+      onCreated?.();
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-background/50 px-3 py-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <code className="flex-shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            {field.path}
+          </code>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1 text-xs">
+            <p className="font-medium">{field.name}</p>
+            <p className="text-muted-foreground">Type: {field.type}</p>
+            {field.description && <p className="text-muted-foreground">{field.description}</p>}
+            {field.required && (
+              <Badge variant="outline" className="text-[10px]">
+                Required
+              </Badge>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+
+      <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+
+      <Input
+        value={targetPath}
+        onChange={(e) => setTargetPath(e.target.value)}
+        placeholder={`$.${field.name}`}
+        className="h-7 flex-1 font-mono text-xs"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && targetPath.trim()) {
+            handleAdd();
+          }
+        }}
+      />
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={handleAdd}
+        disabled={!targetPath.trim() || isPending}
+      >
+        {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        Add
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Table row component for a single mapping
+ */
+interface MappingTableRowProps {
+  resolvedMapping: ResolvedMapping;
+  connectionId: string;
+  actionId: string;
+  onDeleted?: () => void;
+}
+
+function MappingTableRow({
+  resolvedMapping,
+  connectionId,
+  actionId,
+  onDeleted,
+}: MappingTableRowProps) {
+  const { mapping, source, overridden, defaultMapping } = resolvedMapping;
+  const { mutateAsync: deleteOverride, isPending } = useDeleteConnectionOverride(connectionId);
+
+  const coercionType = mapping.transformConfig?.coercion?.type;
+  const isOverride = source === 'connection';
+
+  const handleRevertToDefault = async () => {
+    if (!mapping.id) return;
+    try {
+      await deleteOverride({ mappingId: mapping.id, actionId });
+      onDeleted?.();
+    } catch {
+      // Error toast handled by hook
+    }
+  };
+
+  return (
+    <TableRow className="group">
+      <TableCell>
+        <Badge variant="outline" className="text-xs">
+          {mapping.direction}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+          {mapping.sourcePath}
+        </code>
+      </TableCell>
+      <TableCell>
+        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+      </TableCell>
+      <TableCell>
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+          {mapping.targetPath}
+        </code>
+      </TableCell>
+      <TableCell>
+        {coercionType ? (
+          <Badge variant="secondary" className="text-xs">
+            {coercionType}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <MappingInheritanceBadge source={source} overridden={overridden} />
+      </TableCell>
+      <TableCell>
+        {isOverride && (
+          <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            {overridden && defaultMapping && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={handleRevertToDefault}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Revert to default</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={handleRevertToDefault}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Remove override</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

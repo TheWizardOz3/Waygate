@@ -106,9 +106,10 @@ export {
   isEmpty,
   isNullish,
   getAllPaths,
+  getSchemaFieldPaths,
 } from './path-utils';
 
-export type { PathSegment, GetValueResult, SetValueResult } from './path-utils';
+export type { PathSegment, GetValueResult, SetValueResult, SchemaFieldInfo } from './path-utils';
 
 // =============================================================================
 // Coercion (client-safe)

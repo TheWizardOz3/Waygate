@@ -18,6 +18,7 @@ import {
   deepClone,
   isEmpty,
   isNullish,
+  getSchemaFieldPaths,
   // Coercion
   coerceValueForMapping,
   canCoerce,
@@ -203,6 +204,146 @@ describe('Path Utilities', () => {
       expect(isNullish(undefined)).toBe(true);
       expect(isNullish('')).toBe(false);
       expect(isNullish(0)).toBe(false);
+    });
+  });
+
+  describe('getSchemaFieldPaths', () => {
+    it('should extract fields from simple schema', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'User email' },
+          age: { type: 'number' },
+        },
+        required: ['email'],
+      };
+
+      const fields = getSchemaFieldPaths(schema);
+
+      expect(fields).toHaveLength(2);
+      expect(fields[0]).toEqual({
+        path: '$.email',
+        name: 'email',
+        type: 'string',
+        required: true,
+        description: 'User email',
+      });
+      expect(fields[1]).toEqual({
+        path: '$.age',
+        name: 'age',
+        type: 'number',
+        required: false,
+        description: undefined,
+      });
+    });
+
+    it('should handle nested objects', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          user: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              address: {
+                type: 'object',
+                properties: {
+                  city: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      };
+
+      const fields = getSchemaFieldPaths(schema);
+
+      // Should include parent object and nested fields
+      expect(fields.some((f) => f.path === '$.user')).toBe(true);
+      expect(fields.some((f) => f.path === '$.user.name')).toBe(true);
+      expect(fields.some((f) => f.path === '$.user.address')).toBe(true);
+      expect(fields.some((f) => f.path === '$.user.address.city')).toBe(true);
+    });
+
+    it('should handle arrays with object items', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                value: { type: 'number' },
+              },
+            },
+          },
+        },
+      };
+
+      const fields = getSchemaFieldPaths(schema);
+
+      expect(fields.some((f) => f.path === '$.items')).toBe(true);
+      expect(fields.some((f) => f.path === '$.items[*].id')).toBe(true);
+      expect(fields.some((f) => f.path === '$.items[*].value')).toBe(true);
+    });
+
+    it('should return empty array for null/undefined schema', () => {
+      expect(getSchemaFieldPaths(null)).toEqual([]);
+      expect(getSchemaFieldPaths(undefined)).toEqual([]);
+    });
+
+    it('should return empty array for schema without properties', () => {
+      const schema = { type: 'object' };
+      expect(getSchemaFieldPaths(schema)).toEqual([]);
+    });
+
+    it('should handle array types in type field', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          value: { type: ['string', 'null'] }, // nullable string
+        },
+      };
+
+      const fields = getSchemaFieldPaths(schema);
+      expect(fields[0].type).toBe('string'); // Should use first type
+    });
+
+    it('should respect max depth', () => {
+      const schema = {
+        type: 'object',
+        properties: {
+          a: {
+            type: 'object',
+            properties: {
+              b: {
+                type: 'object',
+                properties: {
+                  c: {
+                    type: 'object',
+                    properties: {
+                      d: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+
+      // With default maxDepth=5, should include all
+      const fieldsDeep = getSchemaFieldPaths(schema);
+      expect(fieldsDeep.some((f) => f.path === '$.a.b.c.d')).toBe(true);
+
+      // With maxDepth=2, should stop at $.a.b
+      const fieldsShallow = getSchemaFieldPaths(schema, 2);
+      expect(fieldsShallow.some((f) => f.path === '$.a')).toBe(true);
+      expect(fieldsShallow.some((f) => f.path === '$.a.b')).toBe(true);
+      expect(fieldsShallow.some((f) => f.path === '$.a.b.c')).toBe(true);
+      expect(fieldsShallow.some((f) => f.path === '$.a.b.c.d')).toBe(false);
     });
   });
 });

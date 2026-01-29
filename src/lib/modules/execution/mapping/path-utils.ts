@@ -532,6 +532,141 @@ export function isNullish(value: unknown): boolean {
 }
 
 /**
+ * Schema field information extracted from JSON Schema
+ */
+export interface SchemaFieldInfo {
+  /** JSONPath to the field (e.g., "$.user.email") */
+  path: string;
+  /** Field name (e.g., "email") */
+  name: string;
+  /** Field type from schema */
+  type: string;
+  /** Whether the field is required */
+  required: boolean;
+  /** Field description from schema */
+  description?: string;
+}
+
+/**
+ * Extract field paths from a JSON Schema
+ * Returns flat list of all fields with their JSONPath expressions
+ *
+ * @param schema JSON Schema object
+ * @param maxDepth Maximum nesting depth to traverse (default: 5)
+ * @returns Array of SchemaFieldInfo objects
+ */
+export function getSchemaFieldPaths(
+  schema:
+    | {
+        type?: string;
+        properties?: Record<
+          string,
+          {
+            type?: string | string[];
+            description?: string;
+            properties?: Record<string, unknown>;
+            items?: { type?: string | string[]; properties?: Record<string, unknown> };
+          }
+        >;
+        required?: string[];
+        items?: {
+          type?: string | string[];
+          properties?: Record<string, unknown>;
+        };
+      }
+    | null
+    | undefined,
+  maxDepth: number = 5
+): SchemaFieldInfo[] {
+  if (!schema || !schema.properties) {
+    return [];
+  }
+
+  const fields: SchemaFieldInfo[] = [];
+  const requiredFields = new Set(schema.required || []);
+
+  function traverse(
+    properties: Record<
+      string,
+      {
+        type?: string | string[];
+        description?: string;
+        properties?: Record<string, unknown>;
+        items?: { type?: string | string[]; properties?: Record<string, unknown> };
+      }
+    >,
+    parentPath: string,
+    parentRequired: Set<string>,
+    depth: number
+  ) {
+    if (depth > maxDepth) {
+      return;
+    }
+
+    for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+      const fieldPath = parentPath ? `${parentPath}.${fieldName}` : `$.${fieldName}`;
+      const fieldType = Array.isArray(fieldSchema.type)
+        ? fieldSchema.type[0]
+        : fieldSchema.type || 'unknown';
+
+      fields.push({
+        path: fieldPath,
+        name: fieldName,
+        type: fieldType,
+        required: parentRequired.has(fieldName),
+        description: fieldSchema.description,
+      });
+
+      // Handle nested objects
+      if (fieldType === 'object' && fieldSchema.properties) {
+        const nestedRequired = new Set((fieldSchema as { required?: string[] }).required || []);
+        traverse(
+          fieldSchema.properties as Record<
+            string,
+            {
+              type?: string | string[];
+              description?: string;
+              properties?: Record<string, unknown>;
+              items?: { type?: string | string[]; properties?: Record<string, unknown> };
+            }
+          >,
+          fieldPath,
+          nestedRequired,
+          depth + 1
+        );
+      }
+
+      // Handle arrays with object items
+      if (fieldType === 'array' && fieldSchema.items) {
+        const itemsSchema = fieldSchema.items;
+        const itemType = Array.isArray(itemsSchema.type) ? itemsSchema.type[0] : itemsSchema.type;
+
+        if (itemType === 'object' && itemsSchema.properties) {
+          const nestedRequired = new Set((itemsSchema as { required?: string[] }).required || []);
+          traverse(
+            itemsSchema.properties as Record<
+              string,
+              {
+                type?: string | string[];
+                description?: string;
+                properties?: Record<string, unknown>;
+                items?: { type?: string | string[]; properties?: Record<string, unknown> };
+              }
+            >,
+            `${fieldPath}[*]`,
+            nestedRequired,
+            depth + 1
+          );
+        }
+      }
+    }
+  }
+
+  traverse(schema.properties, '', requiredFields, 0);
+  return fields;
+}
+
+/**
  * Get all property paths from an object (for debugging/preview)
  */
 export function getAllPaths(obj: unknown, maxDepth: number = MAX_NESTING_DEPTH): string[] {

@@ -563,6 +563,45 @@ On the action's mapping panel, show if any connections have overrides:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### 4.4 Schema Field Pre-population (Auto-Suggested Mappings)
+
+When configuring mappings for an action, the UI automatically extracts fields from the action's input/output schemas and displays them as suggested mappings. This makes it easy to configure mappings without needing to know the API schema beforehand.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ✨ Available Fields from Schema                            [12 fields]     │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  These fields are available in the action schema. Add a target path to      │
+│  create a mapping.                                                          │
+│                                                                             │
+│  ▼ Output Fields (API → App)                                    [8]        │
+│                                                                             │
+│    $.user.email           →  [____________]  [+ Add]                        │
+│    $.user.name            →  [____________]  [+ Add]                        │
+│    $.user.id              →  [____________]  [+ Add]                        │
+│    $.user.profile.avatar  →  [____________]  [+ Add]                        │
+│    ...                                                                      │
+│                                                                             │
+│  ▶ Input Fields (App → API)                                     [4]        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Features:**
+
+- **Schema extraction**: Parses the action's JSON Schema to identify available fields
+- **Nested field support**: Handles nested objects (e.g., `$.user.profile.email`)
+- **Array support**: Shows array item paths with wildcard syntax (e.g., `$.items[*].id`)
+- **Quick add**: Type a target path and press Enter or click Add to create the mapping
+- **Collapsible sections**: Output and input fields are in separate, collapsible sections
+- **Tooltips**: Hover on source paths to see field type, description, and required status
+
+**Implementation:**
+
+- Uses `getSchemaFieldPaths()` utility from `@/lib/modules/execution/mapping`
+- Full action schema data passed from `ConnectionDetail` to `ConnectionMappingList`
+- Unconfigured fields filtered out as mappings are added
+
 ---
 
 ## 5. Implementation Tasks
