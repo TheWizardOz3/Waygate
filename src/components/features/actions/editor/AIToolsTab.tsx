@@ -138,7 +138,7 @@ export function AIToolsTab({
   const syncIntervalDays = Math.round((referenceData?.defaultTtlSeconds ?? 86400) / 86400);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-16">
       {/* Header */}
       <div>
         <h2 className="text-lg font-semibold">AI Tools</h2>
