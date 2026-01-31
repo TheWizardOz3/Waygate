@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm, FieldValues } from 'react-hook-form';
+import { useForm, FieldValues, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowLeft,
@@ -151,7 +151,9 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
     }
   }, [existingAction, form]);
 
-  const name = form.watch('name');
+  // Use useWatch for optimized re-renders
+  const name = useWatch({ control: form.control, name: 'name' });
+  const watchedOutputSchema = useWatch({ control: form.control, name: 'outputSchema' });
 
   useEffect(() => {
     if (!isEditing && name) {
@@ -384,7 +386,7 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
               <AIToolsTab
                 form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
                 integrationName={integration?.name}
-                outputSchema={form.watch('outputSchema') as JsonSchema}
+                outputSchema={watchedOutputSchema as JsonSchema}
                 onRegenerateToolDescriptions={
                   isEditing ? handleRegenerateToolDescriptions : undefined
                 }

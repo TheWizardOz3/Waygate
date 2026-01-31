@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { UseFormReturn, FieldValues } from 'react-hook-form';
+import { useState, useMemo, useCallback, useEffect, memo } from 'react';
+import { UseFormReturn, FieldValues, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -160,7 +160,7 @@ function getArrayPaths(schema: JsonSchema | undefined): string[] {
   return paths;
 }
 
-export function AIToolsTab({
+function AIToolsTabInner({
   form,
   integrationName,
   outputSchema,
@@ -170,14 +170,14 @@ export function AIToolsTab({
   const [newMetadataField, setNewMetadataField] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // AI Tool Configuration fields
-  const toolDescription = form.watch('toolDescription');
-  const toolSuccessTemplate = form.watch('toolSuccessTemplate');
-  const toolErrorTemplate = form.watch('toolErrorTemplate');
+  // Use useWatch for optimized re-renders - only re-render when these specific values change
+  const toolDescription = useWatch({ control: form.control, name: 'toolDescription' });
+  const toolSuccessTemplate = useWatch({ control: form.control, name: 'toolSuccessTemplate' });
+  const toolErrorTemplate = useWatch({ control: form.control, name: 'toolErrorTemplate' });
   const hasStoredDescriptions = toolDescription || toolSuccessTemplate || toolErrorTemplate;
 
-  // Reference Data Sync fields - read once for initial state
-  const referenceData = form.watch('metadata.referenceData');
+  // Reference Data Sync fields - useWatch for optimized subscription
+  const referenceData = useWatch({ control: form.control, name: 'metadata.referenceData' });
   const syncEnabled = referenceData?.syncable ?? false;
 
   // Local state for text inputs to prevent re-renders on every keystroke
@@ -1009,3 +1009,6 @@ export function AIToolsTab({
     </div>
   );
 }
+
+// Memoize to prevent re-renders when parent form changes unrelated fields
+export const AIToolsTab = memo(AIToolsTabInner);
