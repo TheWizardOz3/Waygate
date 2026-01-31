@@ -84,6 +84,57 @@ export const GatewayMappingOptionsSchema = MappingRequestSchema;
 
 export type GatewayMappingOptions = z.infer<typeof GatewayMappingOptionsSchema>;
 
+// =============================================================================
+// Context Injection Schemas
+// =============================================================================
+
+/**
+ * A single item in the injection context (reference data)
+ */
+export const InjectionContextItemSchema = z.object({
+  /** External ID from the source system */
+  id: z.string(),
+  /** Display name for resolution */
+  name: z.string(),
+  /** Additional metadata */
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type InjectionContextItem = z.infer<typeof InjectionContextItemSchema>;
+
+/**
+ * Context for name-to-ID resolution during tool invocation.
+ * Keyed by data type (e.g., "users", "channels").
+ *
+ * @example
+ * {
+ *   "channels": [{ "id": "C123", "name": "general" }],
+ *   "users": [{ "id": "U456", "name": "sarah" }]
+ * }
+ */
+export const InjectionContextSchema = z.record(z.string(), z.array(InjectionContextItemSchema));
+
+export type InjectionContext = z.infer<typeof InjectionContextSchema>;
+
+/**
+ * Tracks a resolved input field
+ */
+export const ResolvedInputSchema = z.object({
+  /** The original value provided */
+  original: z.string(),
+  /** The resolved value (ID) */
+  resolved: z.string(),
+});
+
+export type ResolvedInput = z.infer<typeof ResolvedInputSchema>;
+
+/**
+ * All resolved inputs for an invocation
+ */
+export const ResolvedInputsMetadataSchema = z.record(z.string(), ResolvedInputSchema);
+
+export type ResolvedInputsMetadata = z.infer<typeof ResolvedInputsMetadataSchema>;
+
 /**
  * Options that can be passed with the invocation
  */
@@ -104,6 +155,12 @@ export const GatewayInvokeOptionsSchema = z.object({
   mapping: GatewayMappingOptionsSchema.optional(),
   /** Connection ID for multi-app connections (uses default/primary if not specified) */
   connectionId: z.string().uuid().optional(),
+  /**
+   * Context for name-to-ID resolution.
+   * When provided, Waygate will resolve human-friendly names (like "#general" or "@sarah")
+   * to their corresponding IDs using this context data.
+   */
+  context: InjectionContextSchema.optional(),
 });
 
 export type GatewayInvokeOptions = z.infer<typeof GatewayInvokeOptionsSchema>;
@@ -324,6 +381,15 @@ export const GatewaySuccessResponseSchema = z.object({
    * Only present when reference data is synced for this integration.
    */
   referenceData: ReferenceDataContextSchema.optional(),
+  /**
+   * Details of input fields that were resolved from human-friendly names to IDs.
+   * Only present when context resolution occurred.
+   * Allows AI agents to see what was resolved for transparency.
+   *
+   * @example
+   * { "channel": { "original": "#general", "resolved": "C123456789" } }
+   */
+  resolvedInputs: ResolvedInputsMetadataSchema.optional(),
   /** Response data from the external API */
   data: z.unknown(),
   /** Response metadata with execution metrics */

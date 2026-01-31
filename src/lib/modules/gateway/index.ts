@@ -13,6 +13,11 @@ export {
   // Request schemas
   GatewayInvokeRequestSchema,
   GatewayInvokeOptionsSchema,
+  // Context injection schemas
+  InjectionContextItemSchema,
+  InjectionContextSchema,
+  ResolvedInputSchema,
+  ResolvedInputsMetadataSchema,
   // Metrics & Meta
   ExecutionMetricsSchema,
   ResponseMetaSchema,
@@ -41,6 +46,12 @@ export {
 export type {
   GatewayInvokeRequest,
   GatewayInvokeOptions,
+  // Context injection types
+  InjectionContextItem,
+  InjectionContext,
+  ResolvedInput,
+  ResolvedInputsMetadata,
+  // Response types
   ExecutionMetrics,
   ResponseMeta,
   GatewaySuccessResponse,

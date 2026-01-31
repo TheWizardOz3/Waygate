@@ -23,6 +23,13 @@ import { IntegrationError } from '../integrations/integration.service';
 import { getActionBySlug } from '../actions/action.service';
 import { ActionError } from '../actions/action.service';
 import {
+  resolveContextReferences,
+  formatResolutionDetails,
+  generateFieldHints,
+  type ResolutionContext,
+  type ContextResolutionResult,
+} from '../tool-export/handlers/context-resolver';
+import {
   validateActionInput,
   formatAsApiError,
   type ValidationResult,
@@ -209,7 +216,36 @@ export async function invokeAction(
       console.warn('[GATEWAY] Input mapping error:', mappingError);
     }
 
-    // 3. Validate input (unless skipped) - validate MAPPED input
+    // 2b. Apply CONTEXT resolution (resolve human-friendly names to IDs)
+    // Uses the context from invocation options to resolve references like "#general" -> "C123"
+    let contextResolutionResult: ContextResolutionResult | undefined;
+    if (options.context && Object.keys(options.context).length > 0) {
+      try {
+        // Generate field hints from the input field names
+        const fieldHints = generateFieldHints(Object.keys(mappedInput));
+
+        // Resolve references in the mapped input
+        contextResolutionResult = resolveContextReferences(
+          mappedInput,
+          options.context as ResolutionContext,
+          fieldHints
+        );
+
+        // Use resolved input for subsequent steps
+        if (contextResolutionResult.hasResolutions) {
+          mappedInput = contextResolutionResult.resolvedInput;
+          console.log('[GATEWAY] Context resolution applied:', {
+            resolvedCount: contextResolutionResult.resolvedCount,
+            resolutions: formatResolutionDetails(contextResolutionResult.resolutions),
+          });
+        }
+      } catch (resolutionError) {
+        // Log but don't fail - context resolution errors should be non-fatal
+        console.warn('[GATEWAY] Context resolution error:', resolutionError);
+      }
+    }
+
+    // 3. Validate input (unless skipped) - validate MAPPED and RESOLVED input
     if (!options.skipValidation) {
       const validationResult = validateInput(action, mappedInput);
       if (!validationResult.valid) {
@@ -314,7 +350,8 @@ export async function invokeAction(
         outputMappingResult,
         finalResponseData,
         preambleResult,
-        referenceDataContext
+        referenceDataContext,
+        contextResolutionResult
       );
     } else {
       return formatExecutionErrorResponse(requestId, executionResult);
@@ -801,7 +838,8 @@ function formatSuccessResponse(
   outputMappingResult?: MappingResult,
   finalData?: unknown,
   preambleResult?: PreambleResult,
-  referenceDataContext?: ReferenceDataContext
+  referenceDataContext?: ReferenceDataContext,
+  contextResolutionResult?: ContextResolutionResult
 ): GatewaySuccessResponse {
   // Use final mapped data, or validated data, or raw data
   const responseData = finalData ?? validationResult?.data ?? result.data;
@@ -875,6 +913,11 @@ function formatSuccessResponse(
   // Add reference data context if available (for AI context awareness)
   if (referenceDataContext && Object.keys(referenceDataContext).length > 0) {
     response.referenceData = referenceDataContext;
+  }
+
+  // Add resolved inputs if context resolution occurred (for AI transparency)
+  if (contextResolutionResult?.hasResolutions) {
+    response.resolvedInputs = formatResolutionDetails(contextResolutionResult.resolutions);
   }
 
   return response;

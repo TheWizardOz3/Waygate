@@ -4,6 +4,14 @@
 
 ---
 
+## [1.0.6] - 2026-01-30
+
+### Added
+
+- **Simple Tool Export**: Export Waygate actions as AI-consumable tools for all major LLM platforms. Supports Universal (LLM-agnostic), LangChain, and MCP formats. Includes context resolver for human-friendly name→ID resolution, agent-readable response formatters with follow-on instructions, and UI for export/download. Enables AI agents to use Waygate integrations directly through standardized tool interfaces.
+
+---
+
 ## [1.0.5] - 2026-01-29
 
 ### Added

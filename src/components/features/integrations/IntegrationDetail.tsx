@@ -13,6 +13,7 @@ import {
   GitBranch,
   MessageSquare,
   Database,
+  Wrench,
 } from 'lucide-react';
 import { useIntegration, useConnections } from '@/hooks';
 import { IntegrationHeader } from './IntegrationHeader';
@@ -22,6 +23,7 @@ import { IntegrationLogsTab } from './IntegrationLogsTab';
 import { IntegrationFieldMappingsTab } from './IntegrationFieldMappingsTab';
 import { IntegrationLLMResponseTab } from './IntegrationLLMResponseTab';
 import { IntegrationReferenceDataTab } from './IntegrationReferenceDataTab';
+import { IntegrationToolExportTab } from './IntegrationToolExportTab';
 import { ConnectionList, ConnectionSelector } from '@/components/features/connections';
 
 interface IntegrationDetailProps {
@@ -143,6 +145,13 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
             Reference Data
           </TabsTrigger>
           <TabsTrigger
+            value="export-tools"
+            className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+          >
+            <Wrench className="h-4 w-4" />
+            Export Tools
+          </TabsTrigger>
+          <TabsTrigger
             value="connections"
             className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
@@ -183,6 +192,14 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
           <IntegrationReferenceDataTab
             integrationId={integrationId}
             connectionId={selectedConnectionId}
+          />
+        </TabsContent>
+
+        <TabsContent value="export-tools" className="mt-6 space-y-4">
+          <IntegrationToolExportTab
+            integrationId={integrationId}
+            integrationName={integration.name}
+            integrationSlug={integration.slug}
           />
         </TabsContent>
 

@@ -1,6 +1,6 @@
 # Project Status: Waygate
 
-**Last Updated:** 2026-01-29
+**Last Updated:** 2026-01-30
 
 ---
 
@@ -13,7 +13,7 @@
 | #   | Feature                 | Status      | Dependencies       | Notes                                                                |
 | --- | ----------------------- | ----------- | ------------------ | -------------------------------------------------------------------- |
 | 1   | Reference data sync     | ✅ COMPLETE | None               | Foundational - syncs reference data (users, channels) for AI context |
-| 2   | Simple tool export      | NOT STARTED | Actions (MVP ✅)   | Core tool generation - exports actions as LangChain/MCP tools        |
+| 2   | Simple tool export      | ✅ COMPLETE | Actions (MVP ✅)   | Core tool generation - exports actions as LangChain/MCP tools        |
 | 3   | Variable/context system | NOT STARTED | Simple tool export | Dynamic context injection for runtime variables in AI tools          |
 
 ### Definition of Done
