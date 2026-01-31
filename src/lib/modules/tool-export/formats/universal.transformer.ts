@@ -97,18 +97,26 @@ export function transformActionToUniversalTool(
     // Determine context types from action metadata
     const contextTypes = includeContextTypes ? extractContextTypes(action) : undefined;
 
-    // Build the description using the mini-prompt format builder
-    const descriptionOptions: DescriptionBuilderOptions = {
-      maxLength: maxDescriptionLength,
-      includeContextInfo: includeContextTypes && (contextTypes?.length ?? 0) > 0,
-      includeOutputInfo: !useSimpleDescription,
-      integrationName: integrationName || formatIntegrationName(integrationSlug),
-      contextTypes: contextTypes || [],
-    };
+    // Use stored LLM-generated description if available, otherwise fall back to template-based
+    let description: string;
 
-    const description = useSimpleDescription
-      ? buildSimpleDescription(action, descriptionOptions.integrationName)
-      : buildToolDescription(action, parameters, descriptionOptions);
+    if (action.toolDescription && !useSimpleDescription) {
+      // Use the LLM-generated description stored with the action
+      description = action.toolDescription;
+    } else {
+      // Fall back to template-based description generation
+      const descriptionOptions: DescriptionBuilderOptions = {
+        maxLength: maxDescriptionLength,
+        includeContextInfo: includeContextTypes && (contextTypes?.length ?? 0) > 0,
+        includeOutputInfo: !useSimpleDescription,
+        integrationName: integrationName || formatIntegrationName(integrationSlug),
+        contextTypes: contextTypes || [],
+      };
+
+      description = useSimpleDescription
+        ? buildSimpleDescription(action, descriptionOptions.integrationName)
+        : buildToolDescription(action, parameters, descriptionOptions);
+    }
 
     const tool: UniversalTool = {
       name: toolName,

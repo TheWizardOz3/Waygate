@@ -341,11 +341,23 @@ export function formatErrorResponse(input: ErrorFormatterInput): ToolErrorRespon
   // Categorize the error
   const category = categorizeError(input.errorCode);
 
-  // Generate error message
-  const message = generateErrorMessage(input, category);
+  let message: string;
+  let remediation: string;
 
-  // Generate remediation guidance
-  const remediation = generateRemediation(input, category);
+  // Use stored template if available, otherwise fall back to category-based templates
+  if (input.storedErrorTemplate) {
+    // Interpolate stored template with actual values
+    const templateVars = buildErrorTemplateVariables(input, category);
+    const interpolated = interpolateErrorTemplate(input.storedErrorTemplate, templateVars);
+    // Stored templates typically include both message and remediation
+    message = interpolated;
+    remediation = generateRemediation(input, category);
+  } else {
+    // Generate error message using category-based approach
+    message = generateErrorMessage(input, category);
+    // Generate remediation guidance
+    remediation = generateRemediation(input, category);
+  }
 
   // Build response
   const response: ToolErrorResponse = {
@@ -368,6 +380,52 @@ export function formatErrorResponse(input: ErrorFormatterInput): ToolErrorRespon
   };
 
   return response;
+}
+
+/**
+ * Build template variables for error template interpolation
+ */
+function buildErrorTemplateVariables(
+  input: ErrorFormatterInput,
+  category: ErrorCategory
+): Record<string, string> {
+  return {
+    error_type: formatErrorType(category),
+    error_message: input.errorMessage,
+    error_code: input.errorCode,
+    attempted_action: input.actionDisplayName,
+    integration: input.integrationDisplayName,
+    request_id: input.requestId,
+    category,
+  };
+}
+
+/**
+ * Format error category into human-readable type
+ */
+function formatErrorType(category: ErrorCategory): string {
+  const typeMap: Record<ErrorCategory, string> = {
+    validation: 'Validation',
+    authentication: 'Authentication',
+    not_found: 'Not Found',
+    rate_limit: 'Rate Limit',
+    external_api: 'External API',
+    timeout: 'Timeout',
+    permission: 'Permission',
+    configuration: 'Configuration',
+    internal: 'Internal',
+  };
+  return typeMap[category] || 'Unknown';
+}
+
+/**
+ * Interpolate error template with variables
+ * Replaces {{variable_name}} with actual values
+ */
+function interpolateErrorTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+    return vars[key] !== undefined ? vars[key] : match;
+  });
 }
 
 /**

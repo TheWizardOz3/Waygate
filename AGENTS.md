@@ -290,34 +290,50 @@
 
 ### 9.4 After Making Changes
 
-1. **Update `changelog.md`** with what was added, changed, or fixed
-2. **Update `project_status.md`** to reflect current progress
-3. **Add to `decision_log.md`** if any architectural decisions were made
-4. **Update `architecture.md`** if tech stack, schema, or API changed
-5. **Create/update feature docs** in `docs/Features/` for feature work
+Documentation updates should be **selective** — capture what matters for future context, not a complete record of every change.
 
-**Never leave documentation stale.** Documentation updates are part of completing the work, not a separate task.
+#### Changelog (`changelog.md`)
 
-### 10.5 Communication
+**Include:** User-facing features, breaking changes, security fixes, major bug fixes.
+**Exclude:** Implementation details, file paths, function names, task-level breakdowns.
+**Format:** 2-5 sentences per entry. Focus on _what_ changed and _why it matters_, not _how_.
+
+#### Project Status (`project_status.md`)
+
+**Update when:** Task status changes (started, completed, blocked), milestone progress, new blockers, scope changes.
+**Don't update for:** Implementation details within a task, minor progress notes.
+
+#### Decision Log (`decision_log.md`)
+
+**Add entry when:** Making a choice that affects how future code should be written (patterns, conventions, architectural boundaries).
+**Don't add for:** Implementation choices with no ongoing impact, one-time fixes, library configuration.
+**Keep entries concise:** Decision + Rationale + AI Instructions. Skip verbose migration sections.
+
+#### Architecture (`architecture.md`)
+
+**Update when:** Database schema changes, new API endpoints, new dependencies, system design changes.
+
+### 9.5 Communication
 
 - Explain significant architectural decisions
 - Flag potential issues or concerns proactively
 - Ask clarifying questions when requirements are ambiguous
 - Summarize changes made at the end of significant work
-- Confirm which documentation was updated after completing work
 
 ---
 
 ## 10. Documentation Maintenance
 
-| Trigger Event                  | Required Documentation Updates                       |
-| ------------------------------ | ---------------------------------------------------- |
-| **Feature completed**          | `changelog.md`, `project_status.md`                  |
-| **Bug fixed**                  | `changelog.md`, `project_status.md`                  |
-| **New dependency added**       | `architecture.md`, `changelog.md`                    |
-| **Database schema changed**    | `architecture.md`, `decision_log.md`, `changelog.md` |
-| **API endpoint added/changed** | `architecture.md`, `changelog.md`                    |
-| **Work session ended**         | `project_status.md`                                  |
+| Trigger Event               | Required Updates                                     |
+| --------------------------- | ---------------------------------------------------- |
+| **Feature completed**       | `changelog.md` (brief), `project_status.md` (status) |
+| **Task status changed**     | `project_status.md` (task table only)                |
+| **Major bug fixed**         | `changelog.md` (brief)                               |
+| **Database schema changed** | `architecture.md`, `decision_log.md` (if pattern)    |
+| **New API endpoint**        | `architecture.md`                                    |
+| **Architectural decision**  | `decision_log.md`                                    |
+
+**Goal:** Future context, not complete history. Keep docs lean.
 
 ---
 
@@ -386,4 +402,4 @@ API Request → Auth Check → Input Validation (Zod) → Build Request
 
 ---
 
-_Last Updated: 2026-01-01_
+_Last Updated: 2026-01-26_

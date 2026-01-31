@@ -223,7 +223,7 @@ export function IntegrationAIToolsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="relative">
-                      <pre className="max-h-96 overflow-auto rounded-lg bg-muted p-4 text-xs">
+                      <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                         <code>{JSON.stringify(universalData.tools, null, 2)}</code>
                       </pre>
                       <CopyButton
@@ -235,40 +235,29 @@ export function IntegrationAIToolsTab({
                   </CardContent>
                 </Card>
 
-                {/* Tool List with Descriptions */}
+                {/* Tool Summary */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Tool Descriptions (Mini-Prompts)</CardTitle>
+                    <CardTitle className="text-sm">Available Tools</CardTitle>
                     <CardDescription>
-                      Each tool includes a detailed description with required/optional inputs and
-                      output information
+                      Each tool&apos;s AI description can be configured in its action settings
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                      {universalData.tools.map((tool, index) => (
-                        <AccordionItem key={tool.name} value={`tool-${index}`}>
-                          <AccordionTrigger className="hover:no-underline">
-                            <div className="flex items-center gap-3 text-left">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {tool.name}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">
-                                {tool.parameters?.required?.length ?? 0} required,{' '}
-                                {Object.keys(tool.parameters?.properties ?? {}).length -
-                                  (tool.parameters?.required?.length ?? 0)}{' '}
-                                optional params
-                              </span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-xs">
-                              {tool.description}
-                            </pre>
-                          </AccordionContent>
-                        </AccordionItem>
+                    <div className="flex flex-wrap gap-2">
+                      {universalData.tools.map((tool) => (
+                        <Badge key={tool.name} variant="outline" className="font-mono text-xs">
+                          {tool.name}
+                          <span className="ml-1 font-sans text-muted-foreground">
+                            ({tool.parameters?.required?.length ?? 0} required)
+                          </span>
+                        </Badge>
                       ))}
-                    </Accordion>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      <Info className="mr-1 inline h-3 w-3" />
+                      To customize AI tool descriptions, edit individual actions in the Actions tab
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -364,7 +353,7 @@ export function IntegrationAIToolsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="relative">
-                      <pre className="max-h-80 overflow-auto rounded-lg bg-muted p-4 text-xs">
+                      <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                         <code>{langchainData.codeSnippets.typescript}</code>
                       </pre>
                       <CopyButton
@@ -414,7 +403,7 @@ export function IntegrationAIToolsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="relative">
-                      <pre className="max-h-80 overflow-auto rounded-lg bg-muted p-4 text-xs">
+                      <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                         <code>{langchainData.codeSnippets.python}</code>
                       </pre>
                       <CopyButton
@@ -529,7 +518,7 @@ export function IntegrationAIToolsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="relative">
-                      <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs">
+                      <pre className="overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                         <code>{mcpData.serverFile.claudeDesktopConfig}</code>
                       </pre>
                       <CopyButton
@@ -611,7 +600,7 @@ export function IntegrationAIToolsTab({
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <pre className="rounded-lg bg-muted p-4 text-xs">
+                  <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                     {JSON.stringify(
                       {
                         success: true,
@@ -651,7 +640,7 @@ export function IntegrationAIToolsTab({
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <pre className="rounded-lg bg-muted p-4 text-xs">
+                  <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs">
                     {JSON.stringify(
                       {
                         success: false,

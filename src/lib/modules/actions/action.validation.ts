@@ -60,6 +60,10 @@ export const ActionEditorSchema = z.object({
     .optional(),
   validationConfig: ValidationConfigSchema.nullable().optional(),
   metadata: ActionMetadataSchema.optional(),
+  // AI Tool Export fields (LLM-generated descriptions)
+  toolDescription: z.string().max(2000).nullable().optional(),
+  toolSuccessTemplate: z.string().max(1000).nullable().optional(),
+  toolErrorTemplate: z.string().max(1000).nullable().optional(),
 });
 
 export type ActionEditorData = z.input<typeof ActionEditorSchema>;

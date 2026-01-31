@@ -13,7 +13,7 @@ import { apiClient } from '@/lib/api/client';
 
 interface TestingTabProps {
   actionId: string;
-  integrationId: string;
+  integrationSlug: string;
   actionSlug: string;
 }
 
@@ -29,7 +29,7 @@ interface TestResult {
   };
 }
 
-export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
+export function TestingTab({ integrationSlug, actionSlug }: TestingTabProps) {
   const [input, setInput] = useState('{}');
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
@@ -53,7 +53,7 @@ export function TestingTab({ integrationId, actionSlug }: TestingTabProps) {
       const response = await apiClient.post<{
         data: unknown;
         meta?: { statusCode?: number; duration?: number };
-      }>(`/gateway/${integrationId}/${actionSlug}`, parsedInput);
+      }>(`/actions/${integrationSlug}/${actionSlug}`, parsedInput);
 
       const duration = Date.now() - startTime;
 

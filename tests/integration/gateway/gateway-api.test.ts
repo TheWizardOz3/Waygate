@@ -93,6 +93,9 @@ const mockAction = {
   validationConfig: null,
   cacheable: false,
   cacheTtlSeconds: null,
+  toolDescription: null,
+  toolSuccessTemplate: null,
+  toolErrorTemplate: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

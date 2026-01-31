@@ -435,13 +435,27 @@ export function formatSuccessResponse(input: SuccessFormatterInput): ToolSuccess
   // Generate summary
   const summary = generateSummary(input, category, ids);
 
-  // Generate message using template
-  const messageTemplate = MESSAGE_TEMPLATES[category];
-  const message = messageTemplate(input, summary);
+  let message: string;
+  let nextSteps: string;
 
-  // Generate next steps using template
-  const nextStepsTemplate = NEXT_STEPS_TEMPLATES[category];
-  const nextSteps = nextStepsTemplate(input, ids);
+  // Use stored template if available, otherwise fall back to category-based templates
+  if (input.storedSuccessTemplate) {
+    // Interpolate stored template with actual values
+    const templateVars = buildTemplateVariables(input, category, ids, summary);
+    message = interpolateTemplate(input.storedSuccessTemplate, templateVars);
+    // For stored templates, next steps may be included in the template itself
+    // Fall back to category-based next steps
+    const nextStepsTemplate = NEXT_STEPS_TEMPLATES[category];
+    nextSteps = nextStepsTemplate(input, ids);
+  } else {
+    // Generate message using category-based template
+    const messageTemplate = MESSAGE_TEMPLATES[category];
+    message = messageTemplate(input, summary);
+
+    // Generate next steps using category-based template
+    const nextStepsTemplate = NEXT_STEPS_TEMPLATES[category];
+    nextSteps = nextStepsTemplate(input, ids);
+  }
 
   // Build response
   const response: ToolSuccessResponse = {
@@ -465,6 +479,41 @@ export function formatSuccessResponse(input: SuccessFormatterInput): ToolSuccess
   }
 
   return response;
+}
+
+/**
+ * Build template variables for interpolation
+ */
+function buildTemplateVariables(
+  input: SuccessFormatterInput,
+  category: ToolActionCategory,
+  ids: ResponseIdentifiers,
+  summary: string
+): Record<string, string> {
+  return {
+    action_name: input.actionDisplayName,
+    resource_type: extractResourceName(input.actionDisplayName),
+    key_id: ids.resourceId || ids.messageId || ids.jobId || '',
+    summary,
+    target: ids.target || '',
+    message_id: ids.messageId || '',
+    resource_id: ids.resourceId || '',
+    resource_url: ids.resourceUrl || '',
+    job_id: ids.jobId || '',
+    result_count: ids.resultCount !== undefined ? String(ids.resultCount) : '',
+    integration: input.integrationDisplayName,
+    category,
+  };
+}
+
+/**
+ * Interpolate template with variables
+ * Replaces {{variable_name}} with actual values
+ */
+function interpolateTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+    return vars[key] !== undefined ? vars[key] : match;
+  });
 }
 
 /**

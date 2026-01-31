@@ -64,6 +64,7 @@ export function IntegrationReferenceDataTab({
   const [activeSubTab, setActiveSubTab] = useState('config');
   const [searchQuery, setSearchQuery] = useState('');
   const [dataTypeFilter, setDataTypeFilter] = useState<string>('all');
+  const [showAllActions, setShowAllActions] = useState(false);
 
   // Fetch actions to show sync configuration
   const { data: actionsData, isLoading: actionsLoading } = useActions(integrationId);
@@ -393,47 +394,65 @@ export function IntegrationReferenceDataTab({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {allActions
-                        .filter(
+                      {(() => {
+                        const unconfiguredActions = allActions.filter(
                           (a) =>
                             !(a.metadata as { referenceData?: ReferenceDataConfig })?.referenceData
                               ?.syncable
-                        )
-                        .slice(0, 10)
-                        .map((action) => (
-                          <div
-                            key={action.id}
-                            className="flex items-center justify-between rounded-lg border p-3"
-                          >
-                            <div>
-                              <p className="font-medium">{action.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {action.description?.slice(0, 80) ?? action.slug}
-                                {action.description && action.description.length > 80 ? '...' : ''}
-                              </p>
-                            </div>
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/integrations/${integrationId}/actions/${action.id}`}>
-                                Configure
-                              </Link>
-                            </Button>
-                          </div>
-                        ))}
-                      {allActions.filter(
-                        (a) =>
-                          !(a.metadata as { referenceData?: ReferenceDataConfig })?.referenceData
-                            ?.syncable
-                      ).length > 10 && (
-                        <p className="pt-2 text-center text-xs text-muted-foreground">
-                          And{' '}
-                          {allActions.filter(
-                            (a) =>
-                              !(a.metadata as { referenceData?: ReferenceDataConfig })
-                                ?.referenceData?.syncable
-                          ).length - 10}{' '}
-                          more actions...
-                        </p>
-                      )}
+                        );
+                        const displayedActions = showAllActions
+                          ? unconfiguredActions
+                          : unconfiguredActions.slice(0, 10);
+                        const remainingCount = unconfiguredActions.length - 10;
+
+                        return (
+                          <>
+                            {displayedActions.map((action) => (
+                              <div
+                                key={action.id}
+                                className="flex items-center justify-between rounded-lg border p-3"
+                              >
+                                <div>
+                                  <p className="font-medium">{action.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {action.description?.slice(0, 80) ?? action.slug}
+                                    {action.description && action.description.length > 80
+                                      ? '...'
+                                      : ''}
+                                  </p>
+                                </div>
+                                <Button variant="outline" size="sm" asChild>
+                                  <Link
+                                    href={`/integrations/${integrationId}/actions/${action.id}?tab=settings`}
+                                  >
+                                    Configure
+                                  </Link>
+                                </Button>
+                              </div>
+                            ))}
+                            {remainingCount > 0 && !showAllActions && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-muted-foreground hover:text-foreground"
+                                onClick={() => setShowAllActions(true)}
+                              >
+                                Show {remainingCount} more actions...
+                              </Button>
+                            )}
+                            {showAllActions && unconfiguredActions.length > 10 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-muted-foreground hover:text-foreground"
+                                onClick={() => setShowAllActions(false)}
+                              >
+                                Show less
+                              </Button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </CardContent>

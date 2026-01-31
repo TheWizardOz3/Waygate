@@ -155,7 +155,7 @@ export function EndpointTab({ form, isEditing, integrationSlug }: EndpointTabPro
               <p className="text-xs font-medium text-muted-foreground">Gateway Endpoint Preview</p>
             </div>
             <code className="font-mono text-sm">
-              POST /api/v1/gateway/{integrationSlug}/{form.watch('slug') || 'action-slug'}
+              POST /api/v1/actions/{integrationSlug}/{form.watch('slug') || 'action-slug'}
             </code>
           </div>
         )}

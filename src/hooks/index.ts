@@ -27,6 +27,7 @@ export {
   useBulkDeleteActions,
   useCachedActions,
   useDiscoverActions,
+  useRegenerateToolDescriptions,
   actionKeys,
 } from './useActions';
 

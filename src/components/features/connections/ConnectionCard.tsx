@@ -73,12 +73,12 @@ export function ConnectionCard({
       )}
     >
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-2">
           {/* Icon and Title */}
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
                 status === 'active'
                   ? 'bg-emerald-500/10 group-hover:bg-emerald-500/20'
                   : status === 'error'
@@ -98,27 +98,25 @@ export function ConnectionCard({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="block truncate font-semibold transition-colors group-hover:text-primary">
                   {name}
                 </span>
                 {isPrimary && (
                   <Badge
                     variant="outline"
-                    className="gap-1 border-amber-500/20 bg-amber-500/10 px-1.5 py-0 text-xs text-amber-600"
+                    className="shrink-0 gap-1 border-amber-500/20 bg-amber-500/10 px-1.5 py-0 text-xs text-amber-600"
                   >
                     <Star className="h-2.5 w-2.5 fill-current" />
-                    Primary
                   </Badge>
                 )}
-                <ConnectorTypeBadge type={connectorType} size="sm" />
               </div>
-              <p className="font-mono text-xs text-muted-foreground">{slug}</p>
+              <p className="truncate font-mono text-xs text-muted-foreground">{slug}</p>
             </div>
           </div>
 
           {/* Status Badge & Health & Arrow */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {healthStatus && <HealthStatusDot status={healthStatus} size="default" />}
             <ConnectionStatusBadge status={status} size="sm" />
             {onSelect && (
@@ -129,6 +127,11 @@ export function ConnectionCard({
       </CardHeader>
 
       <CardContent className="pt-0">
+        {/* Connector Type Badge */}
+        <div className="mb-2">
+          <ConnectorTypeBadge type={connectorType} size="sm" />
+        </div>
+
         {/* Base URL if set */}
         {baseUrl && (
           <p className="mb-2 truncate font-mono text-xs text-muted-foreground">{baseUrl}</p>

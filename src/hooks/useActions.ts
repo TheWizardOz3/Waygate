@@ -92,8 +92,12 @@ export function useUpdateAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, ...input }: UpdateActionInput & { id: string }) =>
-      client.actions.update(id, input),
+    mutationFn: ({
+      id,
+      integrationId,
+      ...input
+    }: UpdateActionInput & { id: string; integrationId: string }) =>
+      client.actions.update(id, input, integrationId),
     onSuccess: (data) => {
       // Update the specific action in cache
       queryClient.setQueryData(actionKeys.detail(data.id), data);
@@ -199,6 +203,38 @@ export function useDiscoverActions() {
     },
     onError: (error: Error) => {
       toast.error('Failed to start discovery', {
+        description: error.message,
+      });
+    },
+  });
+}
+
+/**
+ * Hook to regenerate AI tool descriptions for an action
+ */
+export function useRegenerateToolDescriptions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ actionId, integrationId }: { actionId: string; integrationId: string }) =>
+      client.actions.regenerateToolDescriptions(actionId, integrationId),
+    onSuccess: (data, { actionId, integrationId }) => {
+      // Update the action in cache with new descriptions
+      queryClient.setQueryData(actionKeys.detail(actionId), (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        return {
+          ...old,
+          toolDescription: data.toolDescription,
+          toolSuccessTemplate: data.toolSuccessTemplate,
+          toolErrorTemplate: data.toolErrorTemplate,
+        };
+      });
+      // Also invalidate the list in case it affects display
+      queryClient.invalidateQueries({ queryKey: actionKeys.list(integrationId) });
+      toast.success('Tool descriptions regenerated');
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to regenerate tool descriptions', {
         description: error.message,
       });
     },

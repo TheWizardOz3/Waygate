@@ -33,13 +33,14 @@ export function StepSuccess() {
 
   const handleViewIntegration = () => {
     const integrationId = data.createdIntegrationId;
-    reset();
+    // Don't reset before navigation - the wizard resets on mount anyway
+    // Resetting before push() causes a re-render that shows step 1 before navigation completes
     router.push(`/integrations/${integrationId}`);
   };
 
   const handleTestAction = () => {
     const integrationId = data.createdIntegrationId;
-    reset();
+    // Don't reset before navigation - the wizard resets on mount anyway
     router.push(`/integrations/${integrationId}/actions`);
   };
 

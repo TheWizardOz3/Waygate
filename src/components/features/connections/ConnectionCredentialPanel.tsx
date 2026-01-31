@@ -210,6 +210,28 @@ export function ConnectionCredentialPanel({
     }
   };
 
+  // If integration doesn't require authentication, show a simple message
+  if (integration.authType === 'none') {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <CardTitle className="text-lg">Authentication</CardTitle>
+            </div>
+            <Badge className="border-emerald-500/20 bg-emerald-500/15 text-emerald-600">
+              Not Required
+            </Badge>
+          </div>
+          <CardDescription>
+            This integration does not require authentication credentials.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

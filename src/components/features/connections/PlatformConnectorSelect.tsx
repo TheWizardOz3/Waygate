@@ -46,10 +46,18 @@ export function PlatformConnectorSelect({
 
   if (connectors.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center">
-        <Zap className="mx-auto h-8 w-8 text-muted-foreground/50" />
-        <p className="mt-2 text-sm text-muted-foreground">No platform connectors available</p>
-        <p className="mt-1 text-xs text-muted-foreground">Use custom credentials to connect</p>
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+        <Zap className="mx-auto h-8 w-8 text-amber-500/50" />
+        <p className="mt-2 font-medium text-amber-600 dark:text-amber-400">
+          No platform connectors available
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Waygate&apos;s pre-configured OAuth apps are not yet set up for this provider.
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Go back and select &quot;Use Your Own Credentials&quot; to connect with your own OAuth app
+          or API key.
+        </p>
       </div>
     );
   }

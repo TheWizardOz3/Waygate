@@ -119,6 +119,9 @@ const mockAction = {
     tags: ['messaging', 'channels'],
     rateLimit: { requests: 100, window: 60 },
   },
+  toolDescription: null,
+  toolSuccessTemplate: null,
+  toolErrorTemplate: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

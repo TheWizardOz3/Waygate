@@ -39,3 +39,17 @@ export {
   // Template constants
   DESCRIPTION_TEMPLATES,
 } from './templates';
+
+// =============================================================================
+// AI-Powered Description Generator
+// =============================================================================
+
+export {
+  // Generator functions
+  generateToolDescriptions,
+  generateToolDescriptionsBatch,
+  regenerateToolDescriptions,
+  // Types
+  type ToolDescriptionInput,
+  type GeneratedToolDescriptions,
+} from './tool-description-generator';

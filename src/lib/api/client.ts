@@ -292,5 +292,17 @@ export const client = {
         canRescrape: boolean;
       }>(`/integrations/${integrationId}/cached-actions`);
     },
+
+    /**
+     * Regenerate AI tool descriptions for an action
+     * Uses LLM to generate optimized tool description, success template, and error template
+     */
+    regenerateToolDescriptions(actionId: string, integrationId: string) {
+      return apiClient.post<{
+        toolDescription: string;
+        toolSuccessTemplate: string;
+        toolErrorTemplate: string;
+      }>(`/integrations/${integrationId}/actions/${actionId}/regenerate-tool-descriptions`);
+    },
   },
 };

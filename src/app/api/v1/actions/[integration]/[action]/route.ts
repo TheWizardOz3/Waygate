@@ -184,6 +184,8 @@ function extractSlugsFromUrl(url: string): {
  * - X-Waygate-Validation-Mode: "strict" | "warn" | "lenient" - override response validation mode
  * - X-Waygate-Bypass-Response-Validation: "true" to skip response validation entirely
  * - X-Waygate-Connection-Id: UUID of the connection to use (for multi-app connections)
+ * - X-Waygate-Context: JSON object with context for name-to-ID resolution
+ * - X-Waygate-Context-{Type}: JSON array of context items for a specific type (e.g., X-Waygate-Context-Users)
  */
 function parseInvocationOptions(request: NextRequest): GatewayInvokeOptions {
   const options: GatewayInvokeOptions = {};
@@ -239,6 +241,14 @@ function parseInvocationOptions(request: NextRequest): GatewayInvokeOptions {
     options.connectionId = connectionId;
   }
 
+  // Context for name-to-ID resolution
+  // Type is validated by GatewayInvokeOptionsSchema.safeParse below
+  const context = parseContextFromHeaders(request);
+  if (context && Object.keys(context).length > 0) {
+    // The context will be validated by the schema; use type assertion for assignment
+    options.context = context as GatewayInvokeOptions['context'];
+  }
+
   // Validate options
   const parsed = GatewayInvokeOptionsSchema.safeParse(options);
   if (parsed.success) {
@@ -247,6 +257,63 @@ function parseInvocationOptions(request: NextRequest): GatewayInvokeOptions {
 
   // If validation fails, return empty options (use defaults)
   return {};
+}
+
+/**
+ * Parse context from request headers for name-to-ID resolution.
+ *
+ * Supports two formats:
+ * 1. X-Waygate-Context: Full context object as JSON
+ *    Example: X-Waygate-Context: {"channels": [{"id": "C123", "name": "general"}]}
+ *
+ * 2. X-Waygate-Context-{Type}: Individual context type as JSON array
+ *    Example: X-Waygate-Context-Users: [{"id": "U123", "name": "sarah"}]
+ *    Example: X-Waygate-Context-Channels: [{"id": "C456", "name": "general"}]
+ *
+ * Both formats can be combined - individual type headers are merged into the full context.
+ */
+function parseContextFromHeaders(request: NextRequest): Record<string, unknown[]> | undefined {
+  const context: Record<string, unknown[]> = {};
+
+  // Parse full context header
+  const fullContextHeader = request.headers.get('X-Waygate-Context');
+  if (fullContextHeader) {
+    try {
+      const parsed = JSON.parse(fullContextHeader);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (Array.isArray(value)) {
+            context[key] = value;
+          }
+        }
+      }
+    } catch {
+      // Ignore invalid JSON in full context header
+      console.warn('[GATEWAY] Invalid JSON in X-Waygate-Context header');
+    }
+  }
+
+  // Parse individual context type headers (X-Waygate-Context-{Type})
+  const contextPrefix = 'x-waygate-context-';
+  request.headers.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey.startsWith(contextPrefix) && lowerKey !== 'x-waygate-context') {
+      const contextType = lowerKey.slice(contextPrefix.length);
+      if (contextType) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            context[contextType] = parsed;
+          }
+        } catch {
+          // Ignore invalid JSON in context type header
+          console.warn(`[GATEWAY] Invalid JSON in X-Waygate-Context-${contextType} header`);
+        }
+      }
+    }
+  });
+
+  return Object.keys(context).length > 0 ? context : undefined;
 }
 
 /**

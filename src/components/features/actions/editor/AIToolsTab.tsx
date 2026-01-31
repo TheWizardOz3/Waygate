@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Database, RefreshCw, Info, Plus, X, Loader2 } from 'lucide-react';
+import { Sparkles, Database, Info, Plus, X, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AIToolsTabProps {
@@ -356,212 +356,179 @@ export function AIToolsTab({
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium">Reference Data Sync</h3>
                   <Badge variant="outline" className="text-xs">
-                    AI Context
+                    Advanced
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Cache response data so AI tools can resolve names to IDs
+                  Enable AI to look up items by name instead of ID
                 </p>
               </div>
             </div>
             <Switch checked={syncEnabled} onCheckedChange={toggleSyncEnabled} />
           </div>
 
+          {!syncEnabled && (
+            <div className="rounded-lg border border-dashed bg-muted/20 p-4">
+              <p className="text-sm font-medium">When should I enable this?</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Enable this on actions that <strong>list items</strong> (like &quot;List
+                Users&quot;, &quot;List Channels&quot;, or &quot;List Projects&quot;). This allows
+                AI to say &quot;send message to #general&quot; instead of needing the channel ID.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Skip this for actions that create, update, or perform operations.
+              </p>
+            </div>
+          )}
+
           {syncEnabled && (
             <div className="space-y-6 pl-8">
+              {/* Explanation box */}
+              <div className="rounded-lg border bg-blue-500/5 p-4">
+                <p className="text-sm font-medium">How this works</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Waygate will periodically call this action and save the results. Then when AI uses
+                  other actions, it can look up items by name.
+                </p>
+                <div className="mt-3 rounded border bg-background p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Example:</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    If this action returns a list of Slack channels, AI can say &quot;post to
+                    #general&quot; and Waygate will automatically find the channel ID.
+                  </p>
+                </div>
+              </div>
+
               {/* Data Category */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Data Category</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      A label for this type of data (e.g., &quot;users&quot;, &quot;channels&quot;,
-                      &quot;projects&quot;). This is used to group and identify cached items.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                <Label className="text-sm font-medium">
+                  What type of items does this action return?
+                </Label>
                 <Input
-                  placeholder="e.g., users, channels, projects"
+                  placeholder="e.g., users, channels, projects, repositories"
                   value={referenceData?.dataType ?? ''}
                   onChange={(e) => updateReferenceData({ dataType: e.target.value })}
                   className="max-w-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Choose a descriptive name for this data type
+                  This label helps identify what kind of data is cached
                 </p>
               </div>
 
-              {/* JSONPath Extraction */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Response Path</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      JSONPath expression to extract the array of items from the API response. For
-                      example, if the response is {`{ members: [...] }`}, use
-                      <code className="mx-1 rounded bg-muted px-1">$.members[*]</code>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Input
-                  placeholder="$.members[*] or $.data.items[*]"
-                  value={referenceData?.extractionPath ?? ''}
-                  onChange={(e) => updateReferenceData({ extractionPath: e.target.value })}
-                  className="max-w-sm font-mono text-sm"
-                />
+              {/* Technical Configuration - Collapsible */}
+              <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm font-medium">Technical Configuration</p>
                 <p className="text-xs text-muted-foreground">
-                  JSONPath to the array of items in the response
+                  Configure how to extract items from the API response. These settings depend on how
+                  the API structures its response.
                 </p>
-              </div>
 
-              {/* Field Mapping */}
-              <div className="grid gap-4 sm:grid-cols-2">
+                {/* JSONPath Extraction */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium">ID Field</Label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        The field name in each item that contains the unique identifier.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <Label className="text-sm">Path to the list in the response</Label>
                   <Input
-                    placeholder="id"
-                    value={referenceData?.idField ?? 'id'}
-                    onChange={(e) => updateReferenceData({ idField: e.target.value })}
-                    className="font-mono text-sm"
+                    placeholder="$.members[*] or $.data.items[*] or $.channels[*]"
+                    value={referenceData?.extractionPath ?? ''}
+                    onChange={(e) => updateReferenceData({ extractionPath: e.target.value })}
+                    className="max-w-md font-mono text-sm"
                   />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium">Name Field</Label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        The field name in each item that contains the display name (what AI will use
-                        for lookups).
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Input
-                    placeholder="name"
-                    value={referenceData?.nameField ?? 'name'}
-                    onChange={(e) => updateReferenceData({ nameField: e.target.value })}
-                    className="font-mono text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Sync Interval */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Sync Frequency</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      How often to refresh this data from the API. More frequent syncing keeps data
-                      fresh but uses more API calls.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={syncIntervalDays}
-                    onChange={(e) => {
-                      const days = parseInt(e.target.value, 10) || 1;
-                      updateReferenceData({ defaultTtlSeconds: days * 86400 });
-                    }}
-                    className="w-20"
-                  />
-                  <span className="text-sm text-muted-foreground">day(s)</span>
-                </div>
-              </div>
-
-              {/* Additional Fields */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Additional Fields (Optional)</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      Extra fields to store from each item. Useful for filtering or additional
-                      context (e.g., email, is_admin, department).
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {metadataFields.map((field: string) => (
-                    <Badge key={field} variant="secondary" className="gap-1 font-mono text-xs">
-                      {field}
-                      <button
-                        type="button"
-                        onClick={() => removeMetadataField(field)}
-                        className="ml-1 rounded-full hover:bg-destructive/20"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  <div className="flex items-center gap-1">
-                    <Input
-                      placeholder="field_name"
-                      value={newMetadataField}
-                      onChange={(e) => setNewMetadataField(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addMetadataField();
-                        }
-                      }}
-                      className="h-7 w-28 font-mono text-xs"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={addMetadataField}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info box */}
-              <div className="flex items-start gap-3 rounded-lg border bg-blue-500/5 p-4">
-                <RefreshCw className="h-5 w-5 shrink-0 text-blue-500" />
-                <div className="text-sm">
-                  <p className="font-medium">How Reference Data Sync Works</p>
-                  <p className="mt-1 text-muted-foreground">
-                    Waygate periodically calls this action and caches the extracted items. When AI
-                    tools run, they can use this cached data to resolve human-friendly names to IDs
-                    (e.g., &quot;@sarah&quot; → &quot;U123&quot; or &quot;#general&quot; →
-                    &quot;C456&quot;).
+                  <p className="text-xs text-muted-foreground">
+                    JSONPath to the array. For example, if the response is{' '}
+                    <code className="rounded bg-muted px-1">{'{"channels": [...]}'}</code>, enter{' '}
+                    <code className="rounded bg-muted px-1">$.channels[*]</code>
                   </p>
-                  <p className="mt-2 text-muted-foreground">
-                    <strong>Note:</strong> Data is synced per end-user connection. Each user who
-                    connects will have their own cached reference data based on what they have
-                    access to.
+                </div>
+
+                {/* Field Mapping */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm">ID field name</Label>
+                    <Input
+                      placeholder="id"
+                      value={referenceData?.idField ?? 'id'}
+                      onChange={(e) => updateReferenceData({ idField: e.target.value })}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The field containing the unique identifier
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Name field name</Label>
+                    <Input
+                      placeholder="name"
+                      value={referenceData?.nameField ?? 'name'}
+                      onChange={(e) => updateReferenceData({ nameField: e.target.value })}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The field AI will use for lookups (e.g., &quot;name&quot; or
+                      &quot;display_name&quot;)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Sync Interval */}
+                <div className="space-y-2">
+                  <Label className="text-sm">How often to refresh</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={syncIntervalDays}
+                      onChange={(e) => {
+                        const days = parseInt(e.target.value, 10) || 1;
+                        updateReferenceData({ defaultTtlSeconds: days * 86400 });
+                      }}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">day(s)</span>
+                  </div>
+                </div>
+
+                {/* Additional Fields */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Additional fields to cache (optional)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {metadataFields.map((field: string) => (
+                      <Badge key={field} variant="secondary" className="gap-1 font-mono text-xs">
+                        {field}
+                        <button
+                          type="button"
+                          onClick={() => removeMetadataField(field)}
+                          className="ml-1 rounded-full hover:bg-destructive/20"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <Input
+                        placeholder="field_name"
+                        value={newMetadataField}
+                        onChange={(e) => setNewMetadataField(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addMetadataField();
+                          }
+                        }}
+                        className="h-7 w-28 font-mono text-xs"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={addMetadataField}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Extra fields like &quot;email&quot; or &quot;is_admin&quot; for filtering
                   </p>
                 </div>
               </div>

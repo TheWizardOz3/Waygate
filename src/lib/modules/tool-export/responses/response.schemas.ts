@@ -185,6 +185,8 @@ export interface SuccessFormatterInput {
   responseData: unknown;
   /** Resolved inputs (if context resolution occurred) */
   resolvedInputs?: Record<string, { original: string; resolved: string }>;
+  /** LLM-generated success template (if stored with action) */
+  storedSuccessTemplate?: string | null;
 }
 
 /**
@@ -215,6 +217,8 @@ export interface ErrorFormatterInput {
   retryAfterMs?: number | null;
   /** Suggested action from the gateway */
   suggestedAction?: string;
+  /** LLM-generated error template (if stored with action) */
+  storedErrorTemplate?: string | null;
 }
 
 // =============================================================================

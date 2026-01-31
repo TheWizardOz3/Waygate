@@ -225,12 +225,69 @@ function buildOpeningFromDescription(description: string, category: ActionCatego
   }
 
   // Otherwise, format it as "Use this tool to {description}"
-  // Handle cases where description starts with a verb
-  const verbPrefixes = ['get', 'list', 'create', 'update', 'delete', 'send', 'post', 'fetch'];
+  // Handle cases where description starts with a verb in third-person singular form
+  const verbMappings: Record<string, string> = {
+    gets: 'get',
+    lists: 'list',
+    creates: 'create',
+    updates: 'update',
+    deletes: 'delete',
+    sends: 'send',
+    posts: 'post',
+    fetches: 'fetch',
+    retrieves: 'retrieve',
+    returns: 'return',
+    starts: 'start',
+    connects: 'connect',
+    disconnects: 'disconnect',
+    uploads: 'upload',
+    downloads: 'download',
+    searches: 'search',
+    finds: 'find',
+    adds: 'add',
+    removes: 'remove',
+    sets: 'set',
+    opens: 'open',
+    closes: 'close',
+  };
+
+  const verbPrefixes = [
+    'get',
+    'list',
+    'create',
+    'update',
+    'delete',
+    'send',
+    'post',
+    'fetch',
+    'retrieve',
+    'start',
+    'connect',
+    'disconnect',
+    'upload',
+    'download',
+    'search',
+    'find',
+    'add',
+    'remove',
+    'set',
+    'open',
+    'close',
+  ];
   const lowerCleaned = cleaned.toLowerCase();
 
+  // Check for third-person singular verbs and convert to base form
+  for (const [thirdPerson, basForm] of Object.entries(verbMappings)) {
+    if (lowerCleaned.startsWith(thirdPerson + ' ') || lowerCleaned.startsWith(thirdPerson + 's ')) {
+      const rest = cleaned.slice(thirdPerson.length);
+      const opening = `Use this tool to ${basForm}${rest}`;
+      return opening.endsWith('.') ? opening : `${opening}.`;
+    }
+  }
+
+  // Check for base form verbs
   for (const prefix of verbPrefixes) {
-    if (lowerCleaned.startsWith(prefix)) {
+    if (lowerCleaned.startsWith(prefix + ' ')) {
       const opening = `Use this tool to ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`;
       return opening.endsWith('.') ? opening : `${opening}.`;
     }
@@ -304,7 +361,9 @@ function extractConstraints(prop?: JsonSchemaProperty): string[] {
 }
 
 /**
- * Format a parameter description for display.
+ * Format a parameter description for display with instructional guidance.
+ * Following the playbook pattern, parameter descriptions are mini-instructions
+ * that tell the AI agent what to pass and how to use the parameter.
  */
 function formatParameterDescription(param: ParameterInfo): string {
   const parts: string[] = [];
@@ -313,41 +372,117 @@ function formatParameterDescription(param: ParameterInfo): string {
   if (param.description && param.description !== `The ${param.name}`) {
     parts.push(param.description);
   } else {
-    // Generate description from name
+    // Generate an instructional description from name
     const readable = param.name
       .replace(/([A-Z])/g, ' $1')
       .replace(/_/g, ' ')
-      .toLowerCase();
-    parts.push(`The ${readable}`);
+      .toLowerCase()
+      .trim();
+    parts.push(generateParameterGuidance(param.name, readable, param.type));
   }
 
-  // Add type info if not already clear from description
-  if (!parts[0].toLowerCase().includes(param.type)) {
-    parts[0] += ` (${param.type})`;
-  }
-
-  // Add constraints
-  if (param.constraints.length > 0) {
-    parts.push(`[${param.constraints.join(', ')}]`);
-  }
-
-  // Add enum values (shortened if too many)
+  // Add enum values with usage guidance
   if (param.enumValues && param.enumValues.length > 0) {
-    if (param.enumValues.length <= 4) {
-      parts.push(`Allowed: ${param.enumValues.join(', ')}`);
+    if (param.enumValues.length <= 5) {
+      parts.push(`Must be one of: ${param.enumValues.map((v) => `"${v}"`).join(', ')}`);
     } else {
       parts.push(
-        `Allowed: ${param.enumValues.slice(0, 3).join(', ')}... (${param.enumValues.length} options)`
+        `Must be one of: ${param.enumValues
+          .slice(0, 4)
+          .map((v) => `"${v}"`)
+          .join(', ')}... (${param.enumValues.length} total options)`
       );
     }
   }
 
-  // Add default value
+  // Add constraints with clear guidance
+  if (param.constraints.length > 0) {
+    const constraintText = param.constraints
+      .map((c) => {
+        if (c.startsWith('min:')) return `minimum value ${c.slice(4).trim()}`;
+        if (c.startsWith('max:')) return `maximum value ${c.slice(4).trim()}`;
+        if (c.startsWith('min length:')) return `at least ${c.slice(11).trim()} characters`;
+        if (c.startsWith('max length:')) return `at most ${c.slice(11).trim()} characters`;
+        if (c.startsWith('pattern:')) return `must match pattern ${c.slice(8).trim()}`;
+        if (c.startsWith('format:')) return `${c.slice(7).trim()} format`;
+        return c;
+      })
+      .join(', ');
+    parts.push(`Constraints: ${constraintText}`);
+  }
+
+  // Add default value with guidance on when it applies
   if (param.hasDefault) {
-    parts.push(`Default: ${JSON.stringify(param.defaultValue)}`);
+    const defaultStr =
+      typeof param.defaultValue === 'string'
+        ? `"${param.defaultValue}"`
+        : JSON.stringify(param.defaultValue);
+    parts.push(`Defaults to ${defaultStr} if not provided`);
   }
 
   return parts.join('. ').replace(/\.\./g, '.').trim();
+}
+
+/**
+ * Generate instructional guidance for a parameter based on its name and type.
+ */
+function generateParameterGuidance(name: string, readableName: string, type: string): string {
+  // Common parameter patterns with specific guidance
+  const patterns: Record<string, string> = {
+    // Identifiers
+    id: 'The unique identifier',
+    channel: 'The channel ID or name (e.g., "#general" or "C0123456789")',
+    channel_id: 'The channel ID (starts with "C", e.g., "C0123456789")',
+    user: 'The user ID or username',
+    user_id: 'The user ID (starts with "U", e.g., "U0123456789")',
+    team_id: 'The team/workspace ID',
+    thread_ts: 'The parent message timestamp to reply in a thread',
+    ts: 'The message timestamp (used as a unique message identifier)',
+    // Content
+    text: 'The message text content. Supports formatting if the platform allows it',
+    message: 'The message content to send',
+    content: 'The content to include',
+    body: 'The request body or content',
+    title: 'A descriptive title',
+    name: 'A human-readable name',
+    description: 'A description explaining the purpose or details',
+    // Pagination & filtering
+    limit: 'Maximum number of results to return',
+    cursor: 'Pagination cursor from a previous response to get the next page',
+    offset: 'Number of items to skip (for pagination)',
+    page: 'Page number for paginated results',
+    query: 'Search query string',
+    filter: 'Filter criteria to narrow results',
+    // Flags
+    include_: 'Whether to include',
+    exclude_: 'Whether to exclude',
+  };
+
+  // Check for pattern matches
+  const lowerName = name.toLowerCase();
+  for (const [pattern, guidance] of Object.entries(patterns)) {
+    if (lowerName === pattern || lowerName.endsWith('_' + pattern)) {
+      return guidance;
+    }
+    if (pattern.endsWith('_') && lowerName.startsWith(pattern)) {
+      return `${guidance} ${readableName.slice(pattern.length - 1)}`;
+    }
+  }
+
+  // Type-based guidance
+  switch (type) {
+    case 'boolean':
+      return `Set to true to enable ${readableName}, or false to disable`;
+    case 'integer':
+    case 'number':
+      return `The numeric value for ${readableName}`;
+    case 'array':
+      return `An array of ${readableName} values`;
+    case 'object':
+      return `An object containing ${readableName} configuration`;
+    default:
+      return `The ${readableName}`;
+  }
 }
 
 /**

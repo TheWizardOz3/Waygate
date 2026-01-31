@@ -221,6 +221,10 @@ const ActionBaseSchema = z.object({
   cacheTtlSeconds: z.number().int().min(0).max(86400).nullable().optional(),
   tags: z.array(TagSchema).max(10, 'Maximum 10 tags allowed').default([]),
   metadata: ActionMetadataSchema.default({}),
+  // AI Tool Export configuration (LLM-generated at action creation time)
+  toolDescription: z.string().max(2000).nullable().optional(),
+  toolSuccessTemplate: z.string().max(1000).nullable().optional(),
+  toolErrorTemplate: z.string().max(1000).nullable().optional(),
 });
 
 /**
@@ -502,6 +506,9 @@ export function toActionResponse(action: {
   cacheTtlSeconds: number | null;
   tags: string[];
   metadata: unknown;
+  toolDescription: string | null;
+  toolSuccessTemplate: string | null;
+  toolErrorTemplate: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): ActionResponse {
@@ -522,6 +529,9 @@ export function toActionResponse(action: {
     cacheTtlSeconds: action.cacheTtlSeconds,
     tags: action.tags ?? [],
     metadata: (action.metadata ?? {}) as ActionMetadata,
+    toolDescription: action.toolDescription ?? undefined,
+    toolSuccessTemplate: action.toolSuccessTemplate ?? undefined,
+    toolErrorTemplate: action.toolErrorTemplate ?? undefined,
     createdAt: action.createdAt.toISOString(),
     updatedAt: action.updatedAt.toISOString(),
   };
