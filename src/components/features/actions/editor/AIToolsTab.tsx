@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { UseFormReturn, FieldValues } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -176,9 +176,40 @@ export function AIToolsTab({
   const toolErrorTemplate = form.watch('toolErrorTemplate');
   const hasStoredDescriptions = toolDescription || toolSuccessTemplate || toolErrorTemplate;
 
-  // Reference Data Sync fields
+  // Reference Data Sync fields - read once for initial state
   const referenceData = form.watch('metadata.referenceData');
   const syncEnabled = referenceData?.syncable ?? false;
+
+  // Local state for text inputs to prevent re-renders on every keystroke
+  const [localDataType, setLocalDataType] = useState(referenceData?.dataType ?? '');
+  const [localExtractionPath, setLocalExtractionPath] = useState(
+    referenceData?.extractionPath ?? ''
+  );
+  const [localIdField, setLocalIdField] = useState(referenceData?.idField ?? 'id');
+  const [localNameField, setLocalNameField] = useState(referenceData?.nameField ?? 'name');
+  const [localSyncDays, setLocalSyncDays] = useState(
+    Math.round((referenceData?.defaultTtlSeconds ?? 86400) / 86400)
+  );
+
+  // Sync local state when form data changes (e.g., on initial load)
+  // We intentionally depend on individual properties to avoid re-syncing on every form update
+  useEffect(() => {
+    if (referenceData) {
+      setLocalDataType(referenceData.dataType ?? '');
+      setLocalExtractionPath(referenceData.extractionPath ?? '');
+      setLocalIdField(referenceData.idField ?? 'id');
+      setLocalNameField(referenceData.nameField ?? 'name');
+      setLocalSyncDays(Math.round((referenceData.defaultTtlSeconds ?? 86400) / 86400));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    referenceData?.dataType,
+    referenceData?.extractionPath,
+    referenceData?.idField,
+    referenceData?.nameField,
+    referenceData?.defaultTtlSeconds,
+  ]);
+
   const metadataFields = useMemo(
     () => referenceData?.metadataFields ?? [],
     [referenceData?.metadataFields]
@@ -188,6 +219,7 @@ export function AIToolsTab({
     [referenceData?.lookupFields, referenceData?.nameField]
   );
   const syncType = (referenceData?.syncType as SyncType) ?? 'list';
+  const fuzzyMatch = referenceData?.fuzzyMatch ?? true;
 
   // Get available fields from schema
   const availableFields = useMemo(() => getArrayItemFields(outputSchema), [outputSchema]);
@@ -204,30 +236,25 @@ export function AIToolsTab({
     }
   };
 
+  // Update form only when needed (on blur or for non-text fields)
   const updateReferenceData = useCallback(
     (updates: Record<string, unknown>) => {
       const current = form.getValues('metadata.referenceData') || {};
       const metadata = form.getValues('metadata') || {};
 
-      // Build new reference data, only including defaults for new fields
       const newReferenceData = {
-        ...current,
+        dataType: current.dataType ?? '',
+        syncable: current.syncable ?? true,
+        extractionPath: current.extractionPath ?? '',
+        idField: current.idField ?? 'id',
+        nameField: current.nameField ?? 'name',
+        metadataFields: current.metadataFields ?? [],
+        defaultTtlSeconds: current.defaultTtlSeconds ?? 86400,
+        syncType: current.syncType ?? 'list',
+        lookupFields: current.lookupFields ?? [current.nameField || 'name'],
+        fuzzyMatch: current.fuzzyMatch ?? true,
         ...updates,
       };
-
-      // Set defaults only if not already set
-      if (newReferenceData.dataType === undefined) newReferenceData.dataType = '';
-      if (newReferenceData.syncable === undefined) newReferenceData.syncable = true;
-      if (newReferenceData.extractionPath === undefined) newReferenceData.extractionPath = '';
-      if (newReferenceData.idField === undefined) newReferenceData.idField = 'id';
-      if (newReferenceData.nameField === undefined) newReferenceData.nameField = 'name';
-      if (newReferenceData.metadataFields === undefined) newReferenceData.metadataFields = [];
-      if (newReferenceData.defaultTtlSeconds === undefined)
-        newReferenceData.defaultTtlSeconds = 86400;
-      if (newReferenceData.syncType === undefined) newReferenceData.syncType = 'list';
-      if (newReferenceData.lookupFields === undefined)
-        newReferenceData.lookupFields = [newReferenceData.nameField || 'name'];
-      if (newReferenceData.fuzzyMatch === undefined) newReferenceData.fuzzyMatch = true;
 
       form.setValue(
         'metadata',
@@ -235,7 +262,7 @@ export function AIToolsTab({
           ...metadata,
           referenceData: newReferenceData,
         },
-        { shouldDirty: true, shouldTouch: true }
+        { shouldDirty: true }
       );
     },
     [form]
@@ -262,17 +289,22 @@ export function AIToolsTab({
               fuzzyMatch: true,
             },
           },
-          { shouldDirty: true, shouldTouch: true }
+          { shouldDirty: true }
         );
+        // Reset local state
+        setLocalDataType('');
+        setLocalExtractionPath('');
+        setLocalIdField('id');
+        setLocalNameField('name');
+        setLocalSyncDays(1);
       } else {
-        // Remove reference data config when disabled
         form.setValue(
           'metadata',
           {
             ...metadata,
             referenceData: undefined,
           },
-          { shouldDirty: true, shouldTouch: true }
+          { shouldDirty: true }
         );
       }
     },
@@ -318,7 +350,6 @@ export function AIToolsTab({
       const currentValue = form.getValues('toolSuccessTemplate') || '';
       form.setValue('toolSuccessTemplate', currentValue + `{{${variable}}}`, {
         shouldDirty: true,
-        shouldTouch: true,
       });
     },
     [form]
@@ -329,14 +360,10 @@ export function AIToolsTab({
       const currentValue = form.getValues('toolErrorTemplate') || '';
       form.setValue('toolErrorTemplate', currentValue + `{{${variable}}}`, {
         shouldDirty: true,
-        shouldTouch: true,
       });
     },
     [form]
   );
-
-  // Convert seconds to days for display
-  const syncIntervalDays = Math.round((referenceData?.defaultTtlSeconds ?? 86400) / 86400);
 
   return (
     <div className="space-y-8 pb-16">
@@ -629,13 +656,14 @@ export function AIToolsTab({
                 </div>
               </div>
 
-              {/* Data Category */}
+              {/* Data Category - uses local state */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Data label</Label>
                 <Input
                   placeholder="e.g., users, channels, crm_schema"
-                  value={referenceData?.dataType ?? ''}
-                  onChange={(e) => updateReferenceData({ dataType: e.target.value })}
+                  value={localDataType}
+                  onChange={(e) => setLocalDataType(e.target.value)}
+                  onBlur={() => updateReferenceData({ dataType: localDataType })}
                   className="max-w-sm"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -652,8 +680,13 @@ export function AIToolsTab({
                     <Label className="text-sm font-medium">Path to the list in response</Label>
                     {availableArrayPaths.length > 0 ? (
                       <Select
-                        value={referenceData?.extractionPath ?? ''}
-                        onValueChange={(value) => updateReferenceData({ extractionPath: value })}
+                        value={localExtractionPath}
+                        onValueChange={(value) => {
+                          if (value !== '_custom') {
+                            setLocalExtractionPath(value);
+                            updateReferenceData({ extractionPath: value });
+                          }
+                        }}
                       >
                         <SelectTrigger className="max-w-md font-mono text-sm">
                           <SelectValue placeholder="Select array path from schema" />
@@ -672,16 +705,18 @@ export function AIToolsTab({
                     ) : (
                       <Input
                         placeholder="$.members[*] or $.data.items[*]"
-                        value={referenceData?.extractionPath ?? ''}
-                        onChange={(e) => updateReferenceData({ extractionPath: e.target.value })}
+                        value={localExtractionPath}
+                        onChange={(e) => setLocalExtractionPath(e.target.value)}
+                        onBlur={() => updateReferenceData({ extractionPath: localExtractionPath })}
                         className="max-w-md font-mono text-sm"
                       />
                     )}
-                    {referenceData?.extractionPath === '_custom' && (
+                    {localExtractionPath === '_custom' && (
                       <Input
                         placeholder="$.members[*] or $.data.items[*]"
                         value=""
-                        onChange={(e) => updateReferenceData({ extractionPath: e.target.value })}
+                        onChange={(e) => setLocalExtractionPath(e.target.value)}
+                        onBlur={() => updateReferenceData({ extractionPath: localExtractionPath })}
                         className="max-w-md font-mono text-sm"
                         autoFocus
                       />
@@ -699,8 +734,11 @@ export function AIToolsTab({
                       <Label className="text-sm font-medium">ID field</Label>
                       {availableFields.length > 0 ? (
                         <Select
-                          value={referenceData?.idField ?? 'id'}
-                          onValueChange={(value) => updateReferenceData({ idField: value })}
+                          value={localIdField}
+                          onValueChange={(value) => {
+                            setLocalIdField(value);
+                            updateReferenceData({ idField: value });
+                          }}
                         >
                           <SelectTrigger className="font-mono text-sm">
                             <SelectValue placeholder="Select ID field" />
@@ -716,8 +754,9 @@ export function AIToolsTab({
                       ) : (
                         <Input
                           placeholder="id"
-                          value={referenceData?.idField ?? 'id'}
-                          onChange={(e) => updateReferenceData({ idField: e.target.value })}
+                          value={localIdField}
+                          onChange={(e) => setLocalIdField(e.target.value)}
+                          onBlur={() => updateReferenceData({ idField: localIdField })}
                           className="font-mono text-sm"
                         />
                       )}
@@ -729,8 +768,11 @@ export function AIToolsTab({
                       <Label className="text-sm font-medium">Primary name field</Label>
                       {availableFields.length > 0 ? (
                         <Select
-                          value={referenceData?.nameField ?? 'name'}
-                          onValueChange={(value) => updateReferenceData({ nameField: value })}
+                          value={localNameField}
+                          onValueChange={(value) => {
+                            setLocalNameField(value);
+                            updateReferenceData({ nameField: value });
+                          }}
                         >
                           <SelectTrigger className="font-mono text-sm">
                             <SelectValue placeholder="Select name field" />
@@ -746,8 +788,9 @@ export function AIToolsTab({
                       ) : (
                         <Input
                           placeholder="name"
-                          value={referenceData?.nameField ?? 'name'}
-                          onChange={(e) => updateReferenceData({ nameField: e.target.value })}
+                          value={localNameField}
+                          onChange={(e) => setLocalNameField(e.target.value)}
+                          onBlur={() => updateReferenceData({ nameField: localNameField })}
                           className="font-mono text-sm"
                         />
                       )}
@@ -806,7 +849,7 @@ export function AIToolsTab({
                         </p>
                       </div>
                       <Switch
-                        checked={referenceData?.fuzzyMatch ?? true}
+                        checked={fuzzyMatch}
                         onCheckedChange={(checked) => updateReferenceData({ fuzzyMatch: checked })}
                       />
                     </div>
@@ -814,7 +857,7 @@ export function AIToolsTab({
                 </>
               )}
 
-              {/* Sync Interval */}
+              {/* Sync Interval - uses local state */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Refresh interval</Label>
                 <div className="flex items-center gap-2">
@@ -822,11 +865,9 @@ export function AIToolsTab({
                     type="number"
                     min={1}
                     max={30}
-                    value={syncIntervalDays}
-                    onChange={(e) => {
-                      const days = parseInt(e.target.value, 10) || 1;
-                      updateReferenceData({ defaultTtlSeconds: days * 86400 });
-                    }}
+                    value={localSyncDays}
+                    onChange={(e) => setLocalSyncDays(parseInt(e.target.value, 10) || 1)}
+                    onBlur={() => updateReferenceData({ defaultTtlSeconds: localSyncDays * 86400 })}
                     className="w-20"
                   />
                   <span className="text-sm text-muted-foreground">day(s)</span>
@@ -899,8 +940,8 @@ export function AIToolsTab({
                                   .filter(
                                     (f) =>
                                       !metadataFields.includes(f) &&
-                                      f !== referenceData?.idField &&
-                                      f !== referenceData?.nameField
+                                      f !== localIdField &&
+                                      f !== localNameField
                                   )
                                   .map((field) => (
                                     <SelectItem key={field} value={field} className="font-mono">
