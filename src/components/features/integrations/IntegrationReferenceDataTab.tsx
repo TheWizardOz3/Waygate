@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useReferenceData, useSyncJobs, useTriggerSync } from '@/hooks';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { useReferenceData, useSyncJobs, useTriggerSync, useActions } from '@/hooks';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,22 +34,39 @@ import {
   Clock,
   Loader2,
   AlertCircle,
+  Settings2,
+  ExternalLink,
+  Info,
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface IntegrationReferenceDataTabProps {
   integrationId: string;
   connectionId?: string | null;
 }
 
+interface ReferenceDataConfig {
+  syncable?: boolean;
+  dataType?: string;
+  extractionPath?: string;
+  idField?: string;
+  nameField?: string;
+  defaultTtlSeconds?: number;
+}
+
 export function IntegrationReferenceDataTab({
   integrationId,
   connectionId,
 }: IntegrationReferenceDataTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState('data');
+  const [activeSubTab, setActiveSubTab] = useState('config');
   const [searchQuery, setSearchQuery] = useState('');
   const [dataTypeFilter, setDataTypeFilter] = useState<string>('all');
+
+  // Fetch actions to show sync configuration
+  const { data: actionsData, isLoading: actionsLoading } = useActions(integrationId);
 
   const {
     data: referenceData,
@@ -73,6 +90,20 @@ export function IntegrationReferenceDataTab({
   });
 
   const triggerSync = useTriggerSync(integrationId);
+
+  // Filter actions with reference data config
+  const syncableActions = useMemo(() => {
+    if (!actionsData?.actions) return [];
+    return actionsData.actions.filter((action) => {
+      const refData = (action.metadata as { referenceData?: ReferenceDataConfig })?.referenceData;
+      return refData?.syncable === true;
+    });
+  }, [actionsData?.actions]);
+
+  // All actions (for showing which can be configured)
+  const allActions = useMemo(() => {
+    return actionsData?.actions ?? [];
+  }, [actionsData?.actions]);
 
   const handleTriggerSync = async () => {
     try {
@@ -211,6 +242,10 @@ export function IntegrationReferenceDataTab({
       {/* Data/History Tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
         <TabsList>
+          <TabsTrigger value="config" className="gap-2">
+            <Settings2 className="h-4 w-4" />
+            Sync Configuration
+          </TabsTrigger>
           <TabsTrigger value="data" className="gap-2">
             <Database className="h-4 w-4" />
             Cached Data
@@ -220,6 +255,217 @@ export function IntegrationReferenceDataTab({
             Sync History
           </TabsTrigger>
         </TabsList>
+
+        {/* Configuration Tab */}
+        <TabsContent value="config" className="space-y-4">
+          {actionsLoading ? (
+            <DataTableSkeleton />
+          ) : syncableActions.length === 0 && allActions.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Database className="h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium">No actions available</p>
+                  <p className="text-sm text-muted-foreground">
+                    Create actions for this integration first
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Enabled Sync Sources */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Active Sync Sources</CardTitle>
+                  <CardDescription>
+                    Actions configured to sync reference data for AI context
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {syncableActions.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <Info className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">
+                        No actions are configured for reference data sync
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Edit an action and enable &quot;Reference Data Sync&quot; in the Settings
+                        tab
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Action</TableHead>
+                          <TableHead>Data Type</TableHead>
+                          <TableHead>Extraction Path</TableHead>
+                          <TableHead>Sync Interval</TableHead>
+                          <TableHead className="w-20">Status</TableHead>
+                          <TableHead className="w-10"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {syncableActions.map((action) => {
+                          const refData = (
+                            action.metadata as { referenceData?: ReferenceDataConfig }
+                          )?.referenceData;
+                          return (
+                            <TableRow key={action.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{action.name}</p>
+                                  <p className="text-xs text-muted-foreground">{action.slug}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getDataTypeIcon(refData?.dataType ?? 'unknown')}
+                                  <span className="capitalize">{refData?.dataType ?? 'N/A'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                                  {refData?.extractionPath ?? 'N/A'}
+                                </code>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">
+                                  {formatSyncInterval(refData?.defaultTtlSeconds ?? 3600)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 bg-emerald-500/10 text-emerald-600"
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Active
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      asChild
+                                    >
+                                      <Link
+                                        href={`/integrations/${integrationId}/actions/${action.id}`}
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </Link>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit action</TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Available Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Available Actions</CardTitle>
+                  <CardDescription>
+                    Actions that could provide reference data (not yet configured)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {allActions.filter(
+                    (a) =>
+                      !(a.metadata as { referenceData?: ReferenceDataConfig })?.referenceData
+                        ?.syncable
+                  ).length === 0 ? (
+                    <div className="py-4 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        All actions are already configured for sync
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {allActions
+                        .filter(
+                          (a) =>
+                            !(a.metadata as { referenceData?: ReferenceDataConfig })?.referenceData
+                              ?.syncable
+                        )
+                        .slice(0, 10)
+                        .map((action) => (
+                          <div
+                            key={action.id}
+                            className="flex items-center justify-between rounded-lg border p-3"
+                          >
+                            <div>
+                              <p className="font-medium">{action.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {action.description?.slice(0, 80) ?? action.slug}
+                                {action.description && action.description.length > 80 ? '...' : ''}
+                              </p>
+                            </div>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/integrations/${integrationId}/actions/${action.id}`}>
+                                Configure
+                              </Link>
+                            </Button>
+                          </div>
+                        ))}
+                      {allActions.filter(
+                        (a) =>
+                          !(a.metadata as { referenceData?: ReferenceDataConfig })?.referenceData
+                            ?.syncable
+                      ).length > 10 && (
+                        <p className="pt-2 text-center text-xs text-muted-foreground">
+                          And{' '}
+                          {allActions.filter(
+                            (a) =>
+                              !(a.metadata as { referenceData?: ReferenceDataConfig })
+                                ?.referenceData?.syncable
+                          ).length - 10}{' '}
+                          more actions...
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Help Info */}
+              <Card className="border-dashed">
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">How Reference Data Sync Works</p>
+                      <p>
+                        1. Configure an action (like &quot;List Users&quot; or &quot;List
+                        Channels&quot;) to sync reference data in the action&apos;s Settings tab.
+                      </p>
+                      <p>
+                        2. Waygate periodically calls this action and caches the results (users,
+                        channels, etc.).
+                      </p>
+                      <p>
+                        3. When AI tools are invoked, they can use this cached data to resolve
+                        human-friendly names to IDs (e.g., &quot;#general&quot; →
+                        &quot;C123456&quot;).
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
 
         <TabsContent value="data" className="space-y-4">
           {/* Filters */}
@@ -414,4 +660,11 @@ function DataTableSkeleton() {
       </div>
     </Card>
   );
+}
+
+function formatSyncInterval(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+  return `${Math.round(seconds / 86400)}d`;
 }

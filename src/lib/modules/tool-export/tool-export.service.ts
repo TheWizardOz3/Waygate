@@ -126,6 +126,7 @@ export async function exportIntegrationToolsUniversal(
     includeMetadata: options.includeMetadata,
     maxDescriptionLength: options.maxDescriptionLength,
     includeContextTypes: options.includeContextTypes ?? true,
+    integrationName: integration.name,
   });
 
   // Log transformation errors but don't fail the request
@@ -210,6 +211,7 @@ export async function exportActionToolUniversal(
     includeMetadata: options.includeMetadata,
     maxDescriptionLength: options.maxDescriptionLength,
     includeContextTypes: options.includeContextTypes ?? true,
+    integrationName: integration.name,
   });
 
   if (!result.success) {

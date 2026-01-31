@@ -29,7 +29,11 @@ Implemented a complete tool export system enabling Waygate actions to be consume
 
 **UI:**
 
-- New "AI Tools" tab on Integration detail page with export options
+- Combined "AI Tools" tab on Integration detail page (merged Export Tools + LLM Response):
+  - Tool Definitions section with format tabs (Universal, LangChain, MCP)
+  - Tool descriptions expandable to show full mini-prompt format with parameters
+  - Response Formatting section for preamble template configuration
+  - Response Format Examples showing success/error structure
 - Copy-to-clipboard and download functionality for all formats
 - Live preview of tool definitions
 

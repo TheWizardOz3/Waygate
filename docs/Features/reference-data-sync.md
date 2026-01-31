@@ -457,8 +457,11 @@ async function buildReferenceDataContext(
    - `POST /api/v1/internal/reference-sync` - Cron endpoint for background sync
 
 4. **UI Components**
-   - `ReferenceDataSettings.tsx` - Action editor panel for configuring sync
-   - `IntegrationReferenceDataTab.tsx` - Tab for viewing cached data and sync history
+   - `ReferenceDataSettings.tsx` - Action editor panel for configuring sync per-action
+   - `IntegrationReferenceDataTab.tsx` - Reference Data tab with three sub-tabs:
+     - **Sync Configuration** - Overview of which actions are configured for sync, with quick links to configure more
+     - **Cached Data** - Table view of synced reference items with search/filter
+     - **Sync History** - View past sync jobs with status and item counts
    - React Query hooks for data fetching
 
 ### Testing

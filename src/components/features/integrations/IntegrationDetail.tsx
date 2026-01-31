@@ -11,9 +11,8 @@ import {
   ScrollText,
   Plug,
   GitBranch,
-  MessageSquare,
   Database,
-  Wrench,
+  Sparkles,
 } from 'lucide-react';
 import { useIntegration, useConnections } from '@/hooks';
 import { IntegrationHeader } from './IntegrationHeader';
@@ -21,9 +20,8 @@ import { IntegrationOverview } from './IntegrationOverview';
 import { IntegrationActionsTab } from './IntegrationActionsTab';
 import { IntegrationLogsTab } from './IntegrationLogsTab';
 import { IntegrationFieldMappingsTab } from './IntegrationFieldMappingsTab';
-import { IntegrationLLMResponseTab } from './IntegrationLLMResponseTab';
 import { IntegrationReferenceDataTab } from './IntegrationReferenceDataTab';
-import { IntegrationToolExportTab } from './IntegrationToolExportTab';
+import { IntegrationAIToolsTab } from './IntegrationAIToolsTab';
 import { ConnectionList, ConnectionSelector } from '@/components/features/connections';
 
 interface IntegrationDetailProps {
@@ -131,11 +129,11 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
             Field Mappings
           </TabsTrigger>
           <TabsTrigger
-            value="llm-response"
+            value="ai-tools"
             className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
           >
-            <MessageSquare className="h-4 w-4" />
-            LLM Response
+            <Sparkles className="h-4 w-4" />
+            AI Tools
           </TabsTrigger>
           <TabsTrigger
             value="reference-data"
@@ -143,13 +141,6 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
           >
             <Database className="h-4 w-4" />
             Reference Data
-          </TabsTrigger>
-          <TabsTrigger
-            value="export-tools"
-            className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-          >
-            <Wrench className="h-4 w-4" />
-            Export Tools
           </TabsTrigger>
           <TabsTrigger
             value="connections"
@@ -179,12 +170,12 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
           />
         </TabsContent>
 
-        <TabsContent value="llm-response" className="mt-6 space-y-4">
-          <IntegrationLLMResponseTab
+        <TabsContent value="ai-tools" className="mt-6 space-y-4">
+          <IntegrationAIToolsTab
             integrationId={integrationId}
-            connectionId={selectedConnectionId}
             integrationName={integration.name}
             integrationSlug={integration.slug}
+            connectionId={selectedConnectionId}
           />
         </TabsContent>
 
@@ -192,14 +183,6 @@ export function IntegrationDetail({ integrationId }: IntegrationDetailProps) {
           <IntegrationReferenceDataTab
             integrationId={integrationId}
             connectionId={selectedConnectionId}
-          />
-        </TabsContent>
-
-        <TabsContent value="export-tools" className="mt-6 space-y-4">
-          <IntegrationToolExportTab
-            integrationId={integrationId}
-            integrationName={integration.name}
-            integrationSlug={integration.slug}
           />
         </TabsContent>
 
