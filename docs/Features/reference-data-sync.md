@@ -457,12 +457,23 @@ async function buildReferenceDataContext(
    - `POST /api/v1/internal/reference-sync` - Cron endpoint for background sync
 
 4. **UI Components**
-   - `ReferenceDataSettings.tsx` - Action editor panel for configuring sync per-action
+   - `AIToolsTab.tsx` - Dedicated "AI Tools" tab in Action editor with cleaner layout:
+     - Reference Data Sync section with improved UX (sync interval in days, clearer field labels)
+     - Tool Description and Response Templates section
+     - Clickable variable badges for template editing
    - `IntegrationReferenceDataTab.tsx` - Reference Data tab with three sub-tabs:
      - **Sync Configuration** - Overview of which actions are configured for sync, with quick links to configure more
      - **Cached Data** - Table view of synced reference items with search/filter
      - **Sync History** - View past sync jobs with status and item counts
    - React Query hooks for data fetching
+
+### Per-Consumer Sync Behavior
+
+Reference data is synced **per end-user connection**. When multiple end-users connect to a consuming app:
+
+- Each user's connection maintains its own cached reference data
+- Data is isolated based on what each user has access to (e.g., different Slack workspaces see different channels)
+- This ensures AI tools resolve names correctly for each user's context
 
 ### Testing
 

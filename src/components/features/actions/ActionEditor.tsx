@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import {
   GitBranch,
   Play,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Form } from '@/components/ui/form';
@@ -25,11 +26,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EndpointTab } from './editor/EndpointTab';
 import { SchemaTab } from './editor/SchemaTab';
 import { SettingsTab } from './editor/SettingsTab';
+import { AIToolsTab } from './editor/AIToolsTab';
 import { MappingsTab } from './editor/MappingsTab';
 import { TestingTab } from './editor/TestingTab';
 import { createEmptySchema } from './editor/types';
 import { ActionEditorSchema, generateSlugFromName } from '@/lib/modules/actions/action.validation';
-import { useCreateAction, useUpdateAction, useAction, useIntegration } from '@/hooks';
+import {
+  useCreateAction,
+  useUpdateAction,
+  useAction,
+  useIntegration,
+  useRegenerateToolDescriptions,
+} from '@/hooks';
 import type {
   JsonSchema,
   CreateActionInput,
@@ -43,14 +51,19 @@ interface ActionEditorProps {
 
 export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isEditing = !!actionId;
-  const [activeTab, setActiveTab] = useState('endpoint');
+
+  // Read initial tab from URL query parameter
+  const initialTab = searchParams.get('tab') || 'endpoint';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const { data: integration, isLoading: integrationLoading } = useIntegration(integrationId);
   const { data: existingAction, isLoading: actionLoading } = useAction(actionId, integrationId);
 
   const createAction = useCreateAction();
   const updateAction = useUpdateAction();
+  const regenerateToolDescriptions = useRegenerateToolDescriptions();
 
   const isLoading = integrationLoading || (isEditing && actionLoading);
   const isSaving = createAction.isPending || updateAction.isPending;
@@ -90,6 +103,9 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
         bypassValidation: false,
       },
       metadata: {} as Record<string, unknown>,
+      toolDescription: null as string | null,
+      toolSuccessTemplate: null as string | null,
+      toolErrorTemplate: null as string | null,
     },
   });
 
@@ -128,6 +144,9 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
           bypassValidation: false,
         },
         metadata: existingAction.metadata ?? {},
+        toolDescription: existingAction.toolDescription ?? null,
+        toolSuccessTemplate: existingAction.toolSuccessTemplate ?? null,
+        toolErrorTemplate: existingAction.toolErrorTemplate ?? null,
       });
     }
   }, [existingAction, form]);
@@ -153,6 +172,18 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
     },
     [form]
   );
+
+  const handleRegenerateToolDescriptions = useCallback(async () => {
+    if (!actionId || !integrationId) return;
+    const result = await regenerateToolDescriptions.mutateAsync({
+      actionId,
+      integrationId,
+    });
+    // Update form with new descriptions
+    form.setValue('toolDescription', result.toolDescription);
+    form.setValue('toolSuccessTemplate', result.toolSuccessTemplate);
+    form.setValue('toolErrorTemplate', result.toolErrorTemplate);
+  }, [actionId, integrationId, regenerateToolDescriptions, form]);
 
   const onSubmit = async (data: FieldValues) => {
     try {
@@ -296,6 +327,13 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
                 <Settings className="h-4 w-4" />
                 Settings
               </TabsTrigger>
+              <TabsTrigger
+                value="ai-tools"
+                className="relative gap-2 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                <Sparkles className="h-4 w-4" />
+                AI Tools
+              </TabsTrigger>
               {isEditing && actionId && (
                 <TabsTrigger
                   value="mappings"
@@ -336,6 +374,16 @@ export function ActionEditor({ integrationId, actionId }: ActionEditorProps) {
             <TabsContent value="settings" className="mt-6 space-y-0">
               <SettingsTab
                 form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
+              />
+            </TabsContent>
+
+            <TabsContent value="ai-tools" className="mt-6 space-y-0">
+              <AIToolsTab
+                form={form as unknown as import('react-hook-form').UseFormReturn<FieldValues>}
+                integrationName={integration?.name}
+                onRegenerateToolDescriptions={
+                  isEditing ? handleRegenerateToolDescriptions : undefined
+                }
               />
             </TabsContent>
 

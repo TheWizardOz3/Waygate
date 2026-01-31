@@ -16,9 +16,16 @@ Implemented a complete tool export system enabling Waygate actions to be consume
 - **Universal Transformer**: Exports actions in LLM-agnostic format with flattened JSON Schema (no $ref, oneOf, anyOf) compatible with OpenAI, Anthropic, and Gemini
 - **LangChain Transformer**: Generates LangChain-compatible tool definitions with Python-ready code
 - **MCP Transformer**: Generates Model Context Protocol server definitions for Claude Desktop
-- **Description Builder**: Creates LLM-optimized mini-prompt descriptions for each tool
+- **Description Builder**: Creates LLM-optimized mini-prompt descriptions for each tool (template-based fallback)
+- **AI Description Generator**: Generates high-quality tool descriptions using LLM at action creation time (stored in DB)
 - **Context Resolver**: Resolves human-friendly names (#general, @sarah) to IDs using injected reference data
 - **Response Formatters**: Generates agent-readable success/error messages with follow-on instructions
+
+**Database Fields (Action model):**
+
+- `toolDescription`: LLM-generated mini-prompt description stored with each action
+- `toolSuccessTemplate`: Custom success response template for the action
+- `toolErrorTemplate`: Custom error response template for the action
 
 **API Endpoints:**
 
@@ -26,16 +33,29 @@ Implemented a complete tool export system enabling Waygate actions to be consume
 - `GET /api/v1/integrations/:id/tools/langchain` - LangChain format export
 - `GET /api/v1/integrations/:id/tools/mcp` - MCP format export
 - `POST /api/v1/tools/invoke` - Tool invocation with context injection
+- `POST /api/v1/integrations/:id/actions/:actionId/regenerate-tool-descriptions` - Regenerate AI descriptions for an action
 
 **UI:**
 
 - Combined "AI Tools" tab on Integration detail page (merged Export Tools + LLM Response):
   - Tool Definitions section with format tabs (Universal, LangChain, MCP)
-  - Tool descriptions expandable to show full mini-prompt format with parameters
+  - Available Tools summary showing tool names with parameter counts (link to action editor for customization)
   - Response Formatting section for preamble template configuration
   - Response Format Examples showing success/error structure
 - Copy-to-clipboard and download functionality for all formats
-- Live preview of tool definitions
+- Live preview of tool definitions with text wrapping (no horizontal scroll)
+- Dedicated "AI Tools" tab in Action editor (separate from Settings tab):
+  - **Tool Description Section**: View/edit LLM-optimized mini-prompt description
+  - **Success/Error Templates**: Configurable response templates with clickable variable badges
+  - **Generate with AI**: Button to regenerate descriptions using LLM
+  - **Reference Data Sync Section**: Configure data caching for AI context
+    - Data Category: Label for the type of data (users, channels, etc.)
+    - Response Path: JSONPath to extract array from API response
+    - ID/Name Field mapping
+    - Sync Frequency in days (not seconds)
+    - Additional fields with tag-based input
+  - Status badges showing "Configured" vs "Using defaults"
+  - Cleaner layout following the notifications settings pattern (no nested boxes)
 
 ---
 
@@ -369,8 +389,9 @@ src/lib/modules/tool-export/
 │   ├── langchain.transformer.ts    # LangChain-specific adjustments
 │   └── mcp.transformer.ts          # MCP-specific format
 ├── descriptions/
-│   ├── description-builder.ts      # Mini-prompt generation
-│   └── templates.ts                # Description templates
+│   ├── description-builder.ts      # Mini-prompt generation (template-based fallback)
+│   ├── templates.ts                # Description templates
+│   └── tool-description-generator.ts  # LLM-powered description generation
 ├── responses/
 │   ├── success-formatter.ts        # Success message builder
 │   ├── error-formatter.ts          # Error message builder
@@ -380,6 +401,44 @@ src/lib/modules/tool-export/
     ├── invocation-handler.ts       # Generate callable handlers
     └── typescript-codegen.ts       # TypeScript SDK generation
 ```
+
+### LLM-Generated Tool Descriptions
+
+Tool descriptions can be generated using an LLM at action creation time for higher quality, contextually-aware descriptions. This provides:
+
+- **Better parameter guidance**: Instructions on what values to pass, not just type information
+- **Action-specific success/error templates**: Based on the actual output schema
+- **Stored in database**: Generated once, used at export time for fast, consistent results
+
+```typescript
+// Generate descriptions at action creation time
+import { generateToolDescriptions } from '@/lib/modules/tool-export/descriptions';
+
+const descriptions = await generateToolDescriptions({
+  actionName: 'Send Message',
+  actionSlug: 'send-message',
+  actionDescription: 'Sends a message to a channel or user',
+  httpMethod: 'POST',
+  endpointTemplate: '/chat.postMessage',
+  inputSchema: { ... },
+  outputSchema: { ... },
+  integrationName: 'Slack',
+  integrationSlug: 'slack',
+  contextTypes: ['channels', 'users'],
+});
+
+// Store with the action
+await prisma.action.update({
+  where: { id: actionId },
+  data: {
+    toolDescription: descriptions.toolDescription,
+    toolSuccessTemplate: descriptions.toolSuccessTemplate,
+    toolErrorTemplate: descriptions.toolErrorTemplate,
+  },
+});
+```
+
+When exporting tools, stored descriptions are used when available, with fallback to template-based generation.
 
 ### API Endpoints
 
